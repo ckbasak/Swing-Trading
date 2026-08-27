@@ -208,7 +208,7 @@ def build_trading_workflow():
     # Compile
     return workflow.compile()
 
-def run_trading_system() -> List[str]:
+def run_trading_system() -> Dict[str, Any]:
     """
     Helper function to execute the compiled LangGraph workflow.
     """
@@ -223,10 +223,78 @@ def run_trading_system() -> List[str]:
         "logs": ["System Execution Started."]
     }
     result = app.invoke(initial_state)
-    return result.get("logs", [])
+    return result
+
+def format_scan_report(state: Dict[str, Any]) -> str:
+    """
+    Formats the final state dictionary into a clean, human-readable report for Telegram.
+    """
+    from datetime import datetime
+    date_str = datetime.now().strftime("%Y-%m-%d")
+    
+    # Extract portfolio sync updates (exits and SL updates)
+    sync_logs = []
+    for log in state.get("logs", []):
+        if "Closed trade" in log or "Updated Trailing Stop" in log:
+            sync_logs.append(log)
+            
+    report = []
+    report.append(f"📊 **NSE Swing Trading Scan Report**")
+    report.append(f"📅 *Date: {date_str}*")
+    report.append("")
+    report.append(f"💰 **Portfolio Summary:**")
+    report.append(f"• Total Value: ₹{state.get('portfolio_value', 0.0):,.2f}")
+    report.append(f"• Cash Balance: ₹{state.get('cash_balance', 0.0):,.2f}")
+    report.append("")
+    
+    if sync_logs:
+        report.append(f"🔄 **Portfolio Updates & Exits:**")
+        for slog in sync_logs:
+            report.append(f"• {slog}")
+        report.append("")
+        
+    candidates = state.get("candidates", [])
+    report.append(f"🔍 **Breakout Candidates Found ({len(candidates)}):**")
+    if candidates:
+        for idx, c in enumerate(candidates):
+            report.append(
+                f"{idx+1}. **{c['ticker']}** | Price: ₹{c['close']:.2f} | "
+                f"Vol Ratio: {c['volume_ratio']:.2f}x | RSI: {c.get('rsi_14', 0.0):.1f}"
+            )
+    else:
+        report.append("• No new breakout candidates found.")
+    report.append("")
+    
+    trades = state.get("trades_to_execute", [])
+    report.append(f"🚀 **Trades Executed:**")
+    if trades:
+        for t in trades:
+            report.append(
+                f"✅ Bought **{t['ticker']}** ({t['quantity']} shrs) @ ₹{t['entry_price']:.2f}\n"
+                f"   *(SL: ₹{t['initial_sl']:.2f} | Target: ₹{t['target']:.2f} | Cost: ₹{t['cost']:.2f})*"
+            )
+    else:
+        report.append("• No new trades executed.")
+    report.append("")
+    
+    # Gather skips
+    skips = []
+    for log in state.get("logs", []):
+        if "Skipping" in log or "Scaled down" in log:
+            skips.append(log.replace("Skipping ", "").replace("Scaled down ", ""))
+            
+    if skips:
+        report.append(f"⚠️ **Sizing & Capital Skips:**")
+        for sk in skips:
+            report.append(f"• {sk}")
+            
+    return "\n".join(report)
 
 if __name__ == "__main__":
     print("Running system manually...")
-    logs = run_trading_system()
-    for l in logs:
+    state = run_trading_system()
+    print("--- RAW LOGS ---")
+    for l in state.get("logs", []):
         print(l)
+    print("\n--- FORMATTED REPORT ---")
+    print(format_scan_report(state))

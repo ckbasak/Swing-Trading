@@ -74,20 +74,14 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def scan_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("🔍 **Executing Swing Trading Scan...** This might take 1-2 minutes.")
     
-    # Run the compiled LangGraph workflow in an executor thread so it doesn't block the async event loop
     loop = asyncio.get_event_loop()
-    logs = await loop.run_in_executor(None, trading_graph.run_trading_system)
-    
-    # Format and send logs in chunks (max 4096 chars per Telegram message)
-    chunk = "📋 **Market Scan Logs:**\n\n"
-    for log in logs:
-        if len(chunk) + len(log) + 2 > 4000:
-            await update.message.reply_text(chunk)
-            chunk = ""
-        chunk += f"• {log}\n"
-    
-    if chunk:
-        await update.message.reply_text(chunk)
+    try:
+        state = await loop.run_in_executor(None, trading_graph.run_trading_system)
+        report = trading_graph.format_scan_report(state)
+        await update.message.reply_text(report, parse_mode="Markdown")
+    except Exception as e:
+        logger.error(f"Error running scan: {e}")
+        await update.message.reply_text(f"❌ Error running scan: {e}")
 
 async def positions_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("📊 **Fetching Open Positions...**")
@@ -170,31 +164,23 @@ async def daily_scan_job(context: ContextTypes.DEFAULT_TYPE):
     logger.info("Starting scheduled daily scan job...")
     
     loop = asyncio.get_event_loop()
-    logs = await loop.run_in_executor(None, trading_graph.run_trading_system)
-    
-    # Notify all registered chats
-    chat_ids = await loop.run_in_executor(None, get_registered_chats)
-    if not chat_ids:
-        logger.warning("No registered chats found to notify.")
-        return
+    try:
+        state = await loop.run_in_executor(None, trading_graph.run_trading_system)
+        report = trading_graph.format_scan_report(state)
         
-    chunk = "⏰ **Scheduled 5:00 PM IST Market Scan Results:**\n\n"
-    for log in logs:
-        if len(chunk) + len(log) + 2 > 4000:
-            for cid in chat_ids:
-                try:
-                    await context.bot.send_message(chat_id=cid, text=chunk)
-                except Exception as e:
-                    logger.error(f"Failed to send to {cid}: {e}")
-            chunk = ""
-        chunk += f"• {log}\n"
-        
-    if chunk:
+        # Notify all registered chats
+        chat_ids = await loop.run_in_executor(None, get_registered_chats)
+        if not chat_ids:
+            logger.warning("No registered chats found to notify.")
+            return
+            
         for cid in chat_ids:
             try:
-                await context.bot.send_message(chat_id=cid, text=chunk)
+                await context.bot.send_message(chat_id=cid, text=report, parse_mode="Markdown")
             except Exception as e:
                 logger.error(f"Failed to send to {cid}: {e}")
+    except Exception as e:
+        logger.error(f"Error in daily_scan_job: {e}")
 
 def main():
     if not TELEGRAM_BOT_TOKEN:
