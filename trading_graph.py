@@ -68,7 +68,7 @@ def scan_market_node(state: TradingState) -> Dict[str, Any]:
         
         logs.append(f"Found {len(candidates)} breakout candidates.")
         for idx, c in enumerate(candidates):
-            logs.append(f"Candidate {idx+1}: {c['ticker']} | Close: {c['close']:.2f} | Volume Ratio: {c['volume_ratio']:.2x}")
+            logs.append(f"Candidate {idx+1}: {c['ticker']} | Close: {c['close']:.2f} | Volume Ratio: {c['volume_ratio']:.2f}x")
             
         return {
             "candidates": candidates,
