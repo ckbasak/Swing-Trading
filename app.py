@@ -119,14 +119,20 @@ if account is not None and holdings is not None:
     with tab_open:
         st.subheader("Current Holdings")
         if not open_df.empty:
+            if "Traded Value" not in open_df.columns or open_df["Traded Value"].isna().all():
+                open_df["Traded Value"] = open_df["Entry Price"] * open_df["Quantity"]
+            else:
+                open_df["Traded Value"] = pd.to_numeric(open_df["Traded Value"], errors='coerce')
+                
             display_columns = [
-                "Ticker", "Entry Date", "Entry Price", "Quantity", 
+                "Ticker", "Entry Date", "Entry Price", "Quantity", "Traded Value",
                 "Current Price", "Current SL", "Target", "Unrealized PnL", "PnL %"
             ]
             st.dataframe(
                 open_df[display_columns].style.format({
                     "Entry Price": "₹{:.2f}",
                     "Quantity": "{:.0f}",
+                    "Traded Value": "₹{:.2f}",
                     "Current Price": "₹{:.2f}",
                     "Current SL": "₹{:.2f}",
                     "Target": "₹{:.2f}",

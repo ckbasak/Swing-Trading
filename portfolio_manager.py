@@ -47,13 +47,19 @@ def get_or_create_portfolio_sheet(client: gspread.Client, sheet_name: str = "NSE
         
     # Check/Create Holdings sheet
     try:
-        sh.worksheet("Holdings")
+        holdings_ws = sh.worksheet("Holdings")
+        try:
+            first_row = holdings_ws.row_values(1)
+            if "Traded Value" not in first_row:
+                holdings_ws.update_cell(1, len(first_row) + 1, "Traded Value")
+        except Exception as ex:
+            print(f"Error checking/updating headers: {ex}")
     except gspread.WorksheetNotFound:
-        holdings_ws = sh.add_worksheet(title="Holdings", rows="1000", cols="12")
+        holdings_ws = sh.add_worksheet(title="Holdings", rows="1000", cols="13")
         headers = [
             "Ticker", "Entry Date", "Entry Price", "Quantity", "Initial SL", 
             "Current SL", "Target", "Status", "Exit Date", "Exit Price", 
-            "PnL", "Exit Reason"
+            "PnL", "Exit Reason", "Traded Value"
         ]
         holdings_ws.append_row(headers)
         # Delete the default Sheet1 if it exists
@@ -146,7 +152,7 @@ def add_position(sh: gspread.Spreadsheet, ticker: str, entry_price: float, qty: 
     date_str = datetime.now().strftime("%Y-%m-%d")
     row = [
         ticker, date_str, entry_price, qty, initial_sl, 
-        initial_sl, target, "OPEN", "", "", "", ""
+        initial_sl, target, "OPEN", "", "", "", "", str(cost)
     ]
     ws.append_row(row)
     
