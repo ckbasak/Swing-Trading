@@ -41,17 +41,34 @@ def get_nifty_250_tickers() -> List[str]:
     ]
     return fallback
 
+def calculate_rsi(series: pd.Series, period: int = 14) -> pd.Series:
+    """
+    Calculates the Relative Strength Index (RSI) using Wilder's smoothing technique.
+    """
+    delta = series.diff()
+    gain = delta.clip(lower=0)
+    loss = -delta.clip(upper=0)
+    
+    # Standard Wilder's smoothing using EWM
+    avg_gain = gain.ewm(alpha=1/period, adjust=False).mean()
+    avg_loss = loss.ewm(alpha=1/period, adjust=False).mean()
+    
+    rs = avg_gain / avg_loss
+    rsi = 100 - (100 / (1 + rs))
+    return rsi
+
 def screen_stocks(tickers: List[str]) -> List[Dict[str, Any]]:
     """
-    Screens the list of tickers for a 20 DMA Breakout with Volume Confirmation:
+    Screens the list of tickers for a 20 DMA Breakout with Volume and RSI confirmation:
     1. Today's close > Today's 20 DMA
     2. Yesterday's close <= Yesterday's 20 DMA
     3. Today's volume > 1.5 * 20-day average volume
+    4. 14-day RSI is between 50 and 70 (bullish momentum but not overbought)
     """
     breakout_candidates = []
     
     # Download data in batches to be fast
-    # Period 60d is sufficient to calculate 20 DMA (and 20 EMA)
+    # Period 60d is sufficient to calculate 20 DMA (and 20 EMA) and 14-day RSI
     print(f"Downloading historical data for {len(tickers)} tickers...")
     session = requests.Session()
     session.headers.update({
@@ -87,13 +104,14 @@ def screen_stocks(tickers: List[str]) -> List[Dict[str, Any]]:
             if len(df) < 25:
                 continue
             
-            # Calculate daily moving averages
+            # Calculate daily moving averages & RSI
             df['20_SMA'] = df['Close'].rolling(window=20).mean()
             df['20_EMA'] = df['Close'].ewm(span=20, adjust=False).mean()
             df['Vol_SMA_20'] = df['Volume'].rolling(window=20).mean()
+            df['RSI_14'] = calculate_rsi(df['Close'], 14)
             
             # Check for NaN in indicators
-            if df['20_SMA'].isna().iloc[-1] or df['Vol_SMA_20'].isna().iloc[-1]:
+            if df['20_SMA'].isna().iloc[-1] or df['Vol_SMA_20'].isna().iloc[-1] or df['RSI_14'].isna().iloc[-1]:
                 continue
                 
             # Current values (last row)
@@ -102,6 +120,7 @@ def screen_stocks(tickers: List[str]) -> List[Dict[str, Any]]:
             sma_today = df['20_SMA'].iloc[-1]
             ema_today = df['20_EMA'].iloc[-1]
             vol_sma_today = df['Vol_SMA_20'].iloc[-1]
+            rsi_today = df['RSI_14'].iloc[-1]
             
             # Previous values (second last row)
             close_yesterday = df['Close'].iloc[-2]
@@ -110,8 +129,9 @@ def screen_stocks(tickers: List[str]) -> List[Dict[str, Any]]:
             # Conditions
             price_breakout = (close_yesterday <= sma_yesterday) and (close_today > sma_today)
             volume_confirmed = vol_today > (1.5 * vol_sma_today)
+            rsi_confirmed = 50 <= rsi_today <= 70
             
-            if price_breakout and volume_confirmed:
+            if price_breakout and volume_confirmed and rsi_confirmed:
                 breakout_candidates.append({
                     "ticker": ticker,
                     "close": float(close_today),
@@ -119,7 +139,8 @@ def screen_stocks(tickers: List[str]) -> List[Dict[str, Any]]:
                     "avg_volume_20": float(vol_sma_today),
                     "sma_20": float(sma_today),
                     "ema_20": float(ema_today),
-                    "volume_ratio": float(vol_today / vol_sma_today)
+                    "volume_ratio": float(vol_today / vol_sma_today),
+                    "rsi_14": float(rsi_today)
                 })
         except Exception as e:
             # Silently catch individual ticker errors
