@@ -1,0 +1,11 @@
+streamlit
+python-telegram-bot[all]
+gspread
+google-auth
+yfinance
+pandas
+numpy
+langgraph
+pytz
+plotly
+requests
