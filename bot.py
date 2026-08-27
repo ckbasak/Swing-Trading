@@ -121,10 +121,10 @@ async def positions_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             pnl_pct = ((current - entry) / entry) * 100
             pnl_emoji = "🟢" if pnl_val >= 0 else "🔴"
             
-            buy_value = entry * qty
+            entry_value = entry * qty
             msg += (
                 f"📌 **{ticker}**\n"
-                f"   • Qty: {qty} | Entry: ₹{entry:.2f} | Buy Value: ₹{buy_value:.2f}\n"
+                f"   • Qty: {qty} | Entry: ₹{entry:.2f} | Entry Value: ₹{entry_value:.2f}\n"
                 f"   • Current: ₹{current:.2f} | SL: ₹{sl:.2f} | Target: ₹{target:.2f}\n"
                 f"   • PnL: {pnl_emoji} ₹{pnl_val:.2f} ({pnl_pct:+.2f}%)\n\n"
             )

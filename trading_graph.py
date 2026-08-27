@@ -256,11 +256,14 @@ def format_scan_report(state: Dict[str, Any]) -> str:
     candidates = state.get("candidates", [])
     report.append(f"🔍 **Breakout Candidates Found ({len(candidates)}):**")
     if candidates:
-        for idx, c in enumerate(candidates):
-            report.append(
-                f"{idx+1}. **{c['ticker']}** | Price: ₹{c['close']:.2f} | "
-                f"Vol Ratio: {c['volume_ratio']:.2f}x | RSI: {c.get('rsi_14', 0.0):.1f}"
-            )
+        header = f"{'Ticker':<10} {'Price':<8} {'VolRatio':<8} {'RSI':<5}"
+        table_lines = [header, "-" * len(header)]
+        for c in candidates:
+            ticker_clean = c['ticker'].replace(".NS", "")
+            table_lines.append(f"{ticker_clean:<10} {c['close']:<8.2f} {c['volume_ratio']:<7.2f}x {c.get('rsi_14', 0.0):<5.1f}")
+        report.append("```")
+        report.extend(table_lines)
+        report.append("```")
     else:
         report.append("• No new breakout candidates found.")
     report.append("")
@@ -268,11 +271,14 @@ def format_scan_report(state: Dict[str, Any]) -> str:
     trades = state.get("trades_to_execute", [])
     report.append(f"🚀 **Trades Executed:**")
     if trades:
+        header = f"{'Ticker':<10} {'Qty':<5} {'Entry':<8} {'SL':<8} {'Target':<8}"
+        table_lines = [header, "-" * len(header)]
         for t in trades:
-            report.append(
-                f"✅ Bought **{t['ticker']}** ({t['quantity']} shrs) @ ₹{t['entry_price']:.2f}\n"
-                f"   *(SL: ₹{t['initial_sl']:.2f} | Target: ₹{t['target']:.2f} | Cost: ₹{t['cost']:.2f})*"
-            )
+            ticker_clean = t['ticker'].replace(".NS", "")
+            table_lines.append(f"{ticker_clean:<10} {t['quantity']:<5} {t['entry_price']:<8.2f} {t['initial_sl']:<8.2f} {t['target']:<8.2f}")
+        report.append("```")
+        report.extend(table_lines)
+        report.append("```")
     else:
         report.append("• No new trades executed.")
     report.append("")

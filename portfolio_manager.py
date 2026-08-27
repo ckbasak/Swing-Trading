@@ -51,14 +51,14 @@ def get_or_create_portfolio_sheet(client: gspread.Client, sheet_name: str = "NSE
         try:
             first_row = holdings_ws.row_values(1)
             # If old format exists, delete and recreate the worksheet to align columns correctly
-            if "Traded Value" in first_row or "Buy Value" not in first_row:
-                print("Recreating Holdings sheet for the new Buy Value / Sell Value columns...")
+            if any(col in first_row for col in ["Traded Value", "Buy Value", "Sell Value"]) or "Entry Value" not in first_row:
+                print("Recreating Holdings sheet for the new Entry Value / Exit Value columns...")
                 sh.del_worksheet(holdings_ws)
                 holdings_ws = sh.add_worksheet(title="Holdings", rows="1000", cols="14")
                 headers = [
-                    "Ticker", "Entry Date", "Entry Price", "Quantity", "Buy Value",
+                    "Ticker", "Entry Date", "Entry Price", "Quantity", "Entry Value",
                     "Initial SL", "Current SL", "Target", "Status", "Exit Date", 
-                    "Exit Price", "Sell Value", "PnL", "Exit Reason"
+                    "Exit Price", "Exit Value", "PnL", "Exit Reason"
                 ]
                 holdings_ws.append_row(headers)
         except Exception as ex:
@@ -66,9 +66,9 @@ def get_or_create_portfolio_sheet(client: gspread.Client, sheet_name: str = "NSE
     except gspread.WorksheetNotFound:
         holdings_ws = sh.add_worksheet(title="Holdings", rows="1000", cols="14")
         headers = [
-            "Ticker", "Entry Date", "Entry Price", "Quantity", "Buy Value",
+            "Ticker", "Entry Date", "Entry Price", "Quantity", "Entry Value",
             "Initial SL", "Current SL", "Target", "Status", "Exit Date", 
-            "Exit Price", "Sell Value", "PnL", "Exit Reason"
+            "Exit Price", "Exit Value", "PnL", "Exit Reason"
         ]
         holdings_ws.append_row(headers)
         # Delete the default Sheet1 if it exists
