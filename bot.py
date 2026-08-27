@@ -100,9 +100,19 @@ async def positions_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Fetch current prices
         prices_df = await loop.run_in_executor(None, lambda: yf.download(tickers, period="1d", group_by="ticker"))
         
-        msg = "📈 **Current Open Positions:**\n\n"
+        # Prices and PnL Table
+        pnl_header = f"{'Ticker':<9} {'Qty':<4} {'Entry':<7} {'Current':<7} {'PnL%':<6}"
+        pnl_lines = [pnl_header, "-" * len(pnl_header)]
+        
+        # Risk and Targets Table
+        risk_header = f"{'Ticker':<9} {'SL':<7} {'Target':<7} {'EntryVal':<8}"
+        risk_lines = [risk_header, "-" * len(risk_header)]
+        
+        total_unrealized_pnl = 0.0
+        
         for p in open_pos:
             ticker = p["Ticker"]
+            ticker_clean = ticker.replace(".NS", "")
             entry = float(p["Entry Price"])
             qty = int(p["Quantity"])
             target = float(p["Target"])
@@ -115,20 +125,26 @@ async def positions_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 else:
                     current = float(prices_df[ticker]["Close"].iloc[-1])
             except Exception:
-                current = entry # Fallback to entry
+                current = entry
                 
             pnl_val = (current - entry) * qty
             pnl_pct = ((current - entry) / entry) * 100
-            pnl_emoji = "🟢" if pnl_val >= 0 else "🔴"
+            total_unrealized_pnl += pnl_val
+            
+            pnl_lines.append(f"{ticker_clean:<9} {qty:<4} {entry:<7.1f} {current:<7.1f} {pnl_pct:>+5.1f}%")
             
             entry_value = entry * qty
-            msg += (
-                f"📌 **{ticker}**\n"
-                f"   • Qty: {qty} | Entry: ₹{entry:.2f} | Entry Value: ₹{entry_value:.2f}\n"
-                f"   • Current: ₹{current:.2f} | SL: ₹{sl:.2f} | Target: ₹{target:.2f}\n"
-                f"   • PnL: {pnl_emoji} ₹{pnl_val:.2f} ({pnl_pct:+.2f}%)\n\n"
-            )
+            risk_lines.append(f"{ticker_clean:<9} {sl:<7.1f} {target:<7.1f} {entry_value:<8.1f}")
             
+        msg = "📈 **Current Open Positions:**\n\n"
+        msg += "📊 **Prices & PnL:**\n"
+        msg += "```\n" + "\n".join(pnl_lines) + "\n```\n"
+        msg += "🛡️ **Risk & Targets:**\n"
+        msg += "```\n" + "\n".join(risk_lines) + "\n```\n"
+        
+        pnl_emoji = "🟢" if total_unrealized_pnl >= 0 else "🔴"
+        msg += f"💰 **Total Unrealized PnL:** {pnl_emoji} ₹{total_unrealized_pnl:,.2f}"
+        
         await update.message.reply_text(msg, parse_mode="Markdown")
     except Exception as e:
         logger.error(f"Error fetching positions: {e}")
