@@ -53,8 +53,21 @@ def screen_stocks(tickers: List[str]) -> List[Dict[str, Any]]:
     # Download data in batches to be fast
     # Period 60d is sufficient to calculate 20 DMA (and 20 EMA)
     print(f"Downloading historical data for {len(tickers)} tickers...")
+    session = requests.Session()
+    session.headers.update({
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"
+    })
+    
     try:
-        data = yf.download(tickers, period="60d", interval="1d", group_by="ticker", threads=True)
+        data = yf.download(
+            tickers, 
+            period="60d", 
+            interval="1d", 
+            group_by="ticker", 
+            session=session,
+            threads=True,
+            timeout=15
+        )
     except Exception as e:
         print(f"Error during batch download: {e}")
         return []
