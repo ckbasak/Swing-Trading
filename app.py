@@ -119,20 +119,23 @@ if account is not None and holdings is not None:
     with tab_open:
         st.subheader("Current Holdings")
         if not open_df.empty:
-            if "Traded Value" not in open_df.columns or open_df["Traded Value"].isna().all():
-                open_df["Traded Value"] = open_df["Entry Price"] * open_df["Quantity"]
+            if "Buy Value" not in open_df.columns or open_df["Buy Value"].isna().all():
+                if "Traded Value" in open_df.columns and not open_df["Traded Value"].isna().all():
+                    open_df["Buy Value"] = pd.to_numeric(open_df["Traded Value"], errors='coerce')
+                else:
+                    open_df["Buy Value"] = open_df["Entry Price"] * open_df["Quantity"]
             else:
-                open_df["Traded Value"] = pd.to_numeric(open_df["Traded Value"], errors='coerce')
+                open_df["Buy Value"] = pd.to_numeric(open_df["Buy Value"], errors='coerce')
                 
             display_columns = [
-                "Ticker", "Entry Date", "Entry Price", "Quantity", "Traded Value",
+                "Ticker", "Entry Date", "Entry Price", "Quantity", "Buy Value",
                 "Current Price", "Current SL", "Target", "Unrealized PnL", "PnL %"
             ]
             st.dataframe(
                 open_df[display_columns].style.format({
                     "Entry Price": "₹{:.2f}",
                     "Quantity": "{:.0f}",
-                    "Traded Value": "₹{:.2f}",
+                    "Buy Value": "₹{:.2f}",
                     "Current Price": "₹{:.2f}",
                     "Current SL": "₹{:.2f}",
                     "Target": "₹{:.2f}",
@@ -147,15 +150,27 @@ if account is not None and holdings is not None:
     with tab_closed:
         st.subheader("Closed Trade History")
         if not closed_df.empty:
+            if "Buy Value" not in closed_df.columns or closed_df["Buy Value"].isna().all():
+                closed_df["Buy Value"] = closed_df["Entry Price"] * closed_df["Quantity"]
+            else:
+                closed_df["Buy Value"] = pd.to_numeric(closed_df["Buy Value"], errors='coerce')
+                
+            if "Sell Value" not in closed_df.columns or closed_df["Sell Value"].isna().all():
+                closed_df["Sell Value"] = closed_df["Exit Price"] * closed_df["Quantity"]
+            else:
+                closed_df["Sell Value"] = pd.to_numeric(closed_df["Sell Value"], errors='coerce')
+                
             display_closed = [
-                "Ticker", "Entry Date", "Entry Price", "Quantity", 
-                "Exit Date", "Exit Price", "PnL", "Exit Reason"
+                "Ticker", "Entry Date", "Entry Price", "Quantity", "Buy Value",
+                "Exit Date", "Exit Price", "Sell Value", "PnL", "Exit Reason"
             ]
             st.dataframe(
                 closed_df[display_closed].style.format({
                     "Entry Price": "₹{:.2f}",
                     "Quantity": "{:.0f}",
+                    "Buy Value": "₹{:.2f}",
                     "Exit Price": "₹{:.2f}",
+                    "Sell Value": "₹{:.2f}",
                     "PnL": "₹{:.2f}"
                 }),
                 use_container_width=True

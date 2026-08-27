@@ -50,16 +50,25 @@ def get_or_create_portfolio_sheet(client: gspread.Client, sheet_name: str = "NSE
         holdings_ws = sh.worksheet("Holdings")
         try:
             first_row = holdings_ws.row_values(1)
-            if "Traded Value" not in first_row:
-                holdings_ws.update_cell(1, len(first_row) + 1, "Traded Value")
+            # If old format exists, delete and recreate the worksheet to align columns correctly
+            if "Traded Value" in first_row or "Buy Value" not in first_row:
+                print("Recreating Holdings sheet for the new Buy Value / Sell Value columns...")
+                sh.del_worksheet(holdings_ws)
+                holdings_ws = sh.add_worksheet(title="Holdings", rows="1000", cols="14")
+                headers = [
+                    "Ticker", "Entry Date", "Entry Price", "Quantity", "Buy Value",
+                    "Initial SL", "Current SL", "Target", "Status", "Exit Date", 
+                    "Exit Price", "Sell Value", "PnL", "Exit Reason"
+                ]
+                holdings_ws.append_row(headers)
         except Exception as ex:
             print(f"Error checking/updating headers: {ex}")
     except gspread.WorksheetNotFound:
-        holdings_ws = sh.add_worksheet(title="Holdings", rows="1000", cols="13")
+        holdings_ws = sh.add_worksheet(title="Holdings", rows="1000", cols="14")
         headers = [
-            "Ticker", "Entry Date", "Entry Price", "Quantity", "Initial SL", 
-            "Current SL", "Target", "Status", "Exit Date", "Exit Price", 
-            "PnL", "Exit Reason", "Traded Value"
+            "Ticker", "Entry Date", "Entry Price", "Quantity", "Buy Value",
+            "Initial SL", "Current SL", "Target", "Status", "Exit Date", 
+            "Exit Price", "Sell Value", "PnL", "Exit Reason"
         ]
         holdings_ws.append_row(headers)
         # Delete the default Sheet1 if it exists
@@ -151,8 +160,8 @@ def add_position(sh: gspread.Spreadsheet, ticker: str, entry_price: float, qty: 
     ws = sh.worksheet("Holdings")
     date_str = datetime.now().strftime("%Y-%m-%d")
     row = [
-        ticker, date_str, entry_price, qty, initial_sl, 
-        initial_sl, target, "OPEN", "", "", "", "", str(cost)
+        ticker, date_str, entry_price, qty, str(cost),
+        initial_sl, initial_sl, target, "OPEN", "", "", "", "", ""
     ]
     ws.append_row(row)
     
@@ -178,12 +187,15 @@ def close_position(sh: gspread.Spreadsheet, row_idx: int, exit_price: float, rea
     exit_date = datetime.now().strftime("%Y-%m-%d")
     pnl = (exit_price - entry_price) * qty
     
-    # Update sheet cells
-    ws.update_cell(row_idx, 8, "CLOSED")
-    ws.update_cell(row_idx, 9, exit_date)
-    ws.update_cell(row_idx, 10, str(exit_price))
-    ws.update_cell(row_idx, 11, str(pnl))
-    ws.update_cell(row_idx, 12, reason)
+    sell_value = exit_price * qty
+    # Update sheet cells using new 1-based column indexes:
+    # 9: Status, 10: Exit Date, 11: Exit Price, 12: Sell Value, 13: PnL, 14: Exit Reason
+    ws.update_cell(row_idx, 9, "CLOSED")
+    ws.update_cell(row_idx, 10, exit_date)
+    ws.update_cell(row_idx, 11, str(exit_price))
+    ws.update_cell(row_idx, 12, str(sell_value))
+    ws.update_cell(row_idx, 13, str(pnl))
+    ws.update_cell(row_idx, 14, reason)
     
     # Update account cash and total value
     account = get_account_details(sh)
@@ -248,7 +260,7 @@ def sync_portfolio(sh: gspread.Spreadsheet) -> List[str]:
                 new_sl = max(current_sl, ema_20_today)
                 if new_sl > current_sl:
                     ws = sh.worksheet("Holdings")
-                    ws.update_cell(row_idx, 6, str(round(new_sl, 2)))
+                    ws.update_cell(row_idx, 7, str(round(new_sl, 2)))
                     logs.append(f"Updated Trailing Stop for {ticker} from {current_sl:.2f} to {new_sl:.2f}")
         except Exception as e:
             logs.append(f"Error syncing {ticker}: {e}")
