@@ -199,6 +199,45 @@ async def daily_scan_job(context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         logger.error(f"Error in daily_scan_job: {e}")
 
+# Intraday Market Hours Sync Job (Exits only)
+async def market_hours_sync_job(context: ContextTypes.DEFAULT_TYPE):
+    # Get current time in IST
+    tz = pytz.timezone("Asia/Kolkata")
+    now = datetime.datetime.now(tz)
+    
+    # 0 = Monday, 4 = Friday. Skip weekends.
+    if now.weekday() > 4:
+        return
+        
+    start_time = datetime.time(9, 15)
+    end_time = datetime.time(15, 30)
+    current_time = now.time()
+    
+    # Only run during NSE market hours
+    if start_time <= current_time <= end_time:
+        logger.info("Executing intraday market hours portfolio sync...")
+        loop = asyncio.get_event_loop()
+        try:
+            client = await loop.run_in_executor(None, portfolio_manager.get_gspread_client)
+            sh = await loop.run_in_executor(None, portfolio_manager.get_or_create_portfolio_sheet, client)
+            
+            # Sync portfolio checks for exits and returns a log list
+            logs = await loop.run_in_executor(None, portfolio_manager.sync_portfolio, sh)
+            
+            # Extract closed trade logs (exits)
+            exit_logs = [log for log in logs if "Closed trade" in log]
+            if exit_logs:
+                chat_ids = await loop.run_in_executor(None, get_registered_chats)
+                for cid in chat_ids:
+                    for log in exit_logs:
+                        await context.bot.send_message(
+                            chat_id=cid, 
+                            text=f"🔔 **Intraday Exit Alert:**\n{log}", 
+                            parse_mode="Markdown"
+                        )
+        except Exception as e:
+            logger.error(f"Error during intraday market sync: {e}")
+
 def main():
     if not TELEGRAM_BOT_TOKEN:
         logger.error("No TELEGRAM_BOT_TOKEN environment variable set. Exiting.")
@@ -214,11 +253,14 @@ def main():
     app.add_handler(CommandHandler("summary", summary_command))
     
     # Configure JobQueue to run daily at 5:00 PM IST
-    # 5:00 PM IST is 17:00 IST. We map it to Asia/Kolkata timezone.
     tz = pytz.timezone("Asia/Kolkata")
     time_to_run = datetime.time(hour=17, minute=0, second=0, tzinfo=tz)
     app.job_queue.run_daily(daily_scan_job, time=time_to_run)
     logger.info("Daily scan job scheduled for 17:00 IST.")
+    
+    # Configure Repeating Job to run every 5 minutes (300 seconds) during market hours
+    app.job_queue.run_repeating(market_hours_sync_job, interval=300, first=10)
+    logger.info("Intraday market hours sync job scheduled (every 5 minutes).")
     
     # Start bot
     logger.info("Starting Telegram Bot poll...")
