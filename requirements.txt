@@ -9,3 +9,5 @@ langgraph
 pytz
 plotly
 requests
+pyotp
+NorenRestApi

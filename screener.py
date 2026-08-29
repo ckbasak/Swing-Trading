@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 import yfinance as yf
 from typing import List, Dict, Any
+import shoonya_client
 
 # Nifty 250 List URL (Updated to Nifty 50)
 NIFTY_250_URL = "https://archives.nseindia.com/content/indices/ind_nifty50list.csv"
