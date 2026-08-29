@@ -6,12 +6,12 @@ import numpy as np
 import yfinance as yf
 from typing import List, Dict, Any
 
-# Nifty 250 List URL
-NIFTY_250_URL = "https://archives.nseindia.com/content/indices/ind_niftylargemidcap250list.csv"
+# Nifty 250 List URL (Updated to Nifty 50)
+NIFTY_250_URL = "https://archives.nseindia.com/content/indices/ind_nifty50list.csv"
 
 def get_nifty_250_tickers() -> List[str]:
     """
-    Fetches the list of Nifty 250 symbols from the NSE archive and formats them for yfinance (.NS).
+    Fetches the list of Nifty 50 symbols from the NSE archive and formats them for yfinance (.NS).
     Includes a robust fallback list of major NSE tickers in case of network issues.
     """
     headers = {
@@ -27,7 +27,7 @@ def get_nifty_250_tickers() -> List[str]:
                 tickers = [f"{sym.strip()}.NS" for sym in symbols if isinstance(sym, str)]
                 return tickers
     except Exception as e:
-        print(f"Error fetching Nifty 250 from NSE: {e}. Using fallback tickers.")
+        print(f"Error fetching Nifty 50 from NSE: {e}. Using fallback tickers.")
     
     # Fallback to major NSE liquid tickers if download fails
     fallback = [
@@ -128,7 +128,7 @@ def screen_stocks(tickers: List[str]) -> List[Dict[str, Any]]:
             
             # Conditions
             price_breakout = (close_yesterday <= sma_yesterday) and (close_today > sma_today)
-            volume_confirmed = vol_today > (1.5 * vol_sma_today)
+            volume_confirmed = vol_today > (2.0 * vol_sma_today)
             rsi_confirmed = 50 <= rsi_today <= 70
             
             if price_breakout and volume_confirmed and rsi_confirmed:

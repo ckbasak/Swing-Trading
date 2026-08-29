@@ -14,7 +14,7 @@ st.set_page_config(
 )
 
 st.title("📈 NSE Multi-Agent Swing Trading Dashboard")
-st.markdown("Automated 20 DMA Breakout System for Nifty 250 Universe")
+st.markdown("Automated 20 DMA Breakout System for Nifty 50 Universe")
 
 # Refresh Button
 if st.sidebar.button("🔄 Sync & Refresh Portfolio"):
