@@ -67,7 +67,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "🔹 `/scan` - Manually trigger the market scan and execute trades.\n"
         "🔹 `/positions` - List all currently open holdings and their PnL.\n"
         "🔹 `/summary` - Get portfolio performance & cash balances.\n\n"
-        "The automated scan runs daily at **5:00 PM IST** (Monday-Friday)."
+        "The automated scan runs daily at **3:25 PM IST** (Monday-Friday)."
     )
     await update.message.reply_text(welcome_text, parse_mode="Markdown")
 
@@ -252,11 +252,11 @@ def main():
     app.add_handler(CommandHandler(["positions", "position"], positions_command))
     app.add_handler(CommandHandler("summary", summary_command))
     
-    # Configure JobQueue to run daily at 5:00 PM IST
+    # Configure JobQueue to run daily at 3:25 PM IST (5 minutes before market close)
     tz = pytz.timezone("Asia/Kolkata")
-    time_to_run = datetime.time(hour=17, minute=0, second=0, tzinfo=tz)
+    time_to_run = datetime.time(hour=15, minute=25, second=0, tzinfo=tz)
     app.job_queue.run_daily(daily_scan_job, time=time_to_run)
-    logger.info("Daily scan job scheduled for 17:00 IST.")
+    logger.info("Daily scan job scheduled for 15:25 IST.")
     
     # Configure Repeating Job to run every 5 minutes (300 seconds) during market hours
     app.job_queue.run_repeating(market_hours_sync_job, interval=300, first=10)
