@@ -210,7 +210,7 @@ def main():
     # Register handlers
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CommandHandler("scan", scan_command))
-    app.add_handler(CommandHandler("positions", positions_command))
+    app.add_handler(CommandHandler(["positions", "position"], positions_command))
     app.add_handler(CommandHandler("summary", summary_command))
     
     # Configure JobQueue to run daily at 5:00 PM IST
