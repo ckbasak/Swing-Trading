@@ -1,6 +1,6 @@
 # NSE Swing Trading System: Comprehensive Documentation
 
-This blueprint holds the comprehensive developer documentation, step-by-step setup guides, active configurations, credential catalog, backtesting metrics, and the universal Master Prompt. This file acts as the primary master manual to recreate or migrate this system on any other AI coding platform.
+This blueprint holds the comprehensive developer documentation, step-by-step setup guides, active configurations, credentials catalog, performance analytics logic, and the universal Master Prompt. This file acts as the primary master manual to recreate or migrate this system on any other AI coding platform.
 
 ---
 
@@ -28,9 +28,11 @@ graph TD
 ```
 
 ### Core Logic Nodes:
-1. **`Sync Portfolio` (Exits & Trailing Stops):**
-   * Connects to **Yahoo Finance** to fetch current prices and check targets (1:2 R:R) and stop losses (Current SL). If breached, it closes the trade, updates available cash, and logs exits.
+1. **`Sync Portfolio` (Exits, Trailing Stops, & Performance Analytics):**
+   * Connects to **Yahoo Finance** to fetch current prices for all open positions.
+   * Compares prices against targets (1:2 R:R) and stop losses (Current SL). If breached, it closes the trade, updates available cash, and logs exits.
    * Compares the close against the rising **20 EMA**. If the 20 EMA exceeds the current stop loss, it trails the stop loss upward.
+   * Computes portfolio performance analytics: **Total Return (%)**, **CAGR (%)**, and **XIRR (%)** based on the `"Initial Capital"` parameter in sheets and the earliest trade date.
 2. **`Scan Market` (Breakout Screener):**
    * Downloads the official active Nifty 50 ticker list from NSE.
    * Queries yfinance for daily historical candles and checks for breakout signals.
@@ -64,14 +66,35 @@ Holds every open and closed position ledger:
 * **Col 14 (Exit Reason):** `Target Hit`, `Stop Loss Hit`, or `Manual Exit`
 
 ### Worksheet 2: `"Account"` (2 Columns)
-Stores parameters: `Total Portfolio Value`, `Cash Balance`, and `Risk Percent` (e.g. `0.01`).
+Stores parameters: 
+* `Total Portfolio Value`: Current value of cash + open holdings.
+* `Cash Balance`: Available cash.
+* `Risk Percent`: Sizing risk per trade (e.g. `0.01` for 1%).
+* `Initial Capital`: Setup deposits (defaults to `1000000` / 10 Lacs). **You can change this value in your sheet to customize your CAGR/XIRR baseline.**
 
 ### Worksheet 3: `"TelegramChats"` (1 Column)
 Stores registered `ChatID` entries to receive daily broadcast scans.
 
 ---
 
-## 📋 3. Credentials & Connection Configuration Catalog
+## 📈 3. Performance Analytics Logic (CAGR & XIRR)
+
+The system automatically calculates advanced investment performance metrics on the dashboard and `/summary` command:
+
+1. **Total Return (%)**:
+   $$\text{Total Return} = \frac{\text{Current Value} - \text{Initial Capital}}{\text{Initial Capital}} \times 100$$
+2. **CAGR (%)**:
+   * If the system has run for **less than 1 year (365 days)**, CAGR is displayed as the absolute total return (industry standard to prevent misleading annualized short-term returns).
+   * If active for **more than 1 year**, CAGR is annualized:
+     $$\text{CAGR} = \left( \left( \frac{\text{Current Value}}{\text{Initial Capital}} \right)^{\frac{365}{\text{Days Elapsed}}} - 1 \right) \times 100$$
+3. **XIRR (%)**:
+   * Evaluates irregular cashflows. Resolved numerically using Newton-Raphson:
+     $$\text{NPV} = \sum_{i=1}^{N} \frac{\text{CF}_i}{(1 + r)^{\frac{d_i - d_1}{365}}} = 0$$
+   * Cashflows are modeled as a deposit (negative) on the earliest trade entry date, and current liquidation value (positive) today. 
+
+---
+
+## 📋 4. Credentials & Connection Configuration Catalog
 
 | System / Provider | Parameter Name | Credential Value / Token ID |
 | :--- | :--- | :--- |
@@ -88,9 +111,9 @@ Stores registered `ChatID` entries to receive daily broadcast scans.
 
 ---
 
-## 🛠️ 4. Step-by-Step Setup Guide
+## 🛠️ 5. Step-by-Step Setup Guide
 
-### Step 1: Google Sheets & Service Account
+### Step 1: Google Sheets Setup
 1. Create a Google Sheet named **`NSE_Swing_Trading_Portfolio`**.
 2. Go to the Google Cloud Console, enable Drive & Sheets APIs, create a Service Account, and download the JSON key.
 3. Share the Google Sheet with the Service Account email.
@@ -108,7 +131,7 @@ Stores registered `ChatID` entries to receive daily broadcast scans.
 
 ---
 
-## 📊 5. Backtest Optimizations Leaderboard
+## 📊 6. Backtest Optimizations Leaderboard
 To find the safest and most profitable strategy for high-volatility range-bound markets, 12 backtests were simulated over a 1-year correction/recovery cycle (Aug 2025 - Aug 2026). During this period, the benchmark Nifty 50 Index buy-and-hold return was **-1.93%**.
 
 ### Leaderboard Results:
@@ -128,13 +151,9 @@ To find the safest and most profitable strategy for high-volatility range-bound 
 | **11** | Tweak 1 (Index Filter) | Nifty 50 | **-1.58%** | -9.58% | 51 | 31.37% |
 | **12** | Tweak 1 (Index Filter) | Nifty 250 | **-17.13%** | -20.30% | 201 | 28.36% |
 
-### Why Nifty 50 + 2.0x Volume was Chosen:
-1. **Large-Cap Outperformance:** In choppy markets, large-caps are much more stable and profitable. Nifty 50 returned **+11.95%** compared to Nifty 250 which lost **-7.66%**.
-2. **Whipsaw Shield:** Requiring volume to be **2.0x** the average volume (Tweak 3) filtered out 48 false breakouts, **slashing the maximum drawdown by 40%** (from -10.61% down to **-6.74%**) and boosting the Win Rate to **40.00%**.
-
 ---
 
-## 🔮 6. Universal Master Prompt (To Recreate This System)
+## 🔮 7. Universal Master Prompt (To Recreate This System)
 
 *Copy-paste the prompt below into any coding AI agent to build the exact same codebase from scratch in a single go:*
 
@@ -146,10 +165,10 @@ Here are the specifications:
 1. FILE STRUCTURE & RESPONSIBILITIES:
 Create the following files:
 - `screener.py`: Fetches Nifty 50 symbols from NSE, downloads 60d daily historical data in parallel via yfinance, and filters for breakouts.
-- `portfolio_manager.py`: Google Sheets database operations. Handles sheets initialization, fetching open/closed positions, registering chat IDs, adding positions, closing positions, and syncing live quotes/EMA from yfinance.
+- `portfolio_manager.py`: Google Sheets database operations. Handles sheets initialization, fetching open/closed positions, registering chat IDs, adding positions, closing positions, calculating performance analytics (Total Return, CAGR, XIRR), and syncing live quotes/EMA from yfinance.
 - `trading_graph.py`: Builds a stateful LangGraph workflow representing the trading cycle (Sync Portfolio -> Scan Market -> Position Sizer -> Execute Trades) and formats a text-based ASCII scan report.
 - `bot.py`: Telegram Bot handler and cron scheduler. Implements command callbacks and background jobs.
-- `app.py`: Streamlit frontend dashboard.
+- `app.py`: Streamlit frontend dashboard displaying KPI cards for Value, Cash, Unrealized/Realized PnL, Total Return, CAGR, and XIRR.
 - `start.sh`: Shell script launching `python -u bot.py &` in the background and `streamlit run` in the foreground.
 - `Procfile`: Contains `web: sh start.sh`
 - `requirements.txt`: Project dependencies (yfinance, gspread, google-auth, langgraph, streamlit, python-telegram-bot, pytz).
@@ -169,7 +188,7 @@ Create the sheet 'NSE_Swing_Trading_Portfolio' with the following tabs:
 - 'Holdings' (14 Columns): Ticker, Entry Date, Entry Price, Quantity, Entry Value, Initial SL, Current SL, Target, Status, Exit Date, Exit Price, Exit Value, PnL, Exit Reason.
   * Entry Value = Quantity * Entry Price. Exit Value = Quantity * Exit Price.
   * If the sheet exists but has an old layout (like containing 'Traded Value' or 'Buy Value'), write code to delete and recreate it with the correct 14-column layout dynamically.
-- 'Account' (2 Columns): Parameter (Total Portfolio Value, Cash Balance, Risk Percent) and Value.
+- 'Account' (2 Columns): Parameter (Total Portfolio Value, Cash Balance, Risk Percent, Initial Capital) and Value.
 - 'TelegramChats' (1 Column): ChatID.
 
 4. RISK MANAGEMENT & SIZING:
@@ -183,7 +202,7 @@ Create the sheet 'NSE_Swing_Trading_Portfolio' with the following tabs:
   1. Prices & PnL Table: Ticker | Qty | Entry | Current | PnL%
   2. Risk & Targets Table: Ticker | SL | Target | EntryVal
 - `/scan`: Triggers a manual scan and sends the formatted ASCII tables.
-- `/summary`: Outputs cash balance, open positions count, realized PnL.
+- `/summary`: Outputs cash balance, open positions count, realized PnL, Total Return, CAGR, and XIRR.
 
 6. CRON SCHEDULES (IST TIMEZONE):
 - Intraday Exits Sync: Run a repeating job every 5 minutes (300 seconds) on weekdays between 9:15 AM and 3:30 PM IST. Fetch live prices of open holdings, check for Target/SL breaches, close them in the sheet if hit, and send an instant Telegram alert.
