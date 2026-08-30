@@ -1,6 +1,6 @@
 # NSE Swing Trading & Portfolio Management System: Final Blueprint
 
-This blueprint holds the comprehensive developer documentation, step-by-step setup guides, active configurations, credentials catalog, performance metrics calculation models, AI news sentiment filters, and the universal Master Prompt. This file acts as the primary master manual to recreate or migrate this system on any other AI coding platform.
+This blueprint holds the comprehensive developer documentation, step-by-step setup guides, active configurations, credentials catalog, performance metrics calculation models, AI news sentiment filters, system guardrails, and the universal Master Prompt. This file acts as the primary master manual to recreate or migrate this system on any other AI coding platform.
 
 ---
 
@@ -42,9 +42,11 @@ graph TD
    * Queries yfinance for daily historical candles and checks for breakout signals.
    * Checks **Nifty 50 Index News Sentiment**. If it is **NEGATIVE** (macro panic), all breakout entry buying is disabled for the day.
    * For individual breakout candidates, checks stock-specific news. If sentiment is **NEGATIVE**, the candidate is skipped.
-3. **`Calculate Sizing` (Risk Manager):**
+3. **`Calculate Sizing` (Risk Manager & Exposure Guardrails):**
    * Reads account details. Sizes entries so that the maximum loss is exactly **1% of total portfolio value**.
    * Scales position quantities down if cash is scarce, or skips candidates if cash is exhausted.
+   * Applies the **Max 90% Portfolio Exposure** guardrail (ensuring at least 10% cash is kept).
+   * Applies the **Max 3 Daily Purchases** limit, selecting the candidates with the highest volume breakout ratios first.
 4. **`Execute Trades` (Execution & Broadcasting):**
    * Commits buy orders to Google Sheets and broadcasts ASCII tables to Telegram.
 
@@ -83,16 +85,21 @@ Stores registered `ChatID` entries to receive daily broadcast scans.
 
 ---
 
-## 🧠 3. AI News Sentiment Analysis Engine
+## 🛡️ 3. System-Wide Guardrails System
 
-The system uses **Gemini 3.6-flash** to classify current news sentiment:
-1. **Google News RSS Parser:** Uses standard library `xml.etree.ElementTree` to parse `https://news.google.com/rss/search?q={query}` and extract the top 5 recent headlines.
-2. **Gemini Query Prompt:** 
-   ```text
-   You are a professional financial analyst. Analyze the following news headlines related to '{query}' and determine the overall prevailing sentiment. Return ONLY the category name as a single word in uppercase: POSITIVE, NEUTRAL, or NEGATIVE.
-   ```
-3. **Macro Guard:** Negative Nifty news disables screener buying.
-4. **Micro SL Tightener:** Negative stock news sets trailing stop loss to `max(current_sl, today's Low)`.
+The following programmatic safety filters are hardcoded into the execution cycle:
+
+| Guardrail Name | Scope | Operational Threshold | Purpose |
+| :--- | :--- | :--- | :--- |
+| **Double Buy Blocker** | Portfolio | Block addition of duplicate tickers | Prevents over-exposure to a single stock |
+| **Max Portfolio Allocation** | Portfolio | Limits open positions value to **90%** | Guarantees minimum **10% cash** reserves |
+| **Max Daily Purchases** | Sizer | Maximum **3 buys** per scan | Prevents capital exhaustion on massive breakout days |
+| **SL Tightness Guard** | Sizer | Stop Loss must be **>= 3% below Entry** | Prevents immediate stops due to minor price noise |
+| **SL Bloat Guard** | Sizer | Stop Loss must be **<= 15% below Entry** | Discards high-risk, overly bloated breakout trades |
+| **API Retry Session** | Connection | HTTPAdapter with exponential backoff | Avoids yfinance 429 rate limits and IP bans |
+| **Sheet Write Backoff** | Database | 2-second sleep retry on gspread calls | Recovers gracefully from Google API rate limits |
+| **Penny Stock Filter** | Screener | Close Price must be **>= Rs 20** | Filters out micro-cap pump-and-dump stocks |
+| **Liquidity Filter** | Screener | 20-day Volume SMA must be **>= 50,000** | Protects against low-liquidity slippage traps |
 
 ---
 
@@ -126,7 +133,7 @@ The system uses **Gemini 3.6-flash** to classify current news sentiment:
 ### Step 3: Render Cloud Deployment
 1. Create a Web Service on Render connected to your GitHub repository.
 2. Select **Python** as the environment, set the Build Command to `pip install -r requirements.txt`, and set the Start Command to `bash start.sh`.
-3. In the **Environment** tab, click **Add Env Variable** and input:
+3. In the **Environment** tab, click **Add Env Variable and input:**
    * `GOOGLE_SERVICE_ACCOUNT_JSON` = *[Paste contents of service_account.json]*
    * `TELEGRAM_BOT_TOKEN` = `[Your Telegram Bot Token]`
    * `GEMINI_API_KEY` = `[Your Gemini API Key]`
@@ -146,9 +153,9 @@ Here are the specifications:
 1. FILE STRUCTURE & RESPONSIBILITIES:
 Create the following files:
 - `sentiment_analyzer.py`: Connects to Google News RSS search feed for a ticker or macro index, parses XML for the top 5 recent headlines, and calls Gemini model "gemini-3.6-flash" to return 'POSITIVE', 'NEUTRAL', or 'NEGATIVE' sentiment.
-- `screener.py`: Fetches Nifty 50 symbols from NSE, downloads 60d daily historical data in parallel via yfinance, and filters for breakouts. Before screening breakout stocks, check "Nifty 50 Index India" sentiment; if NEGATIVE, skip all buys. For candidate breakouts, check specific stock sentiment; if NEGATIVE, skip.
-- `portfolio_manager.py`: Google Sheets database operations. Handles sheets initialization, fetching open/closed positions, registering chat IDs, adding positions, closing positions, calculating performance metrics (Total Return, CAGR, XIRR), and syncing live quotes/EMA from yfinance. In sync_portfolio, if news sentiment for a held ticker is NEGATIVE, tighten the Stop Loss to max(current_sl, today's Low).
-- `trading_graph.py`: Builds a stateful LangGraph workflow representing the trading cycle (Sync Portfolio -> Scan Market -> Position Sizer -> Execute Trades) and formats a text-based ASCII scan report.
+- `screener.py`: Fetches Nifty 50 symbols from NSE, downloads 60d daily historical data in parallel via yfinance, and filters for breakouts. Before screening breakout stocks, check "Nifty 50 Index India" sentiment; if NEGATIVE, skip all buys. For candidate breakouts, check specific stock sentiment; if NEGATIVE, skip. Filters out penny stocks (Price < 20) and low-volume stocks (Vol SMA 20 < 50,000). Uses HTTPAdapter with exponential retry strategy.
+- `portfolio_manager.py`: Google Sheets database operations. Handles sheets initialization, fetching open/closed positions, registering chat IDs, adding positions, closing positions, calculating performance metrics (Total Return, CAGR, XIRR), and syncing live quotes/EMA from yfinance. In sync_portfolio, if news sentiment for a held ticker is NEGATIVE, tighten the Stop Loss to max(current_sl, today's Low). Implements retry_gspread for 429 rate limit backoff. In add_position, blocks duplicates and checks that Stop Loss percentage is between 3% and 15% of entry price.
+- `trading_graph.py`: Builds a stateful LangGraph workflow representing the trading cycle (Sync Portfolio -> Scan Market -> Position Sizer -> Execute Trades) and formats a text-based ASCII scan report. In the sizer node, enforces a maximum portfolio exposure of 90% (minimum 10% kept in cash) and a maximum daily purchase limit of 3 stocks (strongest volume breakouts first).
 - `bot.py`: Telegram Bot handler and cron scheduler. Implements command callbacks and background jobs.
 - `app.py`: Streamlit frontend dashboard displaying KPI cards for Value, Cash, Unrealized/Realized PnL, Total Return, CAGR, and XIRR.
 - `start.sh`: Shell script launching `python -u bot.py &` in the background and `streamlit run` in the foreground.

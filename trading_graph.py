@@ -80,7 +80,8 @@ def scan_market_node(state: TradingState) -> Dict[str, Any]:
 
 def calculate_positions_node(state: TradingState) -> Dict[str, Any]:
     """
-    Node 3: Enforces 1% risk position sizing and filters against existing holdings.
+    Node 3: Enforces 1% risk position sizing, 90% max portfolio exposure guardrail,
+    and a daily purchase limit of 3 breakouts (strongest volume ratio first).
     """
     logs = state.get("logs", [])
     logs.append("--- Node: Calculating Position Sizing ---")
@@ -89,18 +90,40 @@ def calculate_positions_node(state: TradingState) -> Dict[str, Any]:
     open_positions = state.get("open_positions", [])
     cash = state.get("cash_balance", 0.0)
     risk_per_trade = state.get("risk_per_trade", 0.0)
+    portfolio_value = state.get("portfolio_value", 0.0)
+    
+    # Calculate current open holdings value
+    open_value = 0.0
+    for p in open_positions:
+        try:
+            qty = int(p.get("Quantity", 0))
+            entry = float(p.get("Entry Price", 0.0))
+            open_value += qty * entry
+        except Exception:
+            pass
+            
+    max_open_value = portfolio_value * 0.90
     
     existing_tickers = {p["Ticker"] for p in open_positions}
     trades_to_execute = []
     
     remaining_cash = cash
+    buy_count = 0
     
-    for c in candidates:
+    # Sort candidates by volume ratio descending (strongest breakout first)
+    sorted_candidates = sorted(candidates, key=lambda x: x.get("volume_ratio", 0.0), reverse=True)
+    
+    for c in sorted_candidates:
         ticker = c["ticker"]
         
-        # Skip if already in holdings
+        # Skip if already in holdings (Double Buy Blocker)
         if ticker in existing_tickers:
             logs.append(f"Skipping {ticker}: Already in holdings.")
+            continue
+            
+        # Daily purchase limit guardrail
+        if buy_count >= 3:
+            logs.append(f"Skipping {ticker}: Daily purchase limit of 3 trades reached.")
             continue
             
         entry_price = c["close"]
@@ -125,9 +148,23 @@ def calculate_positions_node(state: TradingState) -> Dict[str, Any]:
             
         total_cost = qty * entry_price
         
-        # Cash check
+        # Exposure Guardrail: Ensure total open value does not exceed 90% of portfolio
+        if open_value + total_cost > max_open_value:
+            allowed_cost = max_open_value - open_value
+            if allowed_cost <= 0:
+                logs.append(f"Skipping {ticker}: Max 90% portfolio exposure allocation reached.")
+                continue
+            scaled_qty = math.floor(allowed_cost / entry_price)
+            if scaled_qty < qty:
+                qty = scaled_qty
+                total_cost = qty * entry_price
+                if qty <= 0:
+                    logs.append(f"Skipping {ticker}: Max 90% portfolio exposure allocation reached.")
+                    continue
+                logs.append(f"Scaled down quantity for {ticker} to {qty} to respect 90% portfolio exposure limit.")
+        
+        # Cash limit check
         if total_cost > remaining_cash:
-            # Scale down quantity to fit remaining cash
             qty = math.floor(remaining_cash / entry_price)
             total_cost = qty * entry_price
             if qty <= 0:
@@ -147,6 +184,8 @@ def calculate_positions_node(state: TradingState) -> Dict[str, Any]:
         })
         
         remaining_cash -= total_cost
+        open_value += total_cost
+        buy_count += 1
         logs.append(f"Prepared trade: Buy {qty} shares of {ticker} @ {entry_price:.2f} (SL: {initial_sl:.2f}, Target: {target:.2f}, Cost: {total_cost:.2f})")
         
     return {

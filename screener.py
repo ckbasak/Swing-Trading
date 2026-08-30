@@ -5,6 +5,8 @@ import pandas as pd
 import numpy as np
 import yfinance as yf
 from typing import List, Dict, Any
+from urllib3.util import Retry
+from requests.adapters import HTTPAdapter
 import sentiment_analyzer
 
 # Nifty 250 List URL (Updated to Nifty 50)
@@ -78,6 +80,15 @@ def screen_stocks(tickers: List[str]) -> List[Dict[str, Any]]:
     # Period 60d is sufficient to calculate 20 DMA (and 20 EMA) and 14-day RSI
     print(f"Downloading historical data for {len(tickers)} tickers...")
     session = requests.Session()
+    retry_strategy = Retry(
+        total=3,
+        backoff_factor=1,
+        status_forcelist=[429, 500, 502, 503, 504],
+        raise_on_status=False
+    )
+    adapter = HTTPAdapter(max_retries=retry_strategy)
+    session.mount("https://", adapter)
+    session.mount("http://", adapter)
     session.headers.update({
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"
     })
@@ -128,7 +139,11 @@ def screen_stocks(tickers: List[str]) -> List[Dict[str, Any]]:
             ema_today = df['20_EMA'].iloc[-1]
             vol_sma_today = df['Vol_SMA_20'].iloc[-1]
             rsi_today = df['RSI_14'].iloc[-1]
-            
+            # Data validation guardrails: block penny stocks (< Rs 20) and low volume (< 50,000 shares)
+            if close_today < 20.0:
+                continue
+            if vol_sma_today < 50000.0:
+                continue
             # Previous values (second last row)
             close_yesterday = df['Close'].iloc[-2]
             sma_yesterday = df['20_SMA'].iloc[-2]

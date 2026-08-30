@@ -2,12 +2,28 @@ import os
 import json
 import gspread
 import math
+import time
 import pandas as pd
 import yfinance as yf
 from datetime import datetime
 import sentiment_analyzer
 from google.oauth2.service_account import Credentials
 from typing import List, Dict, Any, Tuple
+
+def retry_gspread(func, *args, **kwargs):
+    """
+    Executes a gspread operation with automatic 2-second sleep retry on 429 rate limits.
+    """
+    for i in range(3):
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            err_str = str(e)
+            if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str:
+                time.sleep(2)
+            else:
+                raise e
+    return func(*args, **kwargs)
 
 SCOPES = [
     "https://www.googleapis.com/auth/spreadsheets",
@@ -160,6 +176,25 @@ def add_position(sh: gspread.Spreadsheet, ticker: str, entry_price: float, qty: 
     """
     Adds a new open position to the Holdings sheet and updates the Cash Balance.
     """
+    if qty <= 0:
+        return f"Blocked {ticker} entry: Quantity must be greater than 0 (got {qty})."
+        
+    # Check if stock is already open (Double Buy Blocker)
+    open_positions = get_open_positions(sh)
+    if any(p["Ticker"] == ticker for p in open_positions):
+        return f"Blocked duplicate entry for {ticker}: already held as an active open position."
+        
+    # Validate SL distance percentage
+    sl_pct = ((entry_price - initial_sl) / entry_price) * 100.0
+    if sl_pct < 3.0:
+        return f"Blocked {ticker} entry: Stop loss is too tight ({sl_pct:.2f}% < 3.0%)."
+    if sl_pct > 15.0:
+        return f"Blocked {ticker} entry: Stop loss is too wide ({sl_pct:.2f}% > 15.0%)."
+        
+    # Validate target logic
+    if target <= entry_price:
+        return f"Blocked {ticker} entry: Target must be greater than entry price."
+        
     account = get_account_details(sh)
     cash = account["Cash Balance"]
     cost = entry_price * qty
@@ -173,7 +208,7 @@ def add_position(sh: gspread.Spreadsheet, ticker: str, entry_price: float, qty: 
         ticker, date_str, entry_price, qty, str(cost),
         initial_sl, initial_sl, target, "OPEN", "", "", "", "", ""
     ]
-    ws.append_row(row)
+    retry_gspread(ws.append_row, row)
     
     # Update cash balance
     new_cash = cash - cost
@@ -198,14 +233,14 @@ def close_position(sh: gspread.Spreadsheet, row_idx: int, exit_price: float, rea
     pnl = (exit_price - entry_price) * qty
     
     sell_value = exit_price * qty
-    # Update sheet cells using new 1-based column indexes:
+    # Update sheet cells using new 1-based column indexes with rate-limit retry:
     # 9: Status, 10: Exit Date, 11: Exit Price, 12: Sell Value, 13: PnL, 14: Exit Reason
-    ws.update_cell(row_idx, 9, "CLOSED")
-    ws.update_cell(row_idx, 10, exit_date)
-    ws.update_cell(row_idx, 11, str(exit_price))
-    ws.update_cell(row_idx, 12, str(sell_value))
-    ws.update_cell(row_idx, 13, str(pnl))
-    ws.update_cell(row_idx, 14, reason)
+    retry_gspread(ws.update_cell, row_idx, 9, "CLOSED")
+    retry_gspread(ws.update_cell, row_idx, 10, exit_date)
+    retry_gspread(ws.update_cell, row_idx, 11, str(exit_price))
+    retry_gspread(ws.update_cell, row_idx, 12, str(sell_value))
+    retry_gspread(ws.update_cell, row_idx, 13, str(pnl))
+    retry_gspread(ws.update_cell, row_idx, 14, reason)
     
     # Update account cash and total value
     account = get_account_details(sh)
@@ -268,7 +303,7 @@ def sync_portfolio(sh: gspread.Spreadsheet) -> List[str]:
                 new_sl = max(current_sl, low_today)
                 if new_sl > current_sl:
                     ws = sh.worksheet("Holdings")
-                    ws.update_cell(row_idx, 7, str(round(new_sl, 2)))
+                    retry_gspread(ws.update_cell, row_idx, 7, str(round(new_sl, 2)))
                     logs.append(f"⚠️ NEGATIVE NEWS detected for {ticker}. Tightened Trailing Stop to today's low: {new_sl:.2f}")
                     current_sl = new_sl
             
@@ -284,7 +319,7 @@ def sync_portfolio(sh: gspread.Spreadsheet) -> List[str]:
                 new_sl = max(current_sl, ema_20_today)
                 if new_sl > current_sl:
                     ws = sh.worksheet("Holdings")
-                    ws.update_cell(row_idx, 7, str(round(new_sl, 2)))
+                    retry_gspread(ws.update_cell, row_idx, 7, str(round(new_sl, 2)))
                     logs.append(f"Updated Trailing Stop for {ticker} from {current_sl:.2f} to {new_sl:.2f}")
         except Exception as e:
             logs.append(f"Error syncing {ticker}: {e}")
