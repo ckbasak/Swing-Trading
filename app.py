@@ -111,6 +111,21 @@ if account is not None and holdings is not None:
     rpnl_label = "🟢 Realized PnL" if realized_pnl >= 0 else "🔴 Realized PnL"
     col4.metric(rpnl_label, f"₹{realized_pnl:,.2f}")
     
+    # Calculate CAGR & XIRR
+    try:
+        client = portfolio_manager.get_gspread_client()
+        sh = portfolio_manager.get_or_create_portfolio_sheet(client)
+        perf_metrics = portfolio_manager.calculate_performance_metrics(sh)
+    except Exception:
+        perf_metrics = {"Total Return (%)": 0.0, "CAGR (%)": 0.0, "XIRR (%)": 0.0, "Days Elapsed": 0}
+        
+    st.markdown(" ")
+    col5, col6, col7, col8 = st.columns(4)
+    col5.metric("📈 Total Return", f"{perf_metrics['Total Return (%)']}%")
+    col6.metric("📊 CAGR (Annualized)", f"{perf_metrics['CAGR (%)']}%")
+    col7.metric("🌀 XIRR", f"{perf_metrics['XIRR (%)']}%")
+    col8.metric("⏱️ Days Active", f"{perf_metrics['Days Elapsed']} Days")
+    
     st.markdown("---")
     
     # Main Tabs

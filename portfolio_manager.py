@@ -1,6 +1,7 @@
 import os
 import json
 import gspread
+import math
 import pandas as pd
 import yfinance as yf
 from datetime import datetime
@@ -84,15 +85,16 @@ def get_or_create_portfolio_sheet(client: gspread.Client, sheet_name: str = "NSE
     except gspread.WorksheetNotFound:
         account_ws = sh.add_worksheet(title="Account", rows="100", cols="2")
         account_ws.append_row(["Parameter", "Value"])
-        account_ws.append_row(["Total Portfolio Value", "100000"])
-        account_ws.append_row(["Cash Balance", "100000"])
+        account_ws.append_row(["Total Portfolio Value", "1000000"])
+        account_ws.append_row(["Cash Balance", "1000000"])
         account_ws.append_row(["Risk Percent", "0.01"])
+        account_ws.append_row(["Initial Capital", "1000000"])
         
     return sh
 
 def get_account_details(sh: gspread.Spreadsheet) -> Dict[str, float]:
     """
-    Retrieves the account details (Portfolio Value, Cash, Risk %) from the Account sheet.
+    Retrieves the account details (Portfolio Value, Cash, Risk %, Initial Capital) from the Account sheet.
     """
     ws = sh.worksheet("Account")
     records = ws.get_all_records()
@@ -101,6 +103,8 @@ def get_account_details(sh: gspread.Spreadsheet) -> Dict[str, float]:
         param = r["Parameter"].strip()
         val = float(r["Value"])
         details[param] = val
+    if "Initial Capital" not in details:
+        details["Initial Capital"] = 1000000.0
     return details
 
 def update_account_details(sh: gspread.Spreadsheet, updates: Dict[str, float]):
@@ -108,11 +112,15 @@ def update_account_details(sh: gspread.Spreadsheet, updates: Dict[str, float]):
     Updates specific parameters in the Account worksheet.
     """
     ws = sh.worksheet("Account")
-    cells = ws.range('A2:B10')
     records = ws.get_all_records()
     
     # Re-write the table to make sure we don't mess up rows
-    data = {"Total Portfolio Value": 100000.0, "Cash Balance": 100000.0, "Risk Percent": 0.01}
+    data = {
+        "Total Portfolio Value": 1000000.0, 
+        "Cash Balance": 1000000.0, 
+        "Risk Percent": 0.01,
+        "Initial Capital": 1000000.0
+    }
     for r in records:
         param = r["Parameter"].strip()
         if param in data:
@@ -122,11 +130,12 @@ def update_account_details(sh: gspread.Spreadsheet, updates: Dict[str, float]):
         if k in data:
             data[k] = float(v)
             
-    ws.update('A1:B4', [
+    ws.update('A1:B5', [
         ["Parameter", "Value"],
         ["Total Portfolio Value", str(data["Total Portfolio Value"])],
         ["Cash Balance", str(data["Cash Balance"])],
-        ["Risk Percent", str(data["Risk Percent"])]
+        ["Risk Percent", str(data["Risk Percent"])],
+        ["Initial Capital", str(data["Initial Capital"])]
     ])
 
 def get_all_holdings(sh: gspread.Spreadsheet) -> List[Dict[str, Any]]:
@@ -286,6 +295,84 @@ def sync_portfolio(sh: gspread.Spreadsheet) -> List[str]:
     update_account_details(sh, {"Total Portfolio Value": new_portfolio_value})
     
     return logs
+
+def calculate_performance_metrics(sh: gspread.Spreadsheet) -> Dict[str, float]:
+    """
+    Calculates advanced performance metrics: CAGR and XIRR.
+    """
+    account = get_account_details(sh)
+    initial_cap = account.get("Initial Capital", 1000000.0)
+    current_val = account.get("Total Portfolio Value", initial_cap)
+    
+    # Get all closed and open trades to establish start date
+    holdings = get_all_holdings(sh)
+    if not holdings:
+        return {"Total Return (%)": 0.0, "CAGR (%)": 0.0, "XIRR (%)": 0.0, "Days Elapsed": 0}
+        
+    dates = []
+    for h in holdings:
+        dt_str = h.get("Entry Date")
+        if dt_str:
+            try:
+                dates.append(datetime.strptime(str(dt_str).strip(), "%Y-%m-%d"))
+            except ValueError:
+                pass
+                
+    if not dates:
+        return {"Total Return (%)": 0.0, "CAGR (%)": 0.0, "XIRR (%)": 0.0, "Days Elapsed": 0}
+        
+    start_date = min(dates)
+    today = datetime.now()
+    days_elapsed = (today - start_date).days
+    
+    total_return = ((current_val - initial_cap) / initial_cap) * 100.0
+    
+    if days_elapsed <= 0:
+        cagr = 0.0
+    elif days_elapsed < 365:
+        cagr = total_return
+    else:
+        cagr = (((current_val / initial_cap) ** (365.0 / days_elapsed)) - 1) * 100.0
+        
+    # Calculate simple XIRR
+    cashflows = [
+        (start_date, -initial_cap),
+        (today, current_val)
+    ]
+    
+    xirr_val = 0.0
+    if len(cashflows) >= 2:
+        t0 = cashflows[0][0]
+        def npv(r):
+            return sum(cf / ((1 + r) ** ((d - t0).days / 365.0)) for d, cf in cashflows)
+            
+        def npv_derivative(r):
+            return sum(-((d - t0).days / 365.0) * cf * ((1 + r) ** (-((d - t0).days / 365.0) - 1)) for d, cf in cashflows)
+            
+        r = 0.1
+        for _ in range(100):
+            try:
+                val = npv(r)
+                deriv = npv_derivative(r)
+                if deriv == 0:
+                    break
+                new_r = r - val / deriv
+                if abs(new_r - r) < 1e-6:
+                    xirr_val = new_r * 100.0
+                    break
+                r = new_r
+            except Exception:
+                break
+                
+    if math.isnan(xirr_val) or math.isinf(xirr_val):
+        xirr_val = cagr
+        
+    return {
+        "Total Return (%)": round(total_return, 2),
+        "CAGR (%)": round(cagr, 2),
+        "XIRR (%)": round(xirr_val, 2),
+        "Days Elapsed": days_elapsed
+    }
 
 if __name__ == "__main__":
     print("Testing portfolio manager connection...")

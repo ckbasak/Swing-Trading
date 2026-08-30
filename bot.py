@@ -157,6 +157,7 @@ async def summary_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         sh = await loop.run_in_executor(None, portfolio_manager.get_or_create_portfolio_sheet, client)
         account = await loop.run_in_executor(None, portfolio_manager.get_account_details, sh)
         holdings = await loop.run_in_executor(None, portfolio_manager.get_all_holdings, sh)
+        perf = await loop.run_in_executor(None, portfolio_manager.calculate_performance_metrics, sh)
         
         open_pos = [h for h in holdings if h["Status"] == "OPEN"]
         closed_pos = [h for h in holdings if h["Status"] == "CLOSED"]
@@ -170,6 +171,10 @@ async def summary_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"📊 **Open Positions:** {len(open_pos)}\n"
             f"🤝 **Closed Trades:** {len(closed_pos)}\n"
             f"📈 **Realized PnL (Closed):** ₹{total_pnl:,.2f}\n"
+            f"⏱️ **Days Active:** {perf['Days Elapsed']} Days\n"
+            f"🎯 **Total Return:** {perf['Total Return (%)']}%\n"
+            f"📊 **CAGR (Annualized):** {perf['CAGR (%)']}%\n"
+            f"🌀 **XIRR:** {perf['XIRR (%)']}%\n"
         )
         await update.message.reply_text(msg, parse_mode="Markdown")
     except Exception as e:
