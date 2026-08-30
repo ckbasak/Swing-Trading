@@ -22,17 +22,15 @@ graph TD
     end
     
     subgraph Data Feeds
-        B <-- Live Quotes LTP --> H[Shoonya API Client]
-        B <-- Daily History EMA --> I[yfinance Client]
-        C <-- Daily History SMA --> I
+        B <-- Live Prices & EMA --> I[Yahoo Finance Client]
+        C <-- Historical Data SMA --> I
     end
 ```
 
 ### Core Logic Nodes:
 1. **`Sync Portfolio` (Exits & Trailing Stops):**
-   * Connects to the **Shoonya Broker API** to fetch zero-lag, real-time tick prices for all open positions.
-   * Compares prices against targets (1:2 R:R) and stop losses (Current SL). If breached, it closes the trade, updates available cash, and logs exits.
-   * Downloads history from **Yahoo Finance** once a day to check the rising **20 EMA**. If the 20 EMA exceeds the current stop loss, it trails the stop loss upward.
+   * Connects to **Yahoo Finance** to fetch current prices and check targets (1:2 R:R) and stop losses (Current SL). If breached, it closes the trade, updates available cash, and logs exits.
+   * Compares the close against the rising **20 EMA**. If the 20 EMA exceeds the current stop loss, it trails the stop loss upward.
 2. **`Scan Market` (Breakout Screener):**
    * Downloads the official active Nifty 50 ticker list from NSE.
    * Queries yfinance for daily historical candles and checks for breakout signals.
@@ -75,8 +73,6 @@ Stores registered `ChatID` entries to receive daily broadcast scans.
 
 ## 📋 3. Credentials & Connection Configuration Catalog
 
-Below is the centralized catalogue of the credentials configured across the live service:
-
 | System / Provider | Parameter Name | Credential Value / Token ID |
 | :--- | :--- | :--- |
 | **Telegram Bot** | Bot Token API Key | *[Telegram Bot Token]* |
@@ -88,40 +84,26 @@ Below is the centralized catalogue of the credentials configured across the live
 | **Google Sheets** | Service Account Email | `sheets-editor@swing-trade-system-506815.iam.gserviceaccount.com` |
 | **Google Sheets** | Database Sheet Name | `NSE_Swing_Trading_Portfolio` |
 | **Gemini AI** | Gemini Pro API Key | *[Gemini API Key]* |
-| **GitHub Repo** | Git Code Repository | `https://github.com/ckbasak/Swing-Trading.git` |
-| **Shoonya API** | `SHOONYA_USER_ID` | *[Your Shoonya Account Client ID]* |
-| **Shoonya API** | `SHOONYA_PASSWORD` | *[Your Account Password]* |
-| **Shoonya API** | `SHOONYA_TOTP_KEY` | *[2FA Setup Google Secret Key]* |
-| **Shoonya API** | `SHOONYA_VENDOR_CODE` | *[Developer Portal Vendor Code]* |
-| **Shoonya API** | `SHOONYA_API_KEY` | *[Developer Portal API Key]* |
+| **GitHub Repo** | Git Code Repository | `https://github.com/ckbas/Swing-Trading.git` |
 
 ---
 
 ## 🛠️ 4. Step-by-Step Setup Guide
 
-Follow this guide to deploy this system from scratch:
-
 ### Step 1: Google Sheets & Service Account
 1. Create a Google Sheet named **`NSE_Swing_Trading_Portfolio`**.
-2. Go to the Google Cloud Console, create a project, and enable the **Google Sheets API** and **Google Drive API**.
-3. Create a Service Account, generate a JSON private key, and download it as `service_account.json`.
-4. Copy the Service Account email and share the Google Sheet with it as an **Editor**.
+2. Go to the Google Cloud Console, enable Drive & Sheets APIs, create a Service Account, and download the JSON key.
+3. Share the Google Sheet with the Service Account email.
 
 ### Step 2: Telegram Bot Creation
-1. Open Telegram, search for `@BotFather`, and click `/start`.
-2. Send `/newbot`, name your bot, and copy the **Bot Token API Key**.
+1. Message `@BotFather` on Telegram, send `/newbot`, and copy the **Bot Token API Key**.
 
-### Step 3: Shoonya API Keys (Finvasia)
-1. Register for an API developer account at [shoonya.com](https://shoonya.com). Obtain your API Key and Vendor Code.
-2. In your security profile, click **Reset TOTP** and copy the **2FA Setup Secret Key** (e.g. `JBSWY3DPEHPK3PXP`). This will be your `SHOONYA_TOTP_KEY`.
-
-### Step 4: Render Cloud Deployment
+### Step 3: Render Cloud Deployment
 1. Create a Web Service on Render connected to your GitHub repository.
 2. Select **Python** as the environment, set the Build Command to `pip install -r requirements.txt`, and set the Start Command to `bash start.sh`.
 3. In the **Environment** tab, click **Add Env Variable** and input:
    * `GOOGLE_SERVICE_ACCOUNT_JSON` = *[Paste contents of service_account.json]*
-   * `TELEGRAM_BOT_TOKEN` = `8723012283:AAFuddRfXL3-VNbeCdRRwKwoZ3438FaV0uo`
-   * `SHOONYA_USER_ID`, `SHOONYA_PASSWORD`, `SHOONYA_TOTP_KEY`, `SHOONYA_VENDOR_CODE`, `SHOONYA_API_KEY`.
+   * `TELEGRAM_BOT_TOKEN` = `[Your Telegram Bot Token]`
 4. Save and deploy. Set up a free HTTPS ping monitor on **UptimeRobot** pointing to your Render URL to keep the web service awake 24/7.
 
 ---
@@ -163,15 +145,14 @@ Here are the specifications:
 
 1. FILE STRUCTURE & RESPONSIBILITIES:
 Create the following files:
-- `shoonya_client.py`: Handles connection, TOTP login handshake using pyotp, and downloads NSE master symbols list (NSE_symbols.txt.zip).
 - `screener.py`: Fetches Nifty 50 symbols from NSE, downloads 60d daily historical data in parallel via yfinance, and filters for breakouts.
-- `portfolio_manager.py`: Google Sheets database operations. Handles sheets initialization, fetching open/closed positions, registering chat IDs, adding positions, closing positions, and syncing live quotes from Shoonya (with yfinance fallback).
+- `portfolio_manager.py`: Google Sheets database operations. Handles sheets initialization, fetching open/closed positions, registering chat IDs, adding positions, closing positions, and syncing live quotes/EMA from yfinance.
 - `trading_graph.py`: Builds a stateful LangGraph workflow representing the trading cycle (Sync Portfolio -> Scan Market -> Position Sizer -> Execute Trades) and formats a text-based ASCII scan report.
 - `bot.py`: Telegram Bot handler and cron scheduler. Implements command callbacks and background jobs.
 - `app.py`: Streamlit frontend dashboard.
 - `start.sh`: Shell script launching `python -u bot.py &` in the background and `streamlit run` in the foreground.
 - `Procfile`: Contains `web: sh start.sh`
-- `requirements.txt`: Project dependencies (yfinance, gspread, google-auth, langgraph, streamlit, python-telegram-bot, pytz, pyotp, NorenRestApi).
+- `requirements.txt`: Project dependencies (yfinance, gspread, google-auth, langgraph, streamlit, python-telegram-bot, pytz).
 
 2. STRATEGY SPECIFICATIONS:
 - Tickers: Nifty 50 Index (fetched from 'https://archives.nseindia.com/content/indices/ind_nifty50list.csv'). Symbol suffix is '.NS'. Implement fallback tickers.
@@ -198,7 +179,7 @@ Create the sheet 'NSE_Swing_Trading_Portfolio' with the following tabs:
 
 5. BOT COMMANDS & ASCI TABLES:
 - `/start`: Registers chat ID.
-- `/positions` or `/position`: Fetches holdings, queries live prices from Shoonya/yfinance, and outputs two monospaced ASCII tables inside ``` blocks to prevent mobile wrapping:
+- `/positions` or `/position`: Fetches holdings, queries live prices from yfinance, and outputs two monospaced ASCII tables inside ``` blocks to prevent mobile wrapping:
   1. Prices & PnL Table: Ticker | Qty | Entry | Current | PnL%
   2. Risk & Targets Table: Ticker | SL | Target | EntryVal
 - `/scan`: Triggers a manual scan and sends the formatted ASCII tables.
@@ -209,5 +190,5 @@ Create the sheet 'NSE_Swing_Trading_Portfolio' with the following tabs:
 - Daily Buy Scan: Run a daily scan job at 3:25 PM IST (5 minutes before market close) on weekdays. Scan the market, size positions, execute them in the sheet, and broadcast the candidates & purchases report.
 
 7. RATE-LIMIT BYPASSING & SECURITY:
-Configure yfinance downloads to use a requests Session with a custom browser headers dictionary. All credentials (Google Service Account JSON, Telegram Bot Token, Shoonya API keys) must be loaded dynamically from environment variables.
+Configure yfinance downloads to use a requests Session with a custom browser headers dictionary. All credentials (Google Service Account JSON, Telegram Bot Token) must be loaded dynamically from environment variables.
 ```

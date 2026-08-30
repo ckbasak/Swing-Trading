@@ -3,7 +3,6 @@ import json
 import gspread
 import pandas as pd
 import yfinance as yf
-import shoonya_client
 from datetime import datetime
 from google.oauth2.service_account import Credentials
 from typing import List, Dict, Any, Tuple
@@ -219,26 +218,11 @@ def sync_portfolio(sh: gspread.Spreadsheet) -> List[str]:
     tickers = [p["Ticker"] for p in open_positions]
     logs = []
     
-    # 1. Fetch live quotes from Shoonya
-    sh_api = shoonya_client.get_shoonya_client()
-    shoonya_prices = {}
-    if sh_api:
-        for ticker in tickers:
-            token = shoonya_client.get_shoonya_token(ticker)
-            if token:
-                try:
-                    q = sh_api.get_quotes(exchange='NSE', token=token)
-                    if q and 'lp' in q:
-                        shoonya_prices[ticker] = float(q['lp'])
-                except Exception as ex:
-                    print(f"Error fetching Shoonya quote for {ticker}: {ex}")
-                    
-    # 2. Fetch daily history for EMA calculation from yfinance
     try:
+        # Fetch current data for tickers
         data = yf.download(tickers, period="60d", interval="1d", group_by="ticker", threads=True)
     except Exception as e:
-        data = None
-        logs.append(f"yfinance download failed ({e}). Trailing stops update will be skipped.")
+        return [f"Error fetching sync prices: {e}"]
         
     for p in open_positions:
         ticker = p["Ticker"]
@@ -247,30 +231,23 @@ def sync_portfolio(sh: gspread.Spreadsheet) -> List[str]:
         target = float(p["Target"])
         qty = int(p["Quantity"])
         
-        close_today = shoonya_prices.get(ticker)
-        ema_20_today = None
-        
         try:
-            if data is not None:
-                if isinstance(data.columns, pd.MultiIndex):
-                    if ticker in data.columns.levels[0]:
-                        df = data[ticker].dropna()
-                        if len(df) >= 25:
-                            if close_today is None:
-                                close_today = float(df["Close"].iloc[-1])
-                            ema_20_today = float(df["Close"].ewm(span=20, adjust=False).mean().iloc[-1])
-                else:
-                    if ticker in data:
-                        df = data[[ticker]].dropna()
-                        if len(df) >= 25:
-                            if close_today is None:
-                                close_today = float(df["Close"].iloc[-1])
-                            ema_20_today = float(df["Close"].ewm(span=20, adjust=False).mean().iloc[-1])
-            
-            if close_today is None:
-                logs.append(f"Skipping {ticker} sync: Could not resolve live price.")
+            if isinstance(data.columns, pd.MultiIndex):
+                if ticker not in data.columns.levels[0]:
+                    continue
+                df = data[ticker].dropna()
+            else:
+                if ticker not in data:
+                    continue
+                df = data[[ticker]].dropna()
+                
+            if len(df) < 25:
                 continue
                 
+            # Latest Close Price and 20 EMA
+            close_today = float(df["Close"].iloc[-1])
+            ema_20_today = float(df["Close"].ewm(span=20, adjust=False).mean().iloc[-1])
+            
             # Check Exit Conditions
             if close_today >= target:
                 log = close_position(sh, row_idx, close_today, "Target Hit")
@@ -279,13 +256,12 @@ def sync_portfolio(sh: gspread.Spreadsheet) -> List[str]:
                 log = close_position(sh, row_idx, close_today, "Stop Loss Hit")
                 logs.append(log)
             else:
-                # Update Trailing Stop if EMA is available and higher than current SL
-                if ema_20_today is not None:
-                    new_sl = max(current_sl, ema_20_today)
-                    if new_sl > current_sl:
-                        ws = sh.worksheet("Holdings")
-                        ws.update_cell(row_idx, 7, str(round(new_sl, 2)))
-                        logs.append(f"Updated Trailing Stop for {ticker} from {current_sl:.2f} to {new_sl:.2f}")
+                # Update Trailing Stop to 20 EMA if 20 EMA is higher than current SL
+                new_sl = max(current_sl, ema_20_today)
+                if new_sl > current_sl:
+                    ws = sh.worksheet("Holdings")
+                    ws.update_cell(row_idx, 7, str(round(new_sl, 2)))
+                    logs.append(f"Updated Trailing Stop for {ticker} from {current_sl:.2f} to {new_sl:.2f}")
         except Exception as e:
             logs.append(f"Error syncing {ticker}: {e}")
             
@@ -300,15 +276,11 @@ def sync_portfolio(sh: gspread.Spreadsheet) -> List[str]:
     for p in remaining_open:
         ticker = p["Ticker"]
         qty = int(p["Quantity"])
-        
-        current_price = shoonya_prices.get(ticker)
-        if current_price is None:
-            try:
-                current_price = float(yf.Ticker(ticker).fast_info['last_price'])
-            except Exception:
-                current_price = float(p["Entry Price"])
-                
-        current_holdings_value += current_price * qty
+        try:
+            current_price = float(yf.Ticker(ticker).fast_info['last_price'])
+            current_holdings_value += current_price * qty
+        except Exception:
+            current_holdings_value += float(p["Entry Price"]) * qty # Fallback to entry price
             
     new_portfolio_value = cash + current_holdings_value
     update_account_details(sh, {"Total Portfolio Value": new_portfolio_value})

@@ -1,218 +1,142 @@
 # NSE Swing Trading System: Comprehensive Documentation
 
-Welcome to the documentation for your **NSE Swing Trading System**. This system is an automated, cloud-deployed paper-trading and portfolio tracking setup designed to scan the **Nifty 50** stock universe, execute trades based on momentum breakouts, manage risk dynamically, and sync status to a **Google Sheets database**, a **Streamlit Web Dashboard**, and a **Telegram Bot**.
+This blueprint holds the comprehensive developer documentation, step-by-step setup guides, active configurations, credential catalog, backtesting metrics, and the universal Master Prompt. This file acts as the primary master manual to recreate or migrate this system on any other AI coding platform.
 
 ---
 
-## 📐 Architecture & Workflow
+## 📐 1. Architecture & Workflow Design
 
-The system is orchestrating its logic using **LangGraph** (a stateful multi-agent workflow framework). The workflow acts as a State Machine containing four core execution nodes:
+The system is designed as a stateful, event-driven workflow using **LangGraph**. It manages tasks across four distinct execution nodes:
 
 ```mermaid
 graph TD
-    A([Start: 3:25 PM IST]) --> B[Sync Portfolio]
+    A([Start: Cron Trigger]) --> B[Sync Portfolio]
     B --> C[Scan Market]
-    C --> D[Calculate Position Sizing]
+    C --> D[Calculate Sizing]
     D --> E[Execute Trades]
-    E --> F([End: Results Sent to Telegram])
+    E --> F([End: Status Sent to Telegram])
     
     subgraph Database Integration
         B <--> G[(Google Sheets)]
         E --> G
     end
     
-    subgraph Data Sources
-        B <-- Fetch Prices --> H[(Yahoo Finance)]
-        C <-- Fetch Historicals --> H
+    subgraph Data Feeds
+        B <-- Live Prices & EMA --> I[Yahoo Finance Client]
+        C <-- Historical Data SMA --> I
     end
 ```
 
-### 1. The Workflow Nodes:
+### Core Logic Nodes:
 1. **`Sync Portfolio` (Exits & Trailing Stops):**
-   * Downloads live daily data for all open positions from Yahoo Finance.
-   * Compares the close price against the **Target** (1:2 R:R) and **Current Stop Loss (SL)**.
-   * If a target or SL is breached, it closes the trade, credits the cash back, and writes exits to Google Sheets.
-   * If the trade is still active, it recalculates the **20 EMA** (Exponential Moving Average). If the 20 EMA has risen above the `Current SL`, it shifts the stop loss up to lock in trailing profits.
+   * Connects to **Yahoo Finance** to fetch current prices and check targets (1:2 R:R) and stop losses (Current SL). If breached, it closes the trade, updates available cash, and logs exits.
+   * Compares the close against the rising **20 EMA**. If the 20 EMA exceeds the current stop loss, it trails the stop loss upward.
 2. **`Scan Market` (Breakout Screener):**
-   * Fetches the active list of Nifty 50 symbols from the NSE archive.
-   * Downloads 60 days of historical daily data for all 50 tickers in parallel.
-   * Identifies stocks that meet the breakout criteria.
-3. **`Calculate Position Sizing` (Risk Manager):**
-   * Queries your active capital and cash balance from the Google Sheet.
-   * Calculates the capital risk per trade: **1% of total portfolio value**.
-   * Sizes each trade: \(\text{Quantity} = \frac{\text{1\% Risk Amount}}{\text{Entry Price} - \text{Initial SL}}\).
-   * Scales down position sizes if they exceed the remaining available cash, or skips candidates if cash is exhausted.
-4. **`Execute Trades` (Database Writer):**
-   * Appends the finalized trades to the Google Sheet under the new column schema.
-   * Deducts the entry costs from the available cash.
-   * Compiles the results into a formatted ASCII table report and sends it to Telegram.
+   * Downloads the official active Nifty 50 ticker list from NSE.
+   * Queries yfinance for daily historical candles and checks for breakout signals.
+3. **`Calculate Sizing` (Risk Manager):**
+   * Reads account details. Sizes entries so that the maximum loss is exactly **1% of total portfolio value**.
+   * Scales position quantities down if cash is scarce, or skips candidates if cash is exhausted.
+4. **`Execute Trades` (Execution & Broadcasting):**
+   * Commits buy orders to Google Sheets and broadcasts ASCII tables to Telegram.
 
 ---
 
-## 📈 Trading Strategy Specifications
+## 🗄️ 2. Google Sheets Database Schema
 
-The system runs a classic **Momentum Breakout & Trend Following** system:
+The system utilizes Google Sheets as a relational database containing three worksheets:
 
-| Parameter | Rule / Calculation | Rationale |
+### Worksheet 1: `"Holdings"` (14 Columns)
+Holds every open and closed position ledger:
+* **Col 1 (Ticker):** Yahoo Finance Symbol (e.g. `HDFCBANK.NS`)
+* **Col 2 (Entry Date):** YYYY-MM-DD
+* **Col 3 (Entry Price):** Close price on entry day
+* **Col 4 (Quantity):** Shares purchased
+* **Col 5 (Entry Value):** `Quantity * Entry Price`
+* **Col 6 (Initial SL):** Breakout 20 SMA value
+* **Col 7 (Current SL):** Trailing stop loss (20 EMA)
+* **Col 8 (Target):** Profit target (1:2 R:R)
+* **Col 9 (Status):** `OPEN` or `CLOSED`
+* **Col 10 (Exit Date):** YYYY-MM-DD of exit
+* **Col 11 (Exit Price):** Realized exit price
+* **Col 12 (Exit Value):** `Quantity * Exit Price`
+* **Col 13 (PnL):** Realized profit/loss (`Exit Value - Entry Value`)
+* **Col 14 (Exit Reason):** `Target Hit`, `Stop Loss Hit`, or `Manual Exit`
+
+### Worksheet 2: `"Account"` (2 Columns)
+Stores parameters: `Total Portfolio Value`, `Cash Balance`, and `Risk Percent` (e.g. `0.01`).
+
+### Worksheet 3: `"TelegramChats"` (1 Column)
+Stores registered `ChatID` entries to receive daily broadcast scans.
+
+---
+
+## 📋 3. Credentials & Connection Configuration Catalog
+
+| System / Provider | Parameter Name | Credential Value / Token ID |
 | :--- | :--- | :--- |
-| **Screener Universe** | Nifty 50 Index | Focuses on high-liquidity, stable large-cap stocks. Optimized for consolidative and volatile markets. |
-| **Trend Definition** | 20 SMA (Simple Moving Average) | Evaluates short-to-medium-term momentum. |
-| **Price Breakout** | Today's Close > 20 SMA **AND** Yesterday's Close \(\le\) 20 SMA | Catches the exact transition day from bearish/sideways to bullish momentum. |
-| **Volume Confirmation** | Today's Volume > \(2.0 \times\) 20-day Average Volume | Confirms institutional backing; excludes low-volume false breakouts. |
-| **RSI Filter** | **\(50 \le \text{RSI(14)} \le 70\)** | Confirms positive bullish momentum (\(\ge 50\)) but filters out overextended/overbought stocks (\(> 70\)). |
-| **Initial Stop Loss** | Today's 20 SMA value | Protects capital. The close price is guaranteed to be above this line on day 1. |
-| **Trailing Stop Loss** | **20 EMA** (Exponential Moving Average) | Follows the rising trend. Rises automatically but never shifts downwards. |
-| **Profit Target** | Entry Price + \(2 \times\) (Entry Price - Initial SL) | Locks in gains at a healthy **1:2 Risk-to-Reward Ratio**. |
+| **Telegram Bot** | Bot Token API Key | *[Telegram Bot Token]* |
+| **Telegram Bot** | Bot Username / Link | `@nse_swing_123_bot` (https://t.me/nse_swing_123_bot) |
+| **Render Cloud** | REST API Key | *[Render API Key]* |
+| **Render Cloud** | Service ID | `srv-da86e4ugekts73ccfr20` |
+| **Render Cloud** | Owner ID | `tea-da7jlaajnfac738kogrg` |
+| **Render Cloud** | Public Service Web URL | `https://nse-swing-trading.onrender.com` |
+| **Google Sheets** | Service Account Email | `sheets-editor@swing-trade-system-506815.iam.gserviceaccount.com` |
+| **Google Sheets** | Database Sheet Name | `NSE_Swing_Trading_Portfolio` |
+| **Gemini AI** | Gemini Pro API Key | *[Gemini API Key]* |
+| **GitHub Repo** | Git Code Repository | `https://github.com/ckbas/Swing-Trading.git` |
 
 ---
 
-## 🗄️ Google Sheets Database Schema
+## 🛠️ 4. Step-by-Step Setup Guide
 
-Your Google Sheet **`NSE_Swing_Trading_Portfolio`** holds three worksheets which act as your system's relational database. 
+### Step 1: Google Sheets & Service Account
+1. Create a Google Sheet named **`NSE_Swing_Trading_Portfolio`**.
+2. Go to the Google Cloud Console, enable Drive & Sheets APIs, create a Service Account, and download the JSON key.
+3. Share the Google Sheet with the Service Account email.
 
-### 1. `"Holdings"` Worksheet (14 Columns)
-This sheet records every transaction. It holds the following columns in exact order:
+### Step 2: Telegram Bot Creation
+1. Message `@BotFather` on Telegram, send `/newbot`, and copy the **Bot Token API Key**.
 
-| Col | Name | Type | Description |
-| :--- | :--- | :--- | :--- |
-| **1** | **Ticker** | String | Yahoo Finance symbol (e.g., `ADANIPOWER.NS`). |
-| **2** | **Entry Date** | Date | YYYY-MM-DD when the breakout occurred. |
-| **3** | **Entry Price** | Float | Final closing price on entry day. |
-| **4** | **Quantity** | Integer | Number of shares bought. |
-| **5** | **Entry Value** | Float | **`Quantity * Entry Price`** (Initial cost basis). |
-| **6** | **Initial SL** | Float | Stop Loss set on entry (breakout 20 SMA). |
-| **7** | **Current SL** | Float | Trailing Stop Loss (updated to 20 EMA as price rises). |
-| **8** | **Target** | Float | Take profit price target (1:2 R:R). |
-| **9** | **Status** | String | `OPEN` or `CLOSED`. |
-| **10** | **Exit Date** | Date | YYYY-MM-DD of exit (blank for open positions). |
-| **11** | **Exit Price** | Float | Closing price when target/SL was hit. |
-| **12** | **Exit Value** | Float | **`Quantity * Exit Price`** (Total capital received at exit). |
-| **13** | **PnL** | Float | Realized Profit/Loss (\(\text{Exit Value} - \text{Entry Value}\)). |
-| **14** | **Exit Reason** | String | `Target Hit`, `Stop Loss Hit`, or `Manual Exit`. |
-
-### 2. `"Account"` Worksheet
-Stores account metrics to calculate sizing:
-* **Total Portfolio Value:** Sum of Cash + Current Market Value of holdings.
-* **Cash Balance:** Available cash to purchase new assets.
-* **Risk Percent:** Hardcoded sizing risk parameter (default: `0.01` for 1%).
-
-### 3. `"TelegramChats"` Worksheet
-Stores the list of registered Telegram Chat IDs of users who sent `/start` to the bot. Every ID in this sheet receives the automated daily scans.
+### Step 3: Render Cloud Deployment
+1. Create a Web Service on Render connected to your GitHub repository.
+2. Select **Python** as the environment, set the Build Command to `pip install -r requirements.txt`, and set the Start Command to `bash start.sh`.
+3. In the **Environment** tab, click **Add Env Variable** and input:
+   * `GOOGLE_SERVICE_ACCOUNT_JSON` = *[Paste contents of service_account.json]*
+   * `TELEGRAM_BOT_TOKEN` = `[Your Telegram Bot Token]`
+4. Save and deploy. Set up a free HTTPS ping monitor on **UptimeRobot** pointing to your Render URL to keep the web service awake 24/7.
 
 ---
 
-## 🚀 Telegram Command Reference
+## 📊 5. Backtest Optimizations Leaderboard
+To find the safest and most profitable strategy for high-volatility range-bound markets, 12 backtests were simulated over a 1-year correction/recovery cycle (Aug 2025 - Aug 2026). During this period, the benchmark Nifty 50 Index buy-and-hold return was **-1.93%**.
 
-The Telegram Bot (**`@nse_swing_123_bot`**) communicates in clean, monospace **ASCII tables** so data does not warp on phone screens:
+### Leaderboard Results:
 
-### 1. `/start`
-* Registers your Telegram Chat ID in the Google Sheet.
-* Welcomes you and lists available commands.
+| Rank | Configuration | Stock Universe | Return (%) | Max DD (%) | Trades | Win Rate |
+| :---: | :--- | :---: | :---: | :---: | :---: | :---: |
+| **🥇 1** | **Tweak 3 (2.0x Vol)** | **Nifty 50** | **+10.51%** | **-6.74%** | **55** | **40.00%** |
+| **🥈 2** | Baseline (Existing) | Nifty 50 | **+11.95%** | -10.61% | 103 | 35.92% |
+| **🥉 3** | Tweak 4 (Dynamic Size) | Nifty 50 | **+8.55%** | -11.52% | 112 | 35.71% |
+| **4** | Tweak 2 (10 EMA Stop) | Nifty 50 | **+6.49%** | -11.55% | 109 | 33.03% |
+| **5** | Tweak 2 (10 EMA Stop) | Nifty 250 | **+2.25%** | -19.36% | 359 | 30.08% |
+| **6** | Combined (All 4 Tweaks) | Nifty 50 | **+0.52%** | -5.74% | 22 | 31.82% |
+| **7** | Baseline (Existing) | Nifty 250 | **-7.66%** | -18.63% | 357 | 30.25% |
+| **8** | Tweak 4 (Dynamic Size) | Nifty 250 | **-8.24%** | -23.05% | 409 | 30.07% |
+| **9** | Combined (All 4 Tweaks) | Nifty 250 | **-15.64%** | -24.55% | 178 | 28.65% |
+| **10** | Tweak 3 (2.0x Vol) | Nifty 250 | **-16.86%** | -26.57% | 294 | 29.59% |
+| **11** | Tweak 1 (Index Filter) | Nifty 50 | **-1.58%** | -9.58% | 51 | 31.37% |
+| **12** | Tweak 1 (Index Filter) | Nifty 250 | **-17.13%** | -20.30% | 201 | 28.36% |
 
-### 2. `/positions` (or `/position`)
-Fetches active positions, requests live prices from Yahoo Finance, and prints two structured tables:
-```text
-📊 Prices & PnL:
-Ticker   Qty  Entry  Current  PnL%
------------------------------------
-ADANIPOW 136  215.0  216.5    +0.7%
-CGPOWER   49  897.9  899.0    +0.1%
-
-🛡️ Risk & Targets:
-Ticker   SL     Target  EntryVal
-------------------------------------
-ADANIPOW 207.7  229.6   29240.0 
-CGPOWER  877.9  938.0   43997.1 
-
-💰 Total Unrealized PnL: 🟢 ₹305.10
-```
-
-### 3. `/scan`
-Manually runs a live scan of Nifty 50 and updates your portfolio. Returns results in clean tables:
-```text
-📊 NSE Swing Trading Scan Report
-📅 Date: 2026-08-28
-
-💰 Portfolio Summary:
-• Total Value: ₹1,000,000.00
-• Cash Balance: ₹1,000,000.00
-
-🔍 Breakout Candidates Found (2):
-Ticker     Price    VolRatio RSI  
-----------------------------------
-HDFCBANK   1650.00  3.12x    58.4 
-INFY       1820.00  2.85x    61.2 
-
-🚀 Trades Executed:
-Ticker     Qty   Entry    SL       Target  
--------------------------------------------
-HDFCBANK   120   1650.00  1566.67  1816.67
-INFY        85   1820.00  1702.50  2055.00
-```
-
-### 4. `/summary`
-Fetches a high-level overview of portfolio statistics (Available Cash, Holdings Value, Realized PnL).
+### Why Nifty 50 + 2.0x Volume was Chosen:
+1. **Large-Cap Outperformance:** In choppy markets, large-caps are much more stable and profitable. Nifty 50 returned **+11.95%** compared to Nifty 250 which lost **-7.66%**.
+2. **Whipsaw Shield:** Requiring volume to be **2.0x** the average volume (Tweak 3) filtered out 48 false breakouts, **slashing the maximum drawdown by 40%** (from -10.61% down to **-6.74%**) and boosting the Win Rate to **40.00%**.
 
 ---
 
-## 📅 Scheduled Jobs (Live Market Timing)
-To align virtual paper trading with your real-life executions, the bot runs two separate schedules:
+## 🔮 6. Universal Master Prompt (To Recreate This System)
 
-1. **Intraday Exit Sync (Every 5 Minutes):**
-   * Runs Monday through Friday, **9:15 AM to 3:30 PM IST** (during active market hours).
-   * Checks live prices of open positions. If any stock triggers a target or stop loss, it immediately updates the Google Sheet and pings you a Telegram alert so you can mirror the exit in your real broker app.
-2. **Daily Buy Scan (3:25 PM IST):**
-   * Runs daily at **3:25 PM IST** (5 minutes before the market close).
-   * Identifies breakout stocks, sizes them, records them in the sheet, and alerts you. 
-   * This gives you a 5-minute window to execute the identical trades in your broker app before the bell rings.
-
----
-
-## 📊 Strategic Optimization & Backtest Summary
-
-To select the most robust strategy for high-volatility and consolidative markets, 12 distinct configurations were backtested over a 1-year correction and recovery cycle (August 2025 – August 2026). During this period, the benchmark Nifty 50 Index (Buy & Hold) returned **-1.93%**.
-
-### 1. Nifty 50 (Large-Cap) Performance Matrix:
-* **Baseline (Existing):** +11.95% Return | -10.61% Drawdown | 103 Trades
-* **Tweak 2 (10 EMA Stop):** +6.49% Return | -11.55% Drawdown | 109 Trades
-* **Tweak 3 (2.0x Volume):** **+10.51% Return** | **-6.74% Drawdown** | **55 Trades (40% Win Rate)**
-* **Combined (All 4 Tweaks):** +0.52% Return | -5.74% Drawdown | 22 Trades
-
-### 2. Nifty 250 (Large & Mid-Cap) Performance Matrix:
-* **Baseline (Existing):** -7.66% Return | -18.63% Drawdown | 357 Trades
-* **Tweak 2 (10 EMA Stop):** +2.25% Return | -19.36% Drawdown | 359 Trades
-* **Combined (All 4 Tweaks):** -15.64% Return | -24.55% Drawdown | 178 Trades
-
-### 💡 Conclusions & Implemented Production Setup:
-* **Universe Selection:** Nifty 50 (Large-Caps) was significantly more stable and profitable during market correction phases than Nifty 250.
-* **Volume Spike Optimization:** Raising the volume breakout multiple to **2.0x** (Tweak 3) successfully filtered out 48 false breakouts, **reducing the maximum drawdown by 40%** (from -10.6% to **-6.74%**) and raising the win rate to a robust **40.00%**.
-* **Current Production Settings:** The bot has been deployed with the **Nifty 50 stock universe** and **2.0x Volume Confirmation**.
-
----
-
-## 🛠️ Deployments & Process Management (Render)
-
-Because Render’s Free Tier provides a single container process, both the web server (Streamlit) and background service (Telegram Bot + Cron Scheduler) are executed concurrently in the same container using a shell script wrapper:
-
-### 1. Launcher Script (`start.sh`)
-```bash
-# Start Telegram Bot in the background (using python -u to prevent log buffering)
-python -u bot.py &
-
-# Start Streamlit Frontend in the foreground (binds to Render's port)
-streamlit run app.py --server.port $PORT --server.address 0.0.0.0
-```
-
-### 2. Process Files
-* **`Procfile`**: Binds the launch command: `web: sh start.sh`
-* **`requirements.txt`**: Manages exact library versions, including `yfinance`, `gspread`, `langgraph`, and `python-telegram-bot`.
-* **Outbound IP Rate Limits**: The Yahoo Finance downloader is configured with a custom requests session and browser `User-Agent` headers to prevent HTTP 429 rate limit bans on Render servers.
-
----
-
-# 🔮 MASTER PROMPT (To Recreate This System From Scratch)
-
-*Copy-paste the prompt below into any capable coding AI agent to build the exact same codebase from scratch in a single go:*
+*Copy-paste the prompt below into any coding AI agent to build the exact same codebase from scratch in a single go:*
 
 ```text
 Build a complete, production-grade NSE Swing Trading & Portfolio Manager in Python, ready to deploy to Render (Free Tier). The system must run a Streamlit web dashboard and a Telegram bot concurrently inside a single container. The database must be Google Sheets (managed via gspread).
@@ -222,7 +146,7 @@ Here are the specifications:
 1. FILE STRUCTURE & RESPONSIBILITIES:
 Create the following files:
 - `screener.py`: Fetches Nifty 50 symbols from NSE, downloads 60d daily historical data in parallel via yfinance, and filters for breakouts.
-- `portfolio_manager.py`: Google Sheets database operations. Handles sheets initialization, fetching open/closed positions, registering chat IDs, adding positions, and closing positions.
+- `portfolio_manager.py`: Google Sheets database operations. Handles sheets initialization, fetching open/closed positions, registering chat IDs, adding positions, closing positions, and syncing live quotes/EMA from yfinance.
 - `trading_graph.py`: Builds a stateful LangGraph workflow representing the trading cycle (Sync Portfolio -> Scan Market -> Position Sizer -> Execute Trades) and formats a text-based ASCII scan report.
 - `bot.py`: Telegram Bot handler and cron scheduler. Implements command callbacks and background jobs.
 - `app.py`: Streamlit frontend dashboard.
@@ -265,7 +189,6 @@ Create the sheet 'NSE_Swing_Trading_Portfolio' with the following tabs:
 - Intraday Exits Sync: Run a repeating job every 5 minutes (300 seconds) on weekdays between 9:15 AM and 3:30 PM IST. Fetch live prices of open holdings, check for Target/SL breaches, close them in the sheet if hit, and send an instant Telegram alert.
 - Daily Buy Scan: Run a daily scan job at 3:25 PM IST (5 minutes before market close) on weekdays. Scan the market, size positions, execute them in the sheet, and broadcast the candidates & purchases report.
 
-7. RATE-LIMIT BYPASSING:
-Configure yfinance downloads to use a requests Session with a custom headers dictionary:
-`"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"` and a `timeout=15` parameter to avoid HTTP 429 blocks on Render.
+7. RATE-LIMIT BYPASSING & SECURITY:
+Configure yfinance downloads to use a requests Session with a custom browser headers dictionary. All credentials (Google Service Account JSON, Telegram Bot Token) must be loaded dynamically from environment variables.
 ```
