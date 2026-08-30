@@ -5,6 +5,7 @@ import math
 import pandas as pd
 import yfinance as yf
 from datetime import datetime
+import sentiment_analyzer
 from google.oauth2.service_account import Credentials
 from typing import List, Dict, Any, Tuple
 
@@ -253,9 +254,23 @@ def sync_portfolio(sh: gspread.Spreadsheet) -> List[str]:
             if len(df) < 25:
                 continue
                 
-            # Latest Close Price and 20 EMA
+            # Latest Close Price, Low Price, and 20 EMA
             close_today = float(df["Close"].iloc[-1])
+            low_today = float(df["Low"].iloc[-1])
             ema_20_today = float(df["Close"].ewm(span=20, adjust=False).mean().iloc[-1])
+            
+            # Check news sentiment for active position
+            clean_sym = ticker.replace(".NS", "")
+            stock_sentiment = sentiment_analyzer.get_news_sentiment(f"{clean_sym} stock news NSE")
+            
+            if stock_sentiment == "NEGATIVE":
+                # Tighten Stop Loss to today's low if it is higher than current SL
+                new_sl = max(current_sl, low_today)
+                if new_sl > current_sl:
+                    ws = sh.worksheet("Holdings")
+                    ws.update_cell(row_idx, 7, str(round(new_sl, 2)))
+                    logs.append(f"⚠️ NEGATIVE NEWS detected for {ticker}. Tightened Trailing Stop to today's low: {new_sl:.2f}")
+                    current_sl = new_sl
             
             # Check Exit Conditions
             if close_today >= target:

@@ -9,3 +9,4 @@ langgraph
 pytz
 plotly
 requests
+google-generativeai

@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 import yfinance as yf
 from typing import List, Dict, Any
+import sentiment_analyzer
 
 # Nifty 250 List URL (Updated to Nifty 50)
 NIFTY_250_URL = "https://archives.nseindia.com/content/indices/ind_nifty50list.csv"
@@ -65,6 +66,12 @@ def screen_stocks(tickers: List[str]) -> List[Dict[str, Any]]:
     3. Today's volume > 1.5 * 20-day average volume
     4. 14-day RSI is between 50 and 70 (bullish momentum but not overbought)
     """
+    # 1. Macro Sentiment Check: Skip entries if Nifty index news is negative
+    nifty_sentiment = sentiment_analyzer.get_news_sentiment("Nifty 50 Index India")
+    if nifty_sentiment == "NEGATIVE":
+        print("⚠️ Nifty 50 Index News Sentiment is NEGATIVE. Disabling all breakout purchases today due to high macro risk.")
+        return []
+
     breakout_candidates = []
     
     # Download data in batches to be fast
@@ -132,6 +139,13 @@ def screen_stocks(tickers: List[str]) -> List[Dict[str, Any]]:
             rsi_confirmed = 50 <= rsi_today <= 70
             
             if price_breakout and volume_confirmed and rsi_confirmed:
+                # Check stock-specific news sentiment
+                clean_sym = ticker.replace(".NS", "")
+                stock_sentiment = sentiment_analyzer.get_news_sentiment(f"{clean_sym} stock news NSE")
+                if stock_sentiment == "NEGATIVE":
+                    print(f"⚠️ Skipping candidate {ticker} - News Sentiment is NEGATIVE.")
+                    continue
+                    
                 breakout_candidates.append({
                     "ticker": ticker,
                     "close": float(close_today),

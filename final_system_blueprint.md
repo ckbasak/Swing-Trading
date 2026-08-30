@@ -1,6 +1,6 @@
 # NSE Swing Trading & Portfolio Management System: Final Blueprint
 
-This blueprint holds the comprehensive developer documentation, step-by-step setup guides, active configurations, credentials catalog, performance analytics logic, and the universal Master Prompt. This file acts as the primary master manual to recreate or migrate this system on any other AI coding platform.
+This blueprint holds the comprehensive developer documentation, step-by-step setup guides, active configurations, credentials catalog, performance metrics calculation models, AI news sentiment filters, and the universal Master Prompt. This file acts as the primary master manual to recreate or migrate this system on any other AI coding platform.
 
 ---
 
@@ -21,9 +21,11 @@ graph TD
         E --> G
     end
     
-    subgraph Data Feeds
+    subgraph Data & AI Sentiment Feeds
         B <-- Live Prices & EMA --> I[Yahoo Finance Client]
         C <-- Historical Data SMA --> I
+        B <-- News Sentiment --> J[Gemini 3.6-flash AI Client]
+        C <-- News Sentiment --> J
     end
 ```
 
@@ -31,11 +33,15 @@ graph TD
 1. **`Sync Portfolio` (Exits, Trailing Stops, & Performance Analytics):**
    * Connects to **Yahoo Finance** to fetch current prices for all open positions.
    * Compares prices against targets (1:2 R:R) and stop losses (Current SL). If breached, it closes the trade, updates available cash, and logs exits.
+   * Checks Google News RSS feed headlines for active holdings and uses **Gemini 3.6-flash** to score the news sentiment.
+   * If sentiment is **NEGATIVE** (earnings shock, regulatory probe, etc.), it automatically tightens the trailing stop loss to **today's Low** to protect capital.
    * Compares the close against the rising **20 EMA**. If the 20 EMA exceeds the current stop loss, it trails the stop loss upward.
    * Computes portfolio performance analytics: **Total Return (%)**, **CAGR (%)**, and **XIRR (%)** based on the `"Initial Capital"` parameter in sheets and the earliest trade date.
-2. **`Scan Market` (Breakout Screener):**
+2. **`Scan Market` (Breakout Screener & News Filter):**
    * Downloads the official active Nifty 50 ticker list from NSE.
    * Queries yfinance for daily historical candles and checks for breakout signals.
+   * Checks **Nifty 50 Index News Sentiment**. If it is **NEGATIVE** (macro panic), all breakout entry buying is disabled for the day.
+   * For individual breakout candidates, checks stock-specific news. If sentiment is **NEGATIVE**, the candidate is skipped.
 3. **`Calculate Sizing` (Risk Manager):**
    * Reads account details. Sizes entries so that the maximum loss is exactly **1% of total portfolio value**.
    * Scales position quantities down if cash is scarce, or skips candidates if cash is exhausted.
@@ -77,20 +83,16 @@ Stores registered `ChatID` entries to receive daily broadcast scans.
 
 ---
 
-## 📈 3. Performance Analytics Logic (CAGR & XIRR)
+## 🧠 3. AI News Sentiment Analysis Engine
 
-The system automatically calculates advanced investment performance metrics on the dashboard and `/summary` command:
-
-1. **Total Return (%)**:
-   $$\text{Total Return} = \frac{\text{Current Value} - \text{Initial Capital}}{\text{Initial Capital}} \times 100$$
-2. **CAGR (%)**:
-   * If the system has run for **less than 1 year (365 days)**, CAGR is displayed as the absolute total return (industry standard to prevent misleading annualized short-term returns).
-   * If active for **more than 1 year**, CAGR is annualized:
-     $$\text{CAGR} = \left( \left( \frac{\text{Current Value}}{\text{Initial Capital}} \right)^{\frac{365}{\text{Days Elapsed}}} - 1 \right) \times 100$$
-3. **XIRR (%)**:
-   * Evaluates irregular cashflows. Resolved numerically using Newton-Raphson:
-     $$\text{NPV} = \sum_{i=1}^{N} \frac{\text{CF}_i}{(1 + r)^{\frac{d_i - d_1}{365}}} = 0$$
-   * Cashflows are modeled as a deposit (negative) on the earliest trade entry date, and current liquidation value (positive) today. 
+The system uses **Gemini 3.6-flash** to classify current news sentiment:
+1. **Google News RSS Parser:** Uses standard library `xml.etree.ElementTree` to parse `https://news.google.com/rss/search?q={query}` and extract the top 5 recent headlines.
+2. **Gemini Query Prompt:** 
+   ```text
+   You are a professional financial analyst. Analyze the following news headlines related to '{query}' and determine the overall prevailing sentiment. Return ONLY the category name as a single word in uppercase: POSITIVE, NEUTRAL, or NEGATIVE.
+   ```
+3. **Macro Guard:** Negative Nifty news disables screener buying.
+4. **Micro SL Tightener:** Negative stock news sets trailing stop loss to `max(current_sl, today's Low)`.
 
 ---
 
@@ -113,7 +115,7 @@ The system automatically calculates advanced investment performance metrics on t
 
 ## 🛠️ 5. Step-by-Step Setup Guide
 
-### Step 1: Google Sheets Setup
+### Step 1: Google Sheets & Service Account
 1. Create a Google Sheet named **`NSE_Swing_Trading_Portfolio`**.
 2. Go to the Google Cloud Console, enable Drive & Sheets APIs, create a Service Account, and download the JSON key.
 3. Share the Google Sheet with the Service Account email.
@@ -127,33 +129,12 @@ The system automatically calculates advanced investment performance metrics on t
 3. In the **Environment** tab, click **Add Env Variable** and input:
    * `GOOGLE_SERVICE_ACCOUNT_JSON` = *[Paste contents of service_account.json]*
    * `TELEGRAM_BOT_TOKEN` = `[Your Telegram Bot Token]`
-4. Save and deploy. Set up a free HTTPS ping monitor on **UptimeRobot** pointing to your Render URL to keep the web service awake 24/7.
+   * `GEMINI_API_KEY` = `[Your Gemini API Key]`
+4. Save and deploy. Set up a free HTTPS pinger on **UptimeRobot** pointing to your Render URL.
 
 ---
 
-## 📊 6. Backtest Optimizations Leaderboard
-To find the safest and most profitable strategy for high-volatility range-bound markets, 12 backtests were simulated over a 1-year correction/recovery cycle (Aug 2025 - Aug 2026). During this period, the benchmark Nifty 50 Index buy-and-hold return was **-1.93%**.
-
-### Leaderboard Results:
-
-| Rank | Configuration | Stock Universe | Return (%) | Max DD (%) | Trades | Win Rate |
-| :---: | :--- | :---: | :---: | :---: | :---: | :---: |
-| **🥇 1** | **Tweak 3 (2.0x Vol)** | **Nifty 50** | **+10.51%** | **-6.74%** | **55** | **40.00%** |
-| **🥈 2** | Baseline (Existing) | Nifty 50 | **+11.95%** | -10.61% | 103 | 35.92% |
-| **🥉 3** | Tweak 4 (Dynamic Size) | Nifty 50 | **+8.55%** | -11.52% | 112 | 35.71% |
-| **4** | Tweak 2 (10 EMA Stop) | Nifty 50 | **+6.49%** | -11.55% | 109 | 33.03% |
-| **5** | Tweak 2 (10 EMA Stop) | Nifty 250 | **+2.25%** | -19.36% | 359 | 30.08% |
-| **6** | Combined (All 4 Tweaks) | Nifty 50 | **+0.52%** | -5.74% | 22 | 31.82% |
-| **7** | Baseline (Existing) | Nifty 250 | **-7.66%** | -18.63% | 357 | 30.25% |
-| **8** | Tweak 4 (Dynamic Size) | Nifty 250 | **-8.24%** | -23.05% | 409 | 30.07% |
-| **9** | Combined (All 4 Tweaks) | Nifty 250 | **-15.64%** | -24.55% | 178 | 28.65% |
-| **10** | Tweak 3 (2.0x Vol) | Nifty 250 | **-16.86%** | -26.57% | 294 | 29.59% |
-| **11** | Tweak 1 (Index Filter) | Nifty 50 | **-1.58%** | -9.58% | 51 | 31.37% |
-| **12** | Tweak 1 (Index Filter) | Nifty 250 | **-17.13%** | -20.30% | 201 | 28.36% |
-
----
-
-## 🔮 7. Universal Master Prompt (To Recreate This System)
+## 🔮 6. Universal Master Prompt (To Recreate This System)
 
 *Copy-paste the prompt below into any coding AI agent to build the exact same codebase from scratch in a single go:*
 
@@ -164,17 +145,18 @@ Here are the specifications:
 
 1. FILE STRUCTURE & RESPONSIBILITIES:
 Create the following files:
-- `screener.py`: Fetches Nifty 50 symbols from NSE, downloads 60d daily historical data in parallel via yfinance, and filters for breakouts.
-- `portfolio_manager.py`: Google Sheets database operations. Handles sheets initialization, fetching open/closed positions, registering chat IDs, adding positions, closing positions, calculating performance analytics (Total Return, CAGR, XIRR), and syncing live quotes/EMA from yfinance.
+- `sentiment_analyzer.py`: Connects to Google News RSS search feed for a ticker or macro index, parses XML for the top 5 recent headlines, and calls Gemini model "gemini-3.6-flash" to return 'POSITIVE', 'NEUTRAL', or 'NEGATIVE' sentiment.
+- `screener.py`: Fetches Nifty 50 symbols from NSE, downloads 60d daily historical data in parallel via yfinance, and filters for breakouts. Before screening breakout stocks, check "Nifty 50 Index India" sentiment; if NEGATIVE, skip all buys. For candidate breakouts, check specific stock sentiment; if NEGATIVE, skip.
+- `portfolio_manager.py`: Google Sheets database operations. Handles sheets initialization, fetching open/closed positions, registering chat IDs, adding positions, closing positions, calculating performance metrics (Total Return, CAGR, XIRR), and syncing live quotes/EMA from yfinance. In sync_portfolio, if news sentiment for a held ticker is NEGATIVE, tighten the Stop Loss to max(current_sl, today's Low).
 - `trading_graph.py`: Builds a stateful LangGraph workflow representing the trading cycle (Sync Portfolio -> Scan Market -> Position Sizer -> Execute Trades) and formats a text-based ASCII scan report.
 - `bot.py`: Telegram Bot handler and cron scheduler. Implements command callbacks and background jobs.
 - `app.py`: Streamlit frontend dashboard displaying KPI cards for Value, Cash, Unrealized/Realized PnL, Total Return, CAGR, and XIRR.
 - `start.sh`: Shell script launching `python -u bot.py &` in the background and `streamlit run` in the foreground.
 - `Procfile`: Contains `web: sh start.sh`
-- `requirements.txt`: Project dependencies (yfinance, gspread, google-auth, langgraph, streamlit, python-telegram-bot, pytz).
+- `requirements.txt`: Project dependencies (yfinance, gspread, google-auth, langgraph, streamlit, python-telegram-bot, google-generativeai, pytz).
 
 2. STRATEGY SPECIFICATIONS:
-- Tickers: Nifty 50 Index (fetched from 'https://archives.nseindia.com/content/indices/ind_nifty50list.csv'). Symbol suffix is '.NS'. Implement fallback tickers.
+- Tickers: Nifty 50 Index (fetched from 'https://archives.nseindia.com/content/indices/ind_nifty50list.csv'). Symbol suffix is '.NS'.
 - Entry Conditions:
   - Price breakout: Today's Close > Today's 20 SMA AND Yesterday's Close <= Yesterday's 20 SMA.
   - Volume breakout: Today's Volume > 2.0 * 20-day Volume SMA.
@@ -186,8 +168,6 @@ Create the following files:
 3. GOOGLE SHEETS SCHEMAS:
 Create the sheet 'NSE_Swing_Trading_Portfolio' with the following tabs:
 - 'Holdings' (14 Columns): Ticker, Entry Date, Entry Price, Quantity, Entry Value, Initial SL, Current SL, Target, Status, Exit Date, Exit Price, Exit Value, PnL, Exit Reason.
-  * Entry Value = Quantity * Entry Price. Exit Value = Quantity * Exit Price.
-  * If the sheet exists but has an old layout (like containing 'Traded Value' or 'Buy Value'), write code to delete and recreate it with the correct 14-column layout dynamically.
 - 'Account' (2 Columns): Parameter (Total Portfolio Value, Cash Balance, Risk Percent, Initial Capital) and Value.
 - 'TelegramChats' (1 Column): ChatID.
 
@@ -198,7 +178,7 @@ Create the sheet 'NSE_Swing_Trading_Portfolio' with the following tabs:
 
 5. BOT COMMANDS & ASCI TABLES:
 - `/start`: Registers chat ID.
-- `/positions` or `/position`: Fetches holdings, queries live prices from yfinance, and outputs two monospaced ASCII tables inside ``` blocks to prevent mobile wrapping:
+- `/positions` or `/position`: Fetches holdings, queries live prices from yfinance, and outputs two monospaced ASCII tables inside ``` blocks:
   1. Prices & PnL Table: Ticker | Qty | Entry | Current | PnL%
   2. Risk & Targets Table: Ticker | SL | Target | EntryVal
 - `/scan`: Triggers a manual scan and sends the formatted ASCII tables.
@@ -209,5 +189,5 @@ Create the sheet 'NSE_Swing_Trading_Portfolio' with the following tabs:
 - Daily Buy Scan: Run a daily scan job at 3:25 PM IST (5 minutes before market close) on weekdays. Scan the market, size positions, execute them in the sheet, and broadcast the candidates & purchases report.
 
 7. RATE-LIMIT BYPASSING & SECURITY:
-Configure yfinance downloads to use a requests Session with a custom browser headers dictionary. All credentials (Google Service Account JSON, Telegram Bot Token) must be loaded dynamically from environment variables.
+Configure yfinance downloads to use a requests Session with a custom browser headers dictionary. All credentials (Google Service Account JSON, Telegram Bot Token, Gemini API Key) must be loaded dynamically from environment variables.
 ```
