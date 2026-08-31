@@ -1,10 +1,12 @@
 import os
+import gc
 import json
 import gspread
 import math
 import time
 import pandas as pd
 import yfinance as yf
+yf.set_tz_cache_location(None)
 from datetime import datetime
 import sentiment_analyzer
 from google.oauth2.service_account import Credentials
@@ -265,7 +267,7 @@ def sync_portfolio(sh: gspread.Spreadsheet) -> List[str]:
     
     try:
         # Fetch current data for tickers
-        data = yf.download(tickers, period="60d", interval="1d", group_by="ticker", threads=True)
+        data = yf.download(tickers, period="60d", interval="1d", group_by="ticker", threads=False)
     except Exception as e:
         return [f"Error fetching sync prices: {e}"]
         
@@ -344,6 +346,7 @@ def sync_portfolio(sh: gspread.Spreadsheet) -> List[str]:
     new_portfolio_value = cash + current_holdings_value
     update_account_details(sh, {"Total Portfolio Value": new_portfolio_value})
     
+    gc.collect()
     return logs
 
 def calculate_performance_metrics(sh: gspread.Spreadsheet) -> Dict[str, float]:

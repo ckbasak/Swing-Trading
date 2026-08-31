@@ -1,9 +1,11 @@
 import os
+import gc
 import io
 import requests
 import pandas as pd
 import numpy as np
 import yfinance as yf
+yf.set_tz_cache_location(None)
 from typing import List, Dict, Any
 from urllib3.util import Retry
 from requests.adapters import HTTPAdapter
@@ -100,7 +102,7 @@ def screen_stocks(tickers: List[str]) -> List[Dict[str, Any]]:
             interval="1d", 
             group_by="ticker", 
             session=session,
-            threads=True,
+            threads=False,
             timeout=15
         )
     except Exception as e:
@@ -177,6 +179,7 @@ def screen_stocks(tickers: List[str]) -> List[Dict[str, Any]]:
             
     # Sort candidates by volume breakout strength (volume_ratio) descending
     breakout_candidates.sort(key=lambda x: x['volume_ratio'], reverse=True)
+    gc.collect()
     return breakout_candidates
 
 if __name__ == "__main__":

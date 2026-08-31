@@ -1,7 +1,9 @@
 import os
 import streamlit as st
+import gc
 import pandas as pd
 import yfinance as yf
+yf.set_tz_cache_location(None)
 import plotly.express as px
 import plotly.graph_objects as go
 import portfolio_manager
@@ -73,7 +75,7 @@ if account is not None and holdings is not None:
         
         tickers = open_df["Ticker"].tolist()
         try:
-            prices_df = yf.download(tickers, period="1d", group_by="ticker", progress=False)
+            prices_df = yf.download(tickers, period="1d", group_by="ticker", progress=False, threads=False)
             current_prices = {}
             for ticker in tickers:
                 try:
@@ -83,6 +85,7 @@ if account is not None and holdings is not None:
                         current_prices[ticker] = float(prices_df[ticker]["Close"].iloc[-1])
                 except Exception:
                     current_prices[ticker] = open_df.loc[open_df["Ticker"] == ticker, "Entry Price"].values[0]
+            gc.collect()
         except Exception:
             current_prices = {row["Ticker"]: row["Entry Price"] for _, row in open_df.iterrows()}
             
