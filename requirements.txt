@@ -10,3 +10,4 @@ pytz
 plotly
 requests
 google-generativeai
+dhanhq

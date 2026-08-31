@@ -9,6 +9,7 @@ import yfinance as yf
 yf.set_tz_cache_location(None)
 from datetime import datetime
 import sentiment_analyzer
+import dhan_client
 from google.oauth2.service_account import Credentials
 from typing import List, Dict, Any, Tuple
 
@@ -265,8 +266,18 @@ def sync_portfolio(sh: gspread.Spreadsheet) -> List[str]:
     tickers = [p["Ticker"] for p in open_positions]
     logs = []
     
+    # Try fetching real-time LTP from Dhan first
+    dhan_ltps = {}
+    if dhan_client.is_dhan_configured():
+        try:
+            dhan_ltps = dhan_client.get_dhan_ltp(tickers)
+            if dhan_ltps:
+                logs.append(f"📡 Real-time quotes received from Dhan for {len(dhan_ltps)} ticker(s).")
+        except Exception as e:
+            logs.append(f"Dhan LTP fetch notice: {e}")
+            
     try:
-        # Fetch current data for tickers
+        # Fetch historical EMA data for trailing stop loss calculation
         data = yf.download(tickers, period="60d", interval="1d", group_by="ticker", threads=False)
     except Exception as e:
         return [f"Error fetching sync prices: {e}"]
@@ -296,6 +307,9 @@ def sync_portfolio(sh: gspread.Spreadsheet) -> List[str]:
             low_today = float(df["Low"].iloc[-1])
             ema_20_today = float(df["Close"].ewm(span=20, adjust=False).mean().iloc[-1])
             
+            # Prioritize Dhan live tick price if available; fallback to close_today
+            live_price = dhan_ltps.get(ticker, close_today)
+            
             # Check news sentiment for active position
             clean_sym = ticker.replace(".NS", "")
             stock_sentiment = sentiment_analyzer.get_news_sentiment(f"{clean_sym} stock news NSE")
@@ -309,12 +323,12 @@ def sync_portfolio(sh: gspread.Spreadsheet) -> List[str]:
                     logs.append(f"⚠️ NEGATIVE NEWS detected for {ticker}. Tightened Trailing Stop to today's low: {new_sl:.2f}")
                     current_sl = new_sl
             
-            # Check Exit Conditions
-            if close_today >= target:
-                log = close_position(sh, row_idx, close_today, "Target Hit")
+            # Check Exit Conditions against live_price
+            if live_price >= target:
+                log = close_position(sh, row_idx, live_price, "Target Hit")
                 logs.append(log)
-            elif close_today <= current_sl:
-                log = close_position(sh, row_idx, close_today, "Stop Loss Hit")
+            elif live_price <= current_sl:
+                log = close_position(sh, row_idx, live_price, "Stop Loss Hit")
                 logs.append(log)
             else:
                 # Update Trailing Stop to 20 EMA if 20 EMA is higher than current SL
@@ -337,11 +351,13 @@ def sync_portfolio(sh: gspread.Spreadsheet) -> List[str]:
     for p in remaining_open:
         ticker = p["Ticker"]
         qty = int(p["Quantity"])
-        try:
-            current_price = float(yf.Ticker(ticker).fast_info['last_price'])
-            current_holdings_value += current_price * qty
-        except Exception:
-            current_holdings_value += float(p["Entry Price"]) * qty # Fallback to entry price
+        current_price = dhan_ltps.get(ticker)
+        if current_price is None:
+            try:
+                current_price = float(yf.Ticker(ticker).fast_info['last_price'])
+            except Exception:
+                current_price = float(p["Entry Price"]) # Fallback to entry price
+        current_holdings_value += current_price * qty
             
     new_portfolio_value = cash + current_holdings_value
     update_account_details(sh, {"Total Portfolio Value": new_portfolio_value})
