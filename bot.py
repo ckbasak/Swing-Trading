@@ -11,6 +11,7 @@ from telegram.ext import Application, CommandHandler, ContextTypes
 # Import backend modules
 import portfolio_manager
 import trading_graph
+import dhan_client
 
 # Configure logging
 logging.basicConfig(
@@ -97,8 +98,27 @@ async def positions_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
             
         tickers = [p["Ticker"] for p in open_pos]
-        # Fetch current prices
-        prices_df = await loop.run_in_executor(None, lambda: yf.download(tickers, period="1d", group_by="ticker"))
+        
+        # Check Dhan for real-time quotes first
+        dhan_quotes = {}
+        quote_source = "Yahoo Finance (EOD Fallback)"
+        if dhan_client.is_dhan_configured():
+            try:
+                dhan_quotes = await loop.run_in_executor(None, dhan_client.get_dhan_ltp, tickers)
+                if dhan_quotes:
+                    quote_source = "🟢 DhanHQ (Live Broker Feed)"
+            except Exception as e:
+                logger.error(f"Dhan positions quote error: {e}")
+                
+        # Fetch fallback quotes if any tickers missing
+        prices_df = None
+        if len(dhan_quotes) < len(tickers):
+            try:
+                prices_df = await loop.run_in_executor(
+                    None, lambda: yf.download(tickers, period="1d", group_by="ticker", threads=False, progress=False)
+                )
+            except Exception as e:
+                logger.error(f"yfinance fallback download error: {e}")
         
         # Prices and PnL Table
         pnl_header = f"{'Ticker':<9} {'Qty':<4} {'Entry':<7} {'Current':<7} {'PnL%':<6}"
@@ -118,13 +138,17 @@ async def positions_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             target = float(p["Target"])
             sl = float(p["Current SL"])
             
-            # Extract current price
-            try:
-                if len(tickers) == 1:
-                    current = float(prices_df["Close"].iloc[-1])
-                else:
-                    current = float(prices_df[ticker]["Close"].iloc[-1])
-            except Exception:
+            # Determine current price (Prioritize Dhan)
+            current = dhan_quotes.get(ticker)
+            if current is None and prices_df is not None:
+                try:
+                    if len(tickers) == 1:
+                        current = float(prices_df["Close"].iloc[-1])
+                    else:
+                        current = float(prices_df[ticker]["Close"].iloc[-1])
+                except Exception:
+                    current = entry
+            elif current is None:
                 current = entry
                 
             pnl_val = (current - entry) * qty
@@ -136,7 +160,7 @@ async def positions_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             entry_value = entry * qty
             risk_lines.append(f"{ticker_clean:<9} {sl:<7.1f} {target:<7.1f} {entry_value:<8.1f}")
             
-        msg = "📈 **Current Open Positions:**\n\n"
+        msg = f"📈 **Current Open Positions:**\n📡 *Data Source: {quote_source}*\n\n"
         msg += "📊 **Prices & PnL:**\n"
         msg += "```\n" + "\n".join(pnl_lines) + "\n```\n"
         msg += "🛡️ **Risk & Targets:**\n"
@@ -159,13 +183,16 @@ async def summary_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         holdings = await loop.run_in_executor(None, portfolio_manager.get_all_holdings, sh)
         perf = await loop.run_in_executor(None, portfolio_manager.calculate_performance_metrics, sh)
         
+        feed_source = "🟢 DhanHQ (Live Broker Feed)" if dhan_client.is_dhan_configured() else "⚪ Yahoo Finance (EOD Fallback)"
+        
         open_pos = [h for h in holdings if h["Status"] == "OPEN"]
         closed_pos = [h for h in holdings if h["Status"] == "CLOSED"]
         
         total_pnl = sum(float(h["PnL"]) for h in closed_pos if h["PnL"] != "")
         
         msg = (
-            "🏦 **Portfolio Summary:**\n\n"
+            "🏦 **Portfolio Summary:**\n"
+            f"📡 *Data Engine: {feed_source}*\n\n"
             f"💰 **Total Portfolio Value:** ₹{account.get('Total Portfolio Value', 0):,.2f}\n"
             f"💵 **Cash Balance:** ₹{account.get('Cash Balance', 0):,.2f}\n"
             f"📊 **Open Positions:** {len(open_pos)}\n"

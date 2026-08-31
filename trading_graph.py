@@ -6,6 +6,7 @@ from langgraph.graph import StateGraph, END
 # Import backend modules
 import screener
 import portfolio_manager
+import dhan_client
 
 class TradingState(TypedDict):
     candidates: List[Dict[str, Any]]
@@ -271,15 +272,22 @@ def format_scan_report(state: Dict[str, Any]) -> str:
     from datetime import datetime
     date_str = datetime.now().strftime("%Y-%m-%d")
     
-    # Extract portfolio sync updates (exits and SL updates)
+    # Active Market Data Source Badge
+    if dhan_client.is_dhan_configured():
+        source_badge = "🟢 DhanHQ (Live Broker Feed)"
+    else:
+        source_badge = "⚪ Yahoo Finance (EOD Fallback)"
+    
+    # Extract portfolio sync updates (exits, SL updates, and live quote notices)
     sync_logs = []
     for log in state.get("logs", []):
-        if "Closed trade" in log or "Updated Trailing Stop" in log:
+        if any(k in log for k in ["Closed trade", "Updated Trailing Stop", "Real-time quotes", "NEGATIVE NEWS"]):
             sync_logs.append(log)
             
     report = []
     report.append(f"📊 **NSE Swing Trading Scan Report**")
     report.append(f"📅 *Date: {date_str}*")
+    report.append(f"📡 *Data Engine: {source_badge}*")
     report.append("")
     report.append(f"💰 **Portfolio Summary:**")
     report.append(f"• Total Value: ₹{state.get('portfolio_value', 0.0):,.2f}")
@@ -287,7 +295,7 @@ def format_scan_report(state: Dict[str, Any]) -> str:
     report.append("")
     
     if sync_logs:
-        report.append(f"🔄 **Portfolio Updates & Exits:**")
+        report.append(f"🔄 **Portfolio Updates & Quotes:**")
         for slog in sync_logs:
             report.append(f"• {slog}")
         report.append("")
