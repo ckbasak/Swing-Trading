@@ -233,6 +233,7 @@ def close_position(sh: gspread.Spreadsheet, row_idx: int, exit_price: float, rea
     
     exit_date = datetime.now().strftime("%Y-%m-%d")
     pnl = (exit_price - entry_price) * qty
+    pnl_pct = ((exit_price - entry_price) / entry_price) * 100.0 if entry_price > 0 else 0.0
     
     sell_value = exit_price * qty
     # Update sheet cells using new 1-based column indexes with rate-limit retry:
@@ -249,7 +250,8 @@ def close_position(sh: gspread.Spreadsheet, row_idx: int, exit_price: float, rea
     new_cash = account["Cash Balance"] + (exit_price * qty)
     update_account_details(sh, {"Cash Balance": new_cash})
     
-    return f"Closed trade for {ticker} @ {exit_price:.2f} (Reason: {reason}, PnL: {pnl:.2f})"
+    pnl_sign = "+" if pnl >= 0 else ""
+    return f"Closed trade for {ticker} @ {exit_price:.2f} (Reason: {reason}, PnL: ₹{pnl:,.2f} / {pnl_sign}{pnl_pct:.2f}%)"
 
 def sync_portfolio(sh: gspread.Spreadsheet) -> List[str]:
     """

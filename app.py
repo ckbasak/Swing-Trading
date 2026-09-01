@@ -177,6 +177,12 @@ if account is not None and holdings is not None:
             else:
                 closed_df["Entry Value"] = pd.to_numeric(closed_df["Entry Value"], errors='coerce')
                 
+        if not closed_df.empty:
+            closed_df["Entry Price"] = pd.to_numeric(closed_df["Entry Price"], errors='coerce')
+            closed_df["Exit Price"] = pd.to_numeric(closed_df["Exit Price"], errors='coerce')
+            closed_df["Quantity"] = pd.to_numeric(closed_df["Quantity"], errors='coerce')
+            closed_df["Entry Value"] = closed_df["Entry Price"] * closed_df["Quantity"]
+            
             if "Exit Value" not in closed_df.columns or closed_df["Exit Value"].isna().all():
                 if "Sell Value" in closed_df.columns and not closed_df["Sell Value"].isna().all():
                     closed_df["Exit Value"] = pd.to_numeric(closed_df["Sell Value"], errors='coerce')
@@ -185,9 +191,25 @@ if account is not None and holdings is not None:
             else:
                 closed_df["Exit Value"] = pd.to_numeric(closed_df["Exit Value"], errors='coerce')
                 
+            closed_df["PnL"] = pd.to_numeric(closed_df["PnL"], errors='coerce')
+            closed_df["PnL %"] = ((closed_df["Exit Price"] - closed_df["Entry Price"]) / closed_df["Entry Price"]) * 100.0
+                
+            # Summary Metrics for Closed Trades
+            win_trades = len(closed_df[closed_df["PnL"] > 0])
+            total_closed = len(closed_df)
+            win_rate = (win_trades / total_closed * 100.0) if total_closed > 0 else 0.0
+            avg_pnl_pct = closed_df["PnL %"].mean() if total_closed > 0 else 0.0
+            
+            cm1, cm2, cm3 = st.columns(3)
+            cm1.metric("🤝 Total Closed Trades", f"{total_closed}")
+            cm2.metric("🏆 Win Rate", f"{win_rate:.1f}%", f"{win_trades}/{total_closed} profitable")
+            cm3.metric("📈 Avg Trade PnL %", f"{avg_pnl_pct:+.2f}%")
+            
+            st.divider()
+            
             display_closed = [
                 "Ticker", "Entry Date", "Entry Price", "Quantity", "Entry Value",
-                "Exit Date", "Exit Price", "Exit Value", "PnL", "Exit Reason"
+                "Exit Date", "Exit Price", "Exit Value", "PnL", "PnL %", "Exit Reason"
             ]
             st.dataframe(
                 closed_df[display_closed].style.format({
@@ -196,7 +218,8 @@ if account is not None and holdings is not None:
                     "Entry Value": "₹{:.2f}",
                     "Exit Price": "₹{:.2f}",
                     "Exit Value": "₹{:.2f}",
-                    "PnL": "₹{:.2f}"
+                    "PnL": "₹{:.2f}",
+                    "PnL %": "{:+.2f}%"
                 }),
                 use_container_width=True
             )

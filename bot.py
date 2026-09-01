@@ -67,6 +67,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "**Available Commands:**\n"
         "🔹 `/scan` - Manually trigger the market scan and execute trades.\n"
         "🔹 `/positions` - List all currently open holdings and their PnL.\n"
+        "🔹 `/history` - View closed trade history and realized PnL %.\n"
         "🔹 `/summary` - Get portfolio performance & cash balances.\n\n"
         "The automated scan runs daily at **3:25 PM IST** (Monday-Friday)."
     )
@@ -188,7 +189,24 @@ async def summary_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         open_pos = [h for h in holdings if h["Status"] == "OPEN"]
         closed_pos = [h for h in holdings if h["Status"] == "CLOSED"]
         
-        total_pnl = sum(float(h["PnL"]) for h in closed_pos if h["PnL"] != "")
+        total_pnl = 0.0
+        pnl_pcts = []
+        win_count = 0
+        for h in closed_pos:
+            try:
+                pnl = float(h["PnL"]) if h["PnL"] != "" else 0.0
+                total_pnl += pnl
+                entry = float(h["Entry Price"])
+                exit_price = float(h["Exit Price"])
+                pct = ((exit_price - entry) / entry) * 100.0 if entry > 0 else 0.0
+                pnl_pcts.append(pct)
+                if pnl > 0:
+                    win_count += 1
+            except Exception:
+                pass
+                
+        win_rate_str = f" ({win_count}/{len(closed_pos)} won, {(win_count/len(closed_pos)*100.0):.1f}%)" if closed_pos else ""
+        avg_pct_str = f" (Avg: {sum(pnl_pcts)/len(pnl_pcts):+.2f}%)" if pnl_pcts else ""
         
         msg = (
             "🏦 **Portfolio Summary:**\n"
@@ -196,8 +214,8 @@ async def summary_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"💰 **Total Portfolio Value:** ₹{account.get('Total Portfolio Value', 0):,.2f}\n"
             f"💵 **Cash Balance:** ₹{account.get('Cash Balance', 0):,.2f}\n"
             f"📊 **Open Positions:** {len(open_pos)}\n"
-            f"🤝 **Closed Trades:** {len(closed_pos)}\n"
-            f"📈 **Realized PnL (Closed):** ₹{total_pnl:,.2f}\n"
+            f"🤝 **Closed Trades:** {len(closed_pos)}{win_rate_str}\n"
+            f"📈 **Realized PnL (Closed):** ₹{total_pnl:,.2f}{avg_pct_str}\n"
             f"⏱️ **Days Active:** {perf['Days Elapsed']} Days\n"
             f"🎯 **Total Return:** {perf['Total Return (%)']}%\n"
             f"📊 **CAGR (Annualized):** {perf['CAGR (%)']}%\n"
@@ -207,6 +225,67 @@ async def summary_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         logger.error(f"Error getting summary: {e}")
         await update.message.reply_text(f"❌ Error fetching summary: {e}")
+
+async def history_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    loop = asyncio.get_event_loop()
+    try:
+        client = await loop.run_in_executor(None, portfolio_manager.get_gspread_client)
+        sh = await loop.run_in_executor(None, portfolio_manager.get_or_create_portfolio_sheet, client)
+        holdings = await loop.run_in_executor(None, portfolio_manager.get_all_holdings, sh)
+        
+        closed_pos = [h for h in holdings if h["Status"] == "CLOSED"]
+        if not closed_pos:
+            await update.message.reply_text("🤝 **Closed Trade History:**\nNo closed trades recorded yet.")
+            return
+            
+        header = f"{'Ticker':<9} {'Entry':<7} {'Exit':<7} {'PnL(₹)':<9} {'PnL%':<7}"
+        table_lines = [header, "-" * len(header)]
+        
+        total_pnl = 0.0
+        pnl_pcts = []
+        win_count = 0
+        
+        for p in closed_pos:
+            ticker_clean = p["Ticker"].replace(".NS", "")
+            try:
+                entry = float(p["Entry Price"])
+            except Exception:
+                entry = 0.0
+            try:
+                exit_price = float(p["Exit Price"])
+            except Exception:
+                exit_price = 0.0
+            try:
+                pnl = float(p["PnL"]) if p["PnL"] != "" else 0.0
+            except Exception:
+                pnl = 0.0
+                
+            pnl_pct = ((exit_price - entry) / entry) * 100.0 if entry > 0 else 0.0
+            total_pnl += pnl
+            pnl_pcts.append(pnl_pct)
+            if pnl > 0:
+                win_count += 1
+                
+            pnl_str = f"{pnl:>+8.1f}"
+            pct_str = f"{pnl_pct:>+5.1f}%"
+            table_lines.append(f"{ticker_clean:<9} {entry:<7.1f} {exit_price:<7.1f} {pnl_str:<9} {pct_str:<7}")
+            
+        win_rate = (win_count / len(closed_pos)) * 100.0 if closed_pos else 0.0
+        avg_pct = sum(pnl_pcts) / len(pnl_pcts) if pnl_pcts else 0.0
+        pnl_emoji = "🟢" if total_pnl >= 0 else "🔴"
+        
+        msg = (
+            "🤝 **Closed Trades & Realized PnL History:**\n\n"
+            "```\n" + "\n".join(table_lines) + "\n```\n\n"
+            f"📊 **Total Closed:** {len(closed_pos)} trades\n"
+            f"🏆 **Win Rate:** {win_rate:.1f}% ({win_count}/{len(closed_pos)} profitable)\n"
+            f"📈 **Avg Return / Trade:** {avg_pct:+.2f}%\n"
+            f"💰 **Total Realized PnL:** {pnl_emoji} ₹{total_pnl:,.2f}"
+        )
+        await update.message.reply_text(msg, parse_mode="Markdown")
+    except Exception as e:
+        logger.error(f"Error fetching history: {e}")
+        await update.message.reply_text(f"❌ Error fetching trade history: {e}")
 
 # Daily Cron Job
 async def daily_scan_job(context: ContextTypes.DEFAULT_TYPE):
@@ -282,6 +361,7 @@ def main():
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CommandHandler("scan", scan_command))
     app.add_handler(CommandHandler(["positions", "position"], positions_command))
+    app.add_handler(CommandHandler(["history", "closed", "trades"], history_command))
     app.add_handler(CommandHandler("summary", summary_command))
     
     # Configure JobQueue to run daily at 3:25 PM IST (5 minutes before market close)
