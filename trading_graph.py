@@ -133,12 +133,12 @@ def calculate_positions_node(state: TradingState) -> Dict[str, Any]:
         # Calculate Risk Per Share
         risk_per_share = entry_price - initial_sl
         
-        # Safe-guard: Minimum 2% risk buffer if 20 SMA is too close to Close price
-        min_risk = entry_price * 0.02
+        # Safe-guard: Minimum 3% risk buffer if 20 SMA is too close to Close price
+        min_risk = entry_price * 0.03
         if risk_per_share <= min_risk:
-            initial_sl = entry_price * 0.98
+            initial_sl = entry_price * 0.97
             risk_per_share = entry_price - initial_sl
-            logs.append(f"SL adjusted to 2% limit for {ticker} (Initial SL was too tight: {c['sma_20']:.2f})")
+            logs.append(f"SL adjusted to 3% limit for {ticker} (Initial SL was too tight: {c['sma_20']:.2f})")
             
         # 1% Risk Sizing Rule: Quantity = Risk Per Trade / Risk Per Share
         qty = math.floor(risk_per_trade / risk_per_share)
@@ -330,14 +330,16 @@ def format_scan_report(state: Dict[str, Any]) -> str:
         report.append("• No new trades executed.")
     report.append("")
     
-    # Gather skips
+    # Gather skips and execution notices
     skips = []
     for log in state.get("logs", []):
-        if "Skipping" in log or "Scaled down" in log:
-            skips.append(log.replace("Skipping ", "").replace("Scaled down ", ""))
+        if any(k in log for k in ["Skipping", "Scaled down", "Blocked", "Successfully added", "SL adjusted"]):
+            clean_log = log.replace("Skipping ", "").replace("Scaled down ", "")
+            if clean_log not in skips:
+                skips.append(clean_log)
             
     if skips:
-        report.append(f"⚠️ **Sizing & Capital Skips:**")
+        report.append(f"⚠️ **Execution & Sizing Notices:**")
         for sk in skips:
             report.append(f"• {sk}")
             
