@@ -6,7 +6,6 @@ import math
 import time
 import pandas as pd
 import yfinance as yf
-yf.set_tz_cache_location(None)
 from datetime import datetime
 import sentiment_analyzer
 import dhan_client

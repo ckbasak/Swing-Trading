@@ -3,7 +3,6 @@ import streamlit as st
 import gc
 import pandas as pd
 import yfinance as yf
-yf.set_tz_cache_location(None)
 import plotly.express as px
 import plotly.graph_objects as go
 import portfolio_manager
