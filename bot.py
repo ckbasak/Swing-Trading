@@ -5,8 +5,8 @@ import logging
 import asyncio
 import gspread
 import yfinance as yf
-from telegram import Update
-from telegram.ext import Application, CommandHandler, ContextTypes
+from telegram import Update, BotCommand, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 
 # Import backend modules
 import portfolio_manager
@@ -56,37 +56,74 @@ def get_registered_chats() -> list:
         logger.error(f"Error getting registered chats: {e}")
         return []
 
-# Bot Commands
+def get_main_menu_keyboard():
+    """Generates the interactive inline menu button matrix."""
+    keyboard = [
+        [
+            InlineKeyboardButton("🔍 Run Market Scan", callback_data="cmd_scan"),
+            InlineKeyboardButton("📈 Open Positions", callback_data="cmd_positions")
+        ],
+        [
+            InlineKeyboardButton("🤝 Trade History", callback_data="cmd_history"),
+            InlineKeyboardButton("🏦 Portfolio Summary", callback_data="cmd_summary")
+        ]
+    ]
+    return InlineKeyboardMarkup(keyboard)
+
+# Core Actions (Callable from Slash Commands and Inline Buttons)
+
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     register_chat(chat_id)
     
     welcome_text = (
         "🤖 **Welcome to the NSE Multi-Agent Swing Trading Bot!** 🤖\n\n"
-        "You have been registered for automated daily swing trading updates.\n\n"
-        "**Available Commands:**\n"
-        "🔹 `/scan` - Manually trigger the market scan and execute trades.\n"
-        "🔹 `/positions` - List all currently open holdings and their PnL.\n"
-        "🔹 `/history` - View closed trade history and realized PnL %.\n"
-        "🔹 `/summary` - Get portfolio performance & cash balances.\n\n"
-        "The automated scan runs daily at **3:25 PM IST** (Monday-Friday)."
+        "You are registered for automated daily market breakout scans (**3:25 PM IST**) and intraday exit alerts.\n\n"
+        "🎛️ **Quick Action Menu:** Tap any button below or use the chat menu button `[/]`:"
     )
-    await update.message.reply_text(welcome_text, parse_mode="Markdown")
+    await update.message.reply_text(
+        welcome_text, 
+        reply_markup=get_main_menu_keyboard(), 
+        parse_mode="Markdown"
+    )
 
-async def scan_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("🔍 **Executing Swing Trading Scan...** This might take 1-2 minutes.")
+async def menu_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = (
+        "🎛️ **NSE Swing Trading Main Menu**\n\n"
+        "Tap an action button below to execute trades or inspect your portfolio:"
+    )
+    await update.message.reply_text(
+        text, 
+        reply_markup=get_main_menu_keyboard(), 
+        parse_mode="Markdown"
+    )
+
+async def scan_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
+    await context.bot.send_message(chat_id=chat_id, text="🔍 **Executing Swing Trading Scan...** This might take 1-2 minutes.")
     
     loop = asyncio.get_event_loop()
     try:
         state = await loop.run_in_executor(None, trading_graph.run_trading_system)
         report = trading_graph.format_scan_report(state)
-        await update.message.reply_text(report, parse_mode="Markdown")
+        await context.bot.send_message(
+            chat_id=chat_id, 
+            text=report, 
+            reply_markup=get_main_menu_keyboard(),
+            parse_mode="Markdown"
+        )
     except Exception as e:
         logger.error(f"Error running scan: {e}")
-        await update.message.reply_text(f"❌ Error running scan: {e}")
+        await context.bot.send_message(
+            chat_id=chat_id, 
+            text=f"❌ Error running scan: {e}",
+            reply_markup=get_main_menu_keyboard()
+        )
 
-async def positions_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("📊 **Fetching Open Positions...**")
+async def scan_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await scan_action(update.effective_chat.id, context)
+
+async def positions_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
+    await context.bot.send_message(chat_id=chat_id, text="📊 **Fetching Open Positions...**")
     
     loop = asyncio.get_event_loop()
     try:
@@ -95,7 +132,11 @@ async def positions_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         open_pos = await loop.run_in_executor(None, portfolio_manager.get_open_positions, sh)
         
         if not open_pos:
-            await update.message.reply_text("No active open positions found.")
+            await context.bot.send_message(
+                chat_id=chat_id, 
+                text="📈 **Current Open Positions:**\n• No active open positions found.",
+                reply_markup=get_main_menu_keyboard()
+            )
             return
             
         tickers = [p["Ticker"] for p in open_pos]
@@ -170,12 +211,24 @@ async def positions_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         pnl_emoji = "🟢" if total_unrealized_pnl >= 0 else "🔴"
         msg += f"💰 **Total Unrealized PnL:** {pnl_emoji} ₹{total_unrealized_pnl:,.2f}"
         
-        await update.message.reply_text(msg, parse_mode="Markdown")
+        await context.bot.send_message(
+            chat_id=chat_id, 
+            text=msg, 
+            reply_markup=get_main_menu_keyboard(),
+            parse_mode="Markdown"
+        )
     except Exception as e:
         logger.error(f"Error fetching positions: {e}")
-        await update.message.reply_text(f"❌ Error fetching positions: {e}")
+        await context.bot.send_message(
+            chat_id=chat_id, 
+            text=f"❌ Error fetching positions: {e}",
+            reply_markup=get_main_menu_keyboard()
+        )
 
-async def summary_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def positions_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await positions_action(update.effective_chat.id, context)
+
+async def summary_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
     loop = asyncio.get_event_loop()
     try:
         client = await loop.run_in_executor(None, portfolio_manager.get_gspread_client)
@@ -221,12 +274,24 @@ async def summary_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"📊 **CAGR (Annualized):** {perf['CAGR (%)']}%\n"
             f"🌀 **XIRR:** {perf['XIRR (%)']}%\n"
         )
-        await update.message.reply_text(msg, parse_mode="Markdown")
+        await context.bot.send_message(
+            chat_id=chat_id, 
+            text=msg, 
+            reply_markup=get_main_menu_keyboard(),
+            parse_mode="Markdown"
+        )
     except Exception as e:
         logger.error(f"Error getting summary: {e}")
-        await update.message.reply_text(f"❌ Error fetching summary: {e}")
+        await context.bot.send_message(
+            chat_id=chat_id, 
+            text=f"❌ Error fetching summary: {e}",
+            reply_markup=get_main_menu_keyboard()
+        )
 
-async def history_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def summary_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await summary_action(update.effective_chat.id, context)
+
+async def history_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
     loop = asyncio.get_event_loop()
     try:
         client = await loop.run_in_executor(None, portfolio_manager.get_gspread_client)
@@ -235,7 +300,11 @@ async def history_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         closed_pos = [h for h in holdings if h["Status"] == "CLOSED"]
         if not closed_pos:
-            await update.message.reply_text("🤝 **Closed Trade History:**\nNo closed trades recorded yet.")
+            await context.bot.send_message(
+                chat_id=chat_id, 
+                text="🤝 **Closed Trade History:**\n• No closed trades recorded yet.",
+                reply_markup=get_main_menu_keyboard()
+            )
             return
             
         header = f"{'Ticker':<9} {'Entry':<7} {'Exit':<7} {'PnL(₹)':<9} {'PnL%':<7}"
@@ -282,10 +351,55 @@ async def history_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"📈 **Avg Return / Trade:** {avg_pct:+.2f}%\n"
             f"💰 **Total Realized PnL:** {pnl_emoji} ₹{total_pnl:,.2f}"
         )
-        await update.message.reply_text(msg, parse_mode="Markdown")
+        await context.bot.send_message(
+            chat_id=chat_id, 
+            text=msg, 
+            reply_markup=get_main_menu_keyboard(),
+            parse_mode="Markdown"
+        )
     except Exception as e:
         logger.error(f"Error fetching history: {e}")
-        await update.message.reply_text(f"❌ Error fetching trade history: {e}")
+        await context.bot.send_message(
+            chat_id=chat_id, 
+            text=f"❌ Error fetching trade history: {e}",
+            reply_markup=get_main_menu_keyboard()
+        )
+
+async def history_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await history_action(update.effective_chat.id, context)
+
+# Callback Query Handler for Inline Buttons
+async def menu_button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer() # Acknowledge button press immediately
+    
+    chat_id = update.effective_chat.id
+    action = query.data
+    
+    if action == "cmd_scan":
+        await scan_action(chat_id, context)
+    elif action == "cmd_positions":
+        await positions_action(chat_id, context)
+    elif action == "cmd_history":
+        await history_action(chat_id, context)
+    elif action == "cmd_summary":
+        await summary_action(chat_id, context)
+
+# Post Init Hook: Registers Native Telegram Menu Commands
+async def post_init_setup(application: Application):
+    commands = [
+        BotCommand("menu", "🎛️ Show Interactive Button Menu"),
+        BotCommand("scan", "🔍 Run Breakout Scan & Trades"),
+        BotCommand("positions", "📈 View Open Holdings & PnL"),
+        BotCommand("history", "🤝 View Closed Trades & PnL %"),
+        BotCommand("summary", "🏦 View Portfolio Summary"),
+        BotCommand("start", "🚀 Start & Register Chat")
+    ]
+    try:
+        await application.bot.set_my_commands(commands)
+        logger.info("Successfully registered native Telegram Bot Command Menu.")
+    except Exception as e:
+        logger.error(f"Error setting Telegram Bot commands: {e}")
 
 # Daily Cron Job
 async def daily_scan_job(context: ContextTypes.DEFAULT_TYPE):
@@ -304,7 +418,12 @@ async def daily_scan_job(context: ContextTypes.DEFAULT_TYPE):
             
         for cid in chat_ids:
             try:
-                await context.bot.send_message(chat_id=cid, text=report, parse_mode="Markdown")
+                await context.bot.send_message(
+                    chat_id=cid, 
+                    text=report, 
+                    reply_markup=get_main_menu_keyboard(),
+                    parse_mode="Markdown"
+                )
             except Exception as e:
                 logger.error(f"Failed to send to {cid}: {e}")
     except Exception as e:
@@ -344,6 +463,7 @@ async def market_hours_sync_job(context: ContextTypes.DEFAULT_TYPE):
                         await context.bot.send_message(
                             chat_id=cid, 
                             text=f"🔔 **Intraday Exit Alert:**\n{log}", 
+                            reply_markup=get_main_menu_keyboard(),
                             parse_mode="Markdown"
                         )
         except Exception as e:
@@ -354,15 +474,19 @@ def main():
         logger.error("No TELEGRAM_BOT_TOKEN environment variable set. Exiting.")
         return
 
-    # Create Bot Application
-    app = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
+    # Create Bot Application with post_init hook for setting native menu commands
+    app = Application.builder().token(TELEGRAM_BOT_TOKEN).post_init(post_init_setup).build()
     
-    # Register handlers
+    # Register command handlers
     app.add_handler(CommandHandler("start", start_command))
+    app.add_handler(CommandHandler("menu", menu_command))
     app.add_handler(CommandHandler("scan", scan_command))
     app.add_handler(CommandHandler(["positions", "position"], positions_command))
     app.add_handler(CommandHandler(["history", "closed", "trades"], history_command))
     app.add_handler(CommandHandler("summary", summary_command))
+    
+    # Register callback query handler for interactive buttons
+    app.add_handler(CallbackQueryHandler(menu_button_callback))
     
     # Configure JobQueue to run daily at 3:25 PM IST (5 minutes before market close)
     tz = pytz.timezone("Asia/Kolkata")
