@@ -65,7 +65,7 @@ def scan_market_node(state: TradingState) -> Dict[str, Any]:
     try:
         tickers = screener.get_nifty_250_tickers()
         logs.append(f"Scanning Nifty {len(tickers)} universe for breakouts...")
-        candidates = screener.screen_stocks(tickers)
+        candidates = screener.screen_stocks(tickers, logs=logs)
         
         logs.append(f"Found {len(candidates)} breakout candidates.")
         for idx, c in enumerate(candidates):
@@ -278,10 +278,16 @@ def format_scan_report(state: Dict[str, Any]) -> str:
     else:
         source_badge = "⚪ Yahoo Finance (EOD Fallback)"
     
+    # Extract AI Sentiment logs
+    sentiment_logs = []
+    for log in state.get("logs", []):
+        if any(k in log for k in ["Macro Risk Alert", "Macro Market Sentiment", "NEGATIVE NEWS", "Discarded"]):
+            sentiment_logs.append(log)
+            
     # Extract portfolio sync updates (exits, SL updates, and live quote notices)
     sync_logs = []
     for log in state.get("logs", []):
-        if any(k in log for k in ["Closed trade", "Updated Trailing Stop", "Real-time quotes", "NEGATIVE NEWS"]):
+        if any(k in log for k in ["Closed trade", "Updated Trailing Stop", "Real-time quotes"]):
             sync_logs.append(log)
             
     report = []
@@ -294,6 +300,12 @@ def format_scan_report(state: Dict[str, Any]) -> str:
     report.append(f"• Cash Balance: ₹{state.get('cash_balance', 0.0):,.2f}")
     report.append("")
     
+    if sentiment_logs:
+        report.append(f"🧠 **AI News Sentiment Overlay (Gemini):**")
+        for sent_log in sentiment_logs:
+            report.append(f"• {sent_log}")
+        report.append("")
+        
     if sync_logs:
         report.append(f"🔄 **Portfolio Updates & Quotes:**")
         for slog in sync_logs:

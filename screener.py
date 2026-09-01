@@ -61,19 +61,26 @@ def calculate_rsi(series: pd.Series, period: int = 14) -> pd.Series:
     rsi = 100 - (100 / (1 + rs))
     return rsi
 
-def screen_stocks(tickers: List[str]) -> List[Dict[str, Any]]:
+def screen_stocks(tickers: List[str], logs: List[str] = None) -> List[Dict[str, Any]]:
     """
     Screens the list of tickers for a 20 DMA Breakout with Volume and RSI confirmation:
     1. Today's close > Today's 20 DMA
     2. Yesterday's close <= Yesterday's 20 DMA
-    3. Today's volume > 1.5 * 20-day average volume
+    3. Today's volume > 2.0 * 20-day average volume
     4. 14-day RSI is between 50 and 70 (bullish momentum but not overbought)
     """
+    if logs is None:
+        logs = []
+        
     # 1. Macro Sentiment Check: Skip entries if Nifty index news is negative
     nifty_sentiment = sentiment_analyzer.get_news_sentiment("Nifty 50 Index India")
     if nifty_sentiment == "NEGATIVE":
-        print("⚠️ Nifty 50 Index News Sentiment is NEGATIVE. Disabling all breakout purchases today due to high macro risk.")
+        msg = "⚠️ Macro Risk Alert: Nifty 50 News Sentiment is NEGATIVE. New breakout entries are paused to protect capital against broad market selling."
+        print(msg)
+        logs.append(msg)
         return []
+    else:
+        logs.append(f"📡 Macro Market Sentiment: {nifty_sentiment} (Trading active).")
 
     breakout_candidates = []
     
@@ -143,7 +150,9 @@ def screen_stocks(tickers: List[str]) -> List[Dict[str, Any]]:
                 clean_sym = ticker.replace(".NS", "")
                 stock_sentiment = sentiment_analyzer.get_news_sentiment(f"{clean_sym} stock news NSE")
                 if stock_sentiment == "NEGATIVE":
-                    print(f"⚠️ Skipping candidate {ticker} - News Sentiment is NEGATIVE.")
+                    msg = f"⚠️ Discarded {ticker}: Stock News Sentiment is NEGATIVE."
+                    print(msg)
+                    logs.append(msg)
                     continue
                     
                 breakout_candidates.append({
