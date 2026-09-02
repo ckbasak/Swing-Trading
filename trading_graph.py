@@ -270,7 +270,11 @@ def format_scan_report(state: Dict[str, Any]) -> str:
     Formats the final state dictionary into a clean, human-readable report for Telegram.
     """
     from datetime import datetime
-    date_str = datetime.now().strftime("%Y-%m-%d")
+    import pytz
+    tz = pytz.timezone("Asia/Kolkata")
+    now_ist = datetime.now(tz)
+    date_str = now_ist.strftime("%Y-%m-%d")
+    time_str = now_ist.strftime("%I:%M:%S %p IST")
     
     # Active Market Data Source Badge
     if dhan_client.is_dhan_configured():
@@ -292,7 +296,7 @@ def format_scan_report(state: Dict[str, Any]) -> str:
             
     report = []
     report.append(f"📊 **NSE Swing Trading Scan Report**")
-    report.append(f"📅 *Date: {date_str}*")
+    report.append(f"📅 *Date: {date_str} | Time: {time_str}*")
     report.append(f"📡 *Data Engine: {source_badge}*")
     report.append("")
     report.append(f"💰 **Portfolio Summary:**")
@@ -315,29 +319,23 @@ def format_scan_report(state: Dict[str, Any]) -> str:
     candidates = state.get("candidates", [])
     report.append(f"🔍 **Breakout Candidates Found ({len(candidates)}):**")
     if candidates:
-        header = f"{'Ticker':<10} {'Price':<8} {'VolRatio':<8} {'RSI':<5}"
-        table_lines = [header, "-" * len(header)]
-        for c in candidates:
-            ticker_clean = c['ticker'].replace(".NS", "")
-            table_lines.append(f"{ticker_clean:<10} {c['close']:<8.2f} {c['volume_ratio']:<7.2f}x {c.get('rsi_14', 0.0):<5.1f}")
-        report.append("```")
-        report.extend(table_lines)
-        report.append("```")
+        for idx, c in enumerate(candidates, 1):
+            comp_name = screener.get_company_name(c['ticker'])
+            sym = c['ticker'].replace(".NS", "")
+            report.append(f"{idx}. 🏢 **{comp_name}** (`{sym}`)")
+            report.append(f"   💵 Price: ₹{c['close']:.2f} | 📊 Vol Ratio: {c['volume_ratio']:.2f}x | ⚡ RSI(14): {c.get('rsi_14', 0.0):.1f}")
     else:
         report.append("• No new breakout candidates found.")
     report.append("")
     
     trades = state.get("trades_to_execute", [])
-    report.append(f"🚀 **Trades Executed:**")
+    report.append(f"🚀 **Trades Executed ({len(trades)}):**")
     if trades:
-        header = f"{'Ticker':<10} {'Qty':<5} {'Entry':<8} {'SL':<8} {'Target':<8}"
-        table_lines = [header, "-" * len(header)]
-        for t in trades:
-            ticker_clean = t['ticker'].replace(".NS", "")
-            table_lines.append(f"{ticker_clean:<10} {t['quantity']:<5} {t['entry_price']:<8.2f} {t['initial_sl']:<8.2f} {t['target']:<8.2f}")
-        report.append("```")
-        report.extend(table_lines)
-        report.append("```")
+        for idx, t in enumerate(trades, 1):
+            comp_name = screener.get_company_name(t['ticker'])
+            sym = t['ticker'].replace(".NS", "")
+            report.append(f"{idx}. 🏢 **{comp_name}** (`{sym}`)")
+            report.append(f"   📦 Qty: {t['quantity']} | 🏷️ Entry: ₹{t['entry_price']:.2f} | 🛡️ SL: ₹{t['initial_sl']:.2f} | 🎯 Target: ₹{t['target']:.2f}")
     else:
         report.append("• No new trades executed.")
     report.append("")

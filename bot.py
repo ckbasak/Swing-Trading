@@ -12,6 +12,7 @@ from telegram.ext import Application, CommandHandler, CallbackQueryHandler, Cont
 import portfolio_manager
 import trading_graph
 import dhan_client
+import screener
 
 # Configure logging
 logging.basicConfig(
@@ -162,18 +163,18 @@ async def positions_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
             except Exception as e:
                 logger.error(f"yfinance fallback download error: {e}")
         
-        # Prices and PnL Table
-        pnl_header = f"{'Ticker':<9} {'Qty':<4} {'Entry':<7} {'Current':<7} {'PnL%':<6}"
-        pnl_lines = [pnl_header, "-" * len(pnl_header)]
+        tz = pytz.timezone("Asia/Kolkata")
+        now_ist = datetime.datetime.now(tz).strftime("%Y-%m-%d | %I:%M:%S %p IST")
         
-        # Risk and Targets Table
-        risk_header = f"{'Ticker':<9} {'SL':<7} {'Target':<7} {'EntryVal':<8}"
-        risk_lines = [risk_header, "-" * len(risk_header)]
+        msg = f"📈 **Current Open Holdings ({len(open_pos)}):**\n"
+        msg += f"📅 *As of: {now_ist}*\n"
+        msg += f"📡 *Data Source: {quote_source}*\n\n"
         
         total_unrealized_pnl = 0.0
         
-        for p in open_pos:
+        for idx, p in enumerate(open_pos, 1):
             ticker = p["Ticker"]
+            comp_name = screener.get_company_name(ticker)
             ticker_clean = ticker.replace(".NS", "")
             entry = float(p["Entry Price"])
             qty = int(p["Quantity"])
@@ -194,22 +195,17 @@ async def positions_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
                 current = entry
                 
             pnl_val = (current - entry) * qty
-            pnl_pct = ((current - entry) / entry) * 100
+            pnl_pct = ((current - entry) / entry) * 100.0 if entry > 0 else 0.0
             total_unrealized_pnl += pnl_val
+            pnl_emoji = "🟢" if pnl_val >= 0 else "🔴"
             
-            pnl_lines.append(f"{ticker_clean:<9} {qty:<4} {entry:<7.1f} {current:<7.1f} {pnl_pct:>+5.1f}%")
-            
-            entry_value = entry * qty
-            risk_lines.append(f"{ticker_clean:<9} {sl:<7.1f} {target:<7.1f} {entry_value:<8.1f}")
-            
-        msg = f"📈 **Current Open Positions:**\n📡 *Data Source: {quote_source}*\n\n"
-        msg += "📊 **Prices & PnL:**\n"
-        msg += "```\n" + "\n".join(pnl_lines) + "\n```\n"
-        msg += "🛡️ **Risk & Targets:**\n"
-        msg += "```\n" + "\n".join(risk_lines) + "\n```\n"
+            msg += f"{idx}. 🏢 **{comp_name}** (`{ticker_clean}`)\n"
+            msg += f"   • Qty: `{qty}` | Entry: `₹{entry:.2f}` | Live: `₹{current:.2f}`\n"
+            msg += f"   • PnL: {pnl_emoji} `₹{pnl_val:+,.2f}` (`{pnl_pct:+.2f}%`)\n"
+            msg += f"   • 🛡️ SL: `₹{sl:.2f}` | 🎯 Target: `₹{target:.2f}`\n\n"
         
-        pnl_emoji = "🟢" if total_unrealized_pnl >= 0 else "🔴"
-        msg += f"💰 **Total Unrealized PnL:** {pnl_emoji} ₹{total_unrealized_pnl:,.2f}"
+        total_pnl_emoji = "🟢" if total_unrealized_pnl >= 0 else "🔴"
+        msg += f"💰 **Total Unrealized PnL:** {total_pnl_emoji} **₹{total_unrealized_pnl:,.2f}**"
         
         await context.bot.send_message(
             chat_id=chat_id, 
@@ -261,8 +257,12 @@ async def summary_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
         win_rate_str = f" ({win_count}/{len(closed_pos)} won, {(win_count/len(closed_pos)*100.0):.1f}%)" if closed_pos else ""
         avg_pct_str = f" (Avg: {sum(pnl_pcts)/len(pnl_pcts):+.2f}%)" if pnl_pcts else ""
         
+        tz = pytz.timezone("Asia/Kolkata")
+        now_ist = datetime.datetime.now(tz).strftime("%Y-%m-%d | %I:%M:%S %p IST")
+        
         msg = (
-            "🏦 **Portfolio Summary:**\n"
+            "🏦 **Portfolio Performance Summary:**\n"
+            f"📅 *As of: {now_ist}*\n"
             f"📡 *Data Engine: {feed_source}*\n\n"
             f"💰 **Total Portfolio Value:** ₹{account.get('Total Portfolio Value', 0):,.2f}\n"
             f"💵 **Cash Balance:** ₹{account.get('Cash Balance', 0):,.2f}\n"
@@ -307,15 +307,20 @@ async def history_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
             )
             return
             
-        header = f"{'Ticker':<9} {'Entry':<7} {'Exit':<7} {'PnL(₹)':<9} {'PnL%':<7}"
-        table_lines = [header, "-" * len(header)]
+        tz = pytz.timezone("Asia/Kolkata")
+        now_ist = datetime.datetime.now(tz).strftime("%Y-%m-%d | %I:%M:%S %p IST")
+        
+        msg = f"🤝 **Closed Trades History ({len(closed_pos)}):**\n"
+        msg += f"📅 *As of: {now_ist}*\n\n"
         
         total_pnl = 0.0
         pnl_pcts = []
         win_count = 0
         
-        for p in closed_pos:
-            ticker_clean = p["Ticker"].replace(".NS", "")
+        for idx, p in enumerate(closed_pos, 1):
+            ticker = p["Ticker"]
+            comp_name = screener.get_company_name(ticker)
+            ticker_clean = ticker.replace(".NS", "")
             try:
                 entry = float(p["Entry Price"])
             except Exception:
@@ -335,22 +340,24 @@ async def history_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
             if pnl > 0:
                 win_count += 1
                 
-            pnl_str = f"{pnl:>+8.1f}"
-            pct_str = f"{pnl_pct:>+5.1f}%"
-            table_lines.append(f"{ticker_clean:<9} {entry:<7.1f} {exit_price:<7.1f} {pnl_str:<9} {pct_str:<7}")
+            pnl_emoji = "🟢" if pnl >= 0 else "🔴"
+            exit_reason = p.get("Exit Reason", "Closed")
+            exit_date = p.get("Exit Date", "")
+            
+            msg += f"{idx}. 🏢 **{comp_name}** (`{ticker_clean}`)\n"
+            msg += f"   • Entry: `₹{entry:.2f}` | Exit: `₹{exit_price:.2f}`\n"
+            msg += f"   • PnL: {pnl_emoji} `₹{pnl:+,.2f}` (`{pnl_pct:+.2f}%`)\n"
+            msg += f"   • 🏷️ Reason: {exit_reason} | 📅 Date: {exit_date}\n\n"
             
         win_rate = (win_count / len(closed_pos)) * 100.0 if closed_pos else 0.0
         avg_pct = sum(pnl_pcts) / len(pnl_pcts) if pnl_pcts else 0.0
-        pnl_emoji = "🟢" if total_pnl >= 0 else "🔴"
+        total_pnl_emoji = "🟢" if total_pnl >= 0 else "🔴"
         
-        msg = (
-            "🤝 **Closed Trades & Realized PnL History:**\n\n"
-            "```\n" + "\n".join(table_lines) + "\n```\n\n"
-            f"📊 **Total Closed:** {len(closed_pos)} trades\n"
-            f"🏆 **Win Rate:** {win_rate:.1f}% ({win_count}/{len(closed_pos)} profitable)\n"
-            f"📈 **Avg Return / Trade:** {avg_pct:+.2f}%\n"
-            f"💰 **Total Realized PnL:** {pnl_emoji} ₹{total_pnl:,.2f}"
-        )
+        msg += f"📊 **Total Closed:** {len(closed_pos)} trades\n"
+        msg += f"🏆 **Win Rate:** {win_rate:.1f}% ({win_count}/{len(closed_pos)} profitable)\n"
+        msg += f"📈 **Avg Return / Trade:** {avg_pct:+.2f}%\n"
+        msg += f"💰 **Total Realized PnL:** {total_pnl_emoji} **₹{total_pnl:,.2f}**"
+        
         await context.bot.send_message(
             chat_id=chat_id, 
             text=msg, 

@@ -13,6 +13,73 @@ import sentiment_analyzer
 # Nifty 250 List URL (Updated to Nifty 50)
 NIFTY_250_URL = "https://archives.nseindia.com/content/indices/ind_nifty50list.csv"
 
+# Comprehensive Cache for Nifty 50 Company Names
+COMPANY_NAME_CACHE: Dict[str, str] = {
+    "ADANIENT.NS": "Adani Enterprises Ltd.",
+    "ADANIPORTS.NS": "Adani Ports & SEZ Ltd.",
+    "APOLLOHOSP.NS": "Apollo Hospitals Enterprise Ltd.",
+    "ASIANPAINT.NS": "Asian Paints Ltd.",
+    "AXISBANK.NS": "Axis Bank Ltd.",
+    "BAJAJ-AUTO.NS": "Bajaj Auto Ltd.",
+    "BAJFINANCE.NS": "Bajaj Finance Ltd.",
+    "BAJAJFINSV.NS": "Bajaj Finserv Ltd.",
+    "BEL.NS": "Bharat Electronics Ltd.",
+    "BHARTIARTL.NS": "Bharti Airtel Ltd.",
+    "CIPLA.NS": "Cipla Ltd.",
+    "COALINDIA.NS": "Coal India Ltd.",
+    "DRREDDY.NS": "Dr. Reddy's Laboratories Ltd.",
+    "EICHERMOT.NS": "Eicher Motors Ltd.",
+    "ETERNAL.NS": "Eternal Capital Ltd.",
+    "GRASIM.NS": "Grasim Industries Ltd.",
+    "HCLTECH.NS": "HCL Technologies Ltd.",
+    "HDFCBANK.NS": "HDFC Bank Ltd.",
+    "HDFCLIFE.NS": "HDFC Life Insurance Co. Ltd.",
+    "HINDALCO.NS": "Hindalco Industries Ltd.",
+    "HINDUNILVR.NS": "Hindustan Unilever Ltd.",
+    "ICICIBANK.NS": "ICICI Bank Ltd.",
+    "INDIGO.NS": "InterGlobe Aviation Ltd.",
+    "INDUSINDBK.NS": "IndusInd Bank Ltd.",
+    "INFY.NS": "Infosys Ltd.",
+    "ITC.NS": "ITC Ltd.",
+    "JIOFIN.NS": "Jio Financial Services Ltd.",
+    "JSWSTEEL.NS": "JSW Steel Ltd.",
+    "KOTAKBANK.NS": "Kotak Mahindra Bank Ltd.",
+    "LICI.NS": "Life Insurance Corp of India",
+    "LT.NS": "Larsen & Toubro Ltd.",
+    "LTIM.NS": "LTIMindtree Ltd.",
+    "M&M.NS": "Mahindra & Mahindra Ltd.",
+    "MARUTI.NS": "Maruti Suzuki India Ltd.",
+    "MAXHEALTH.NS": "Max Healthcare Institute Ltd.",
+    "NESTLEIND.NS": "Nestle India Ltd.",
+    "NTPC.NS": "NTPC Ltd.",
+    "ONGC.NS": "Oil & Natural Gas Corp Ltd.",
+    "POWERGRID.NS": "Power Grid Corp of India Ltd.",
+    "RELIANCE.NS": "Reliance Industries Ltd.",
+    "SBILIFE.NS": "SBI Life Insurance Co. Ltd.",
+    "SBIN.NS": "State Bank of India",
+    "SHRIRAMFIN.NS": "Shriram Finance Ltd.",
+    "SUNPHARMA.NS": "Sun Pharmaceutical Industries Ltd.",
+    "TATACONSUM.NS": "Tata Consumer Products Ltd.",
+    "TATAMOTORS.NS": "Tata Motors Ltd.",
+    "TATASTEEL.NS": "Tata Steel Ltd.",
+    "TCS.NS": "Tata Consultancy Services Ltd.",
+    "TECHM.NS": "Tech Mahindra Ltd.",
+    "TITAN.NS": "Titan Company Ltd.",
+    "TMPV.NS": "Tata Motors PV Ltd.",
+    "TRENT.NS": "Trent Ltd.",
+    "ULTRACEMCO.NS": "UltraTech Cement Ltd.",
+    "WIPRO.NS": "Wipro Ltd."
+}
+
+def get_company_name(ticker: str) -> str:
+    """
+    Returns the official company name for an NSE ticker symbol.
+    """
+    sym = ticker.strip().upper()
+    if not sym.endswith(".NS"):
+        sym = f"{sym}.NS"
+    return COMPANY_NAME_CACHE.get(sym, sym.replace(".NS", ""))
+
 def get_nifty_250_tickers() -> List[str]:
     """
     Fetches the list of Nifty 50 symbols from the NSE archive and formats them for yfinance (.NS).
@@ -26,6 +93,13 @@ def get_nifty_250_tickers() -> List[str]:
         if response.status_code == 200:
             df = pd.read_csv(io.StringIO(response.text))
             if 'Symbol' in df.columns:
+                if 'Company Name' in df.columns:
+                    for _, row in df.iterrows():
+                        s = str(row['Symbol']).strip().upper()
+                        c = str(row['Company Name']).strip()
+                        if s and c:
+                            COMPANY_NAME_CACHE[f"{s}.NS"] = c
+                            
                 symbols = df['Symbol'].tolist()
                 # Format for yfinance
                 tickers = [f"{sym.strip()}.NS" for sym in symbols if isinstance(sym, str)]
