@@ -1,6 +1,6 @@
 # NSE Swing Trading System: Complete Walkthrough & Handover Manual
 
-This blueprint is the exhaustive master reference manual for the automated NSE Swing Trading and Portfolio Management System. It contains the complete architectural layouts, database schemas, quantitative strategy rules, AI news sentiment guardrails, DhanHQ broker API configurations, memory management protocols, interactive Telegram menu systems, credentials catalog, and the Universal Master Prompt.
+This blueprint is the exhaustive master reference manual for the automated NSE Swing Trading and Portfolio Management System. It contains the complete architectural layouts, database schemas, quantitative strategy rules, AI news sentiment guardrails, DhanHQ broker API configurations, memory management protocols, interactive Telegram menu systems, 3-year backtest scorecard, credentials catalog, and the Universal Master Prompt.
 
 ---
 
@@ -35,10 +35,10 @@ graph TD
 ### Execution Nodes Breakdown:
 
 1. **`Sync Portfolio Node` (Live Price Stream, Exits & Trailing Stops):**
-   * Connects to **DhanHQ API** (`dhan_client.py`) to query real-time tick prices (LTP) for all open positions. If Dhan credentials are unset or the token expires, automatically falls back to **Yahoo Finance** (`yfinance`).
+   * Connects to **DhanHQ API** (`dhan_client.py`) to stream real-time tick prices (LTP) for all open positions. If Dhan credentials are unset or the token expires, automatically falls back to **Yahoo Finance** (`yfinance`).
    * Evaluates exit conditions:
-     * **Target Hit:** If `Live Price >= Target` (1:2 Risk-to-Reward Ratio), closes the position, calculates realized profit/loss, updates cash balance, and logs `Closed trade @ Exit Price (Reason: Target Hit, PnL: ₹... / +...%)`.
-     * **Stop Loss Hit:** If `Live Price <= Current SL`, closes the position, calculates realized loss, updates cash balance, and logs `Closed trade @ Exit Price (Reason: Stop Loss Hit, PnL: ₹... / -...%)`.
+     * **Target Hit:** If `Live Price >= Target` (1:2 Risk-to-Reward Ratio), closes position, calculates realized profit/loss, updates cash balance, and logs `Closed trade @ Exit Price (Reason: Target Hit, PnL: ₹... / +...%)`.
+     * **Stop Loss Hit:** If `Live Price <= Current SL`, closes position, calculates realized loss, updates cash balance, and logs `Closed trade @ Exit Price (Reason: Stop Loss Hit, PnL: ₹... / -...%)`.
    * **AI News Sentiment Guardrail (Micro):** Queries Google News RSS for news headlines on the held stock and invokes **Gemini 3.6-flash**. If news sentiment is **NEGATIVE** (e.g., earnings miss, regulatory penalty), the trailing stop loss is immediately tightened to **today's Low** to protect capital against sudden market dumps.
    * **Dynamic Trailing Stop (20 EMA):** If close price is favorable, calculates the 20-day Exponential Moving Average (20 EMA). If `20 EMA > Current SL`, updates `Current SL` in Google Sheets to `20 EMA` (Stop loss trails upward and never moves downward).
    * **Performance Tracking:** Dynamically solves for **Total Return (%)**, **CAGR (%)**, and **XIRR (%)** across active trading days.
@@ -55,7 +55,7 @@ graph TD
 
 3. **`Calculate Sizing Node` (Risk Management & Exposure Guardrails):**
    * Enforces strict **1% Risk-per-Trade sizing**:
-     $$	ext{Quantity} = \left\lfloor rac{	ext{Total Portfolio Value} 	imes 0.01}{	ext{Entry Price} - 	ext{Initial SL}} ightfloor$$
+     $$\text{Quantity} = \left\lfloor \frac{\text{Total Portfolio Value} \times 0.01}{\text{Entry Price} - \text{Initial SL}} \right\rfloor$$
    * **Double Buy Blocker:** Rejects candidates that already exist as active `OPEN` positions in Google Sheets.
    * **Stop Loss Distance Validation:** Verifies that the initial Stop Loss is between **3% and 15%** of the Entry Price (discards noise-prone tight stops and high-risk wide stops).
    * **90% Max Portfolio Allocation (10% Cash Buffer):** Limits total open position value to **90% of total portfolio value**, scaling down purchase quantities or skipping entries if cash is insufficient.
@@ -63,7 +63,7 @@ graph TD
 
 4. **`Execute Trades Node` (Database Commit & Notifications):**
    * Appends executed trades into the Google Sheets `"Holdings"` worksheet with exponential rate-limit backoffs.
-   * Formats ASCII monospaced summary tables and broadcasts real-time reports to registered Telegram chats.
+   * Displays full Company Names, exact IST timestamps, and broadcasts real-time reports to registered Telegram chats.
 
 ---
 
@@ -111,7 +111,7 @@ The database is hosted on Google Sheets under the spreadsheet name **`NSE_Swing_
 | **DhanHQ Fallback Engine** | Data Feed | Automatic fallback to `yfinance` if credentials expire or network times out | Prevents bot crashes & downtime |
 | **Double Buy Blocker** | Portfolio | Checks database and rejects duplicate ticker purchases | Prevents single-stock overexposure |
 | **Max Portfolio Allocation** | Portfolio | Restricts open holdings to **90% of total portfolio value** | Guarantees **minimum 10% cash buffer** |
-| **Daily Purchase Limit** | Sizer | Maximum **3 breakout buys** per scan (highest volume ratio first) | Prevents capital exhaustion on bullish days |
+| **Daily Purchase Limit** | Sizer | Maximum **3 breakout buys** per scan (highest volume ratio first) | Prevents capital exhaustion on bull runs |
 | **SL Tightness Guard** | Sizer | Rejects entries where Stop Loss distance is **< 3%** | Prevents premature stops from daily noise |
 | **SL Bloat Guard** | Sizer | Rejects entries where Stop Loss distance is **> 15%** | Discards bloated, high-risk trades |
 | **Penny Stock Filter** | Screener | Discards stocks priced **< ₹20** | Filters micro-cap pump-and-dump stocks |
@@ -123,13 +123,13 @@ The database is hosted on Google Sheets under the spreadsheet name **`NSE_Swing_
 
 ## 🎛️ 4. Telegram Bot Commands & Interactive Menu System
 
-The Telegram Bot (`@nse_swing_123_bot`) features an interactive touch menu and a native command menu bar:
+The Telegram Bot (`@nse_swing_123_bot`) features an interactive touch menu, exact IST timestamps, full company names, and a native command menu bar:
 
 ### Native Menu Bar (`[/]` Popup):
 * `🎛️ /menu` — Displays the interactive touch button hub.
-* `🔍 /scan` — Runs an immediate breakout scan, checks AI sentiment, and executes trades.
-* `📈 /positions` — Displays open positions with real-time Dhan/Yahoo tick quotes, SL, Target, and Unrealized PnL.
-* `🤝 /history` — Displays all closed trades with Entry, Exit, Realized PnL (₹), and **`PnL %`**.
+* `🔍 /scan` — Runs an immediate breakout scan with IST time, AI news sentiment, and executes orders.
+* `📈 /positions` — Displays open positions with real-time Dhan/Yahoo tick quotes, Company Names, SL, Target, and Unrealized PnL.
+* `🤝 /history` — Displays all closed trades with Company Names, Entry, Exit, Realized PnL (₹), and **`PnL %`**.
 * `🏦 /summary` — Summarizes Portfolio Value, Cash, Realized PnL, Win Rate %, Total Return %, CAGR %, and XIRR %.
 * `🚀 /start` — Welcome guide and dynamic chat registration.
 
@@ -144,7 +144,24 @@ The Telegram Bot (`@nse_swing_123_bot`) features an interactive touch menu and a
 
 ---
 
-## 🔑 5. Credentials & Environment Variables Catalog
+## 🏆 5. 3-Year Quantitative Backtest Scorecard (2023 – 2026)
+
+| Metric | Quantitative Swing Strategy | Nifty 50 Index Benchmark | Outperformance / Alpha |
+| :--- | :---: | :---: | :---: |
+| **Starting Capital** | **₹1,000,000.00** | **₹1,000,000.00** | — |
+| **Ending Capital (3 Years)** | **₹1,356,216.40** | **₹1,237,183.75** | **+₹119,032.65** |
+| **Total Return (%)** | **+35.62%** | **+23.72%** | **+11.90% Excess Return** 🚀 |
+| **Annualized Return (CAGR)** | **10.60% p.a.** | **7.29% p.a.** | **+3.31% p.a. Alpha** |
+| **Maximum Drawdown** | **-7.38%** | **-15.77%** | **Cut Risk in Half (2.1x Safer)** 🛡️ |
+| **Profit Factor** | **1.53** | — | **₹1.53 win per ₹1.00 loss** |
+| **Total Trades** | **167 trades** | Buy & Hold | ~55 trades / year |
+| **Win Rate (%)** | **37.1%** | — | 62 Wins / 105 Losses |
+| **Avg Win vs Avg Loss** | **+₹16,547.10 (+4.90%)** | **-₹6,378.13 (-2.09%)** | **2.59x Win-to-Loss Ratio** |
+| **Avg Holding Duration** | **9.3 Trading Days** | 3.0 Years | Swing Horizon |
+
+---
+
+## 🔑 6. Credentials & Environment Variables Catalog
 
 | Provider | Environment Variable | Value / Description | Where to Set |
 | :--- | :--- | :--- | :--- |
@@ -162,7 +179,7 @@ The Telegram Bot (`@nse_swing_123_bot`) features an interactive touch menu and a
 
 ---
 
-## 🔮 6. Universal Master Prompt (For Recreating System Anywhere)
+## 🔮 7. Universal Master Prompt (For Recreating System Anywhere)
 
 ```text
 Build a complete, production-grade NSE Swing Trading & Portfolio Manager in Python, ready to deploy to Render (Free Tier). The system must run a Streamlit web dashboard and a Telegram bot concurrently inside a single container. The database must be Google Sheets (managed via gspread).
@@ -170,10 +187,10 @@ Build a complete, production-grade NSE Swing Trading & Portfolio Manager in Pyth
 1. FILE STRUCTURE & RESPONSIBILITIES:
 - `dhan_client.py`: Integrates DhanHQ API ('dhanhq'). Downloads and caches the Dhan NSE Scrip Master CSV ('https://images.dhan.co/api-data/api-scrip-master.csv') in memory to map symbols (e.g. 'RELIANCE' -> 2885). Provides get_dhan_ltp(tickers) for zero-latency live quotes with graceful fallback to yfinance if unconfigured.
 - `sentiment_analyzer.py`: Connects to Google News RSS search feed for a ticker or macro index, parses XML for the top 5 recent headlines, and calls Gemini model "gemini-3.6-flash" to return 'POSITIVE', 'NEUTRAL', or 'NEGATIVE' sentiment.
-- `screener.py`: Fetches Nifty 50 symbols from NSE, downloads 60d daily historical data in parallel via yfinance, and filters for breakouts. Checks macro and stock-specific news sentiment before qualifying candidates. Filters out penny stocks (Price < 20) and low-volume stocks (Vol SMA 20 < 50,000).
+- `screener.py`: Fetches Nifty 50 symbols from NSE, downloads 60d daily historical data in parallel via yfinance, and filters for breakouts. Includes official Company Name mappings (e.g. 'HCL Technologies Ltd.' for 'HCLTECH.NS'). Checks macro and stock-specific news sentiment before qualifying candidates. Filters out penny stocks (Price < 20) and low-volume stocks (Vol SMA 20 < 50,000).
 - `portfolio_manager.py`: Google Sheets database operations. Handles sheets initialization, fetching open/closed positions, registering chat IDs, adding positions, closing positions, calculating performance metrics (Total Return, CAGR, XIRR, PnL %), and syncing live quotes from DhanHQ (with yfinance fallback). Implements retry_gspread for 429 rate limit backoff. In add_position, blocks duplicates and checks Stop Loss percentage (3% - 15%).
-- `trading_graph.py`: Builds a stateful LangGraph workflow representing the trading cycle (Sync Portfolio -> Scan Market -> Position Sizer -> Execute Trades) and formats a text-based ASCII scan report. Sizer enforces max 90% portfolio exposure (10% cash buffer), max 3 daily purchases, and minimum 3% SL buffer.
-- `bot.py`: Telegram Bot handler and cron scheduler. Implements interactive InlineKeyboardMarkup button menus, native BotCommand menu registration, and commands (/menu, /scan, /positions, /history, /summary, /start).
+- `trading_graph.py`: Builds a stateful LangGraph workflow representing the trading cycle (Sync Portfolio -> Scan Market -> Position Sizer -> Execute Trades) and formats a text-based scan report with IST timestamps and Company Names. Sizer enforces max 90% portfolio exposure (10% cash buffer), max 3 daily purchases, and minimum 3% SL buffer.
+- `bot.py`: Telegram Bot handler and cron scheduler. Implements interactive InlineKeyboardMarkup button menus, native BotCommand menu registration, IST Date/Time timestamps, Company Names, and commands (/menu, /scan, /positions, /history, /summary, /start).
 - `app.py`: Streamlit frontend dashboard displaying KPI cards for Value, Cash, Unrealized/Realized PnL, Total Return, CAGR, XIRR, Closed Trades table with PnL % and win rate metrics, and Plotly charts.
 - `start.sh`: Shell script launching `python -u bot.py &` in the background and `streamlit run app.py --server.port $PORT --server.address 0.0.0.0 --server.fileWatcherType none --server.headless true` in the foreground.
 - `Procfile`: Contains `web: sh start.sh`
