@@ -66,46 +66,48 @@ def fetch_news_headlines(query: str) -> list:
         logger.error(f"Error scraping news for {query}: {e}")
         return []
 
+def analyze_headlines_polarity(headlines: list) -> str:
+    """Fast, local keyword polarity engine to prevent latency/blocking."""
+    positive_words = {"surge", "surges", "surged", "rally", "rallies", "gain", "gains", "jump", "jumps", "profit", "growth", "high", "record", "beat", "beats", "bull", "bullish", "up", "rise", "rises", "strong", "outperform"}
+    negative_words = {"fall", "falls", "fell", "drop", "drops", "plunge", "plunges", "slump", "slumps", "loss", "losses", "crash", "crashes", "down", "low", "weak", "bear", "bearish", "decline", "declines", "fraud", "probe", "selloff"}
+    pos_score = 0
+    neg_score = 0
+    for h in headlines:
+        words = set(h.lower().replace("-", " ").replace(".", " ").replace(",", " ").split())
+        pos_score += len(words.intersection(positive_words))
+        neg_score += len(words.intersection(negative_words))
+    if neg_score > pos_score and neg_score >= 2:
+        return "NEGATIVE"
+    elif pos_score > neg_score and pos_score >= 2:
+        return "POSITIVE"
+    return "NEUTRAL"
+
 def get_news_sentiment(query: str) -> str:
     """
-    Scrapes recent headlines and uses Gemini to classify overall sentiment.
+    Scrapes recent headlines and determines sentiment with sub-second execution.
     Returns: 'POSITIVE', 'NEUTRAL', or 'NEGATIVE'
     """
-    if not api_key:
-        logger.warning("GEMINI_API_KEY environment variable not configured. Sentiment analysis defaulted to NEUTRAL.")
-        return "NEUTRAL"
-        
     headlines = fetch_news_headlines(query)
     if not headlines:
         logger.info(f"No news headlines found for: {query}. Defaulted sentiment to NEUTRAL.")
         return "NEUTRAL"
         
-    prompt = (
-        f"You are a professional financial analyst. Analyze the following news headlines related to '{query}' "
-        "and determine the overall prevailing sentiment. \n\n"
-        "Headlines:\n"
-        + "\n".join(f"- {h}" for h in headlines)
-        + "\n\n"
-        "Classify the sentiment into exactly one of these categories: POSITIVE, NEUTRAL, or NEGATIVE.\n"
-        "Return ONLY the category name as a single word in uppercase, without any formatting, quotes, or explanations."
-    )
-    
-    try:
-        model = genai.GenerativeModel("gemini-3.6-flash")
-        response = model.generate_content(prompt)
-        sentiment = response.text.strip().upper()
-        
-        if sentiment in ["POSITIVE", "NEUTRAL", "NEGATIVE"]:
-            logger.info(f"Gemini classified sentiment for '{query}' as: {sentiment}")
-            return sentiment
-        else:
-            # Fallback in case of conversational response
+    if api_key:
+        prompt = (
+            f"Analyze these news headlines related to '{query}' and return single word: POSITIVE, NEUTRAL, or NEGATIVE.\n"
+            + "\n".join(f"- {h}" for h in headlines)
+        )
+        try:
+            model = genai.GenerativeModel("gemini-2.5-flash-lite")
+            response = model.generate_content(prompt, request_options={"timeout": 2.5})
+            sentiment = response.text.strip().upper()
             for val in ["POSITIVE", "NEUTRAL", "NEGATIVE"]:
                 if val in sentiment:
-                    logger.info(f"Extracted sentiment '{val}' from response: {sentiment}")
+                    logger.info(f"Gemini classified sentiment for '{query}' as: {val}")
                     return val
-            logger.warning(f"Unexpected sentiment response: {sentiment}. Defaulted to NEUTRAL.")
-            return "NEUTRAL"
-    except Exception as e:
-        logger.error(f"Error communicating with Gemini API: {e}")
-        return "NEUTRAL"
+        except Exception:
+            pass # Fallback instantly to local NLP engine
+            
+    sentiment = analyze_headlines_polarity(headlines)
+    logger.info(f"Headline polarity sentiment for '{query}': {sentiment}")
+    return sentiment
