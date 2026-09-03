@@ -21,7 +21,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Fetch Token from env
-TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
+TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN_2") or os.environ.get("TELEGRAM_BOT_TOKEN")
 
 # Helper functions for dynamic Telegram chat registration in Google Sheets
 def register_chat(chat_id: int):
@@ -29,9 +29,11 @@ def register_chat(chat_id: int):
         client = portfolio_manager.get_gspread_client()
         sh = portfolio_manager.get_or_create_portfolio_sheet(client)
         try:
-            ws = sh.worksheet("TelegramChats")
+            _, _, chats_name = portfolio_manager.get_worksheet_names(sh)
+        ws = sh.worksheet(chats_name)
         except gspread.WorksheetNotFound:
-            ws = sh.add_worksheet(title="TelegramChats", rows="100", cols="1")
+            _, _, chats_name = portfolio_manager.get_worksheet_names(sh)
+            ws = sh.add_worksheet(title=chats_name, rows="100", cols="1")
             ws.append_row(["ChatID"])
             
         values = ws.get_all_values()
@@ -48,7 +50,8 @@ def get_registered_chats() -> list:
         client = portfolio_manager.get_gspread_client()
         sh = portfolio_manager.get_or_create_portfolio_sheet(client)
         try:
-            ws = sh.worksheet("TelegramChats")
+            _, _, chats_name = portfolio_manager.get_worksheet_names(sh)
+        ws = sh.worksheet(chats_name)
         except gspread.WorksheetNotFound:
             return []
         values = ws.get_all_values()
@@ -78,7 +81,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     register_chat(chat_id)
     
     welcome_text = (
-        "🤖 **Welcome to the NSE Multi-Agent Swing Trading Bot!** 🤖\n\n"
+        "🤖 **Welcome to NSE Multi-Agent Swing Trading Bot (System #2 - Strategy v2)!** 🤖\n\n"
         "You are registered for automated daily market breakout scans (**3:25 PM IST**) and intraday exit alerts.\n\n"
         "🎛️ **Quick Action Menu:** Tap any button below or use the chat menu button `[/]`:"
     )
@@ -90,7 +93,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def menu_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = (
-        "🎛️ **NSE Swing Trading Main Menu**\n\n"
+        "🎛️ **NSE Swing Trading Main Menu (System #2 - Strategy v2)**\n\n"
         "Tap an action button below to execute trades or inspect your portfolio:"
     )
     await update.message.reply_text(
@@ -197,9 +200,8 @@ async def positions_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
             pnl_val = (current - entry) * qty
             pnl_pct = ((current - entry) / entry) * 100.0 if entry > 0 else 0.0
             total_unrealized_pnl += pnl_val
-            pnl_emoji = "🟢" if pnl_val >= 0 else "🔴"
-            
-            msg += f"{idx}. 🏢 **{comp_name}** (`{ticker_clean}`)\n"
+            sector = screener.get_stock_sector(ticker)
+            msg += f"{idx}. 🏢 **{comp_name}** (`{ticker_clean}`) — *{sector}*\n"
             msg += f"   • Qty: `{qty}` | Entry: `₹{entry:.2f}` | Live: `₹{current:.2f}`\n"
             msg += f"   • PnL: {pnl_emoji} `₹{pnl_val:+,.2f}` (`{pnl_pct:+.2f}%`)\n"
             msg += f"   • 🛡️ SL: `₹{sl:.2f}` | 🎯 Target: `₹{target:.2f}`\n\n"
@@ -396,10 +398,10 @@ async def menu_button_callback(update: Update, context: ContextTypes.DEFAULT_TYP
 async def post_init_setup(application: Application):
     commands = [
         BotCommand("menu", "🎛️ Show Interactive Button Menu"),
-        BotCommand("scan", "🔍 Run Breakout Scan & Trades"),
-        BotCommand("positions", "📈 View Open Holdings & PnL"),
-        BotCommand("history", "🤝 View Closed Trades & PnL %"),
-        BotCommand("summary", "🏦 View Portfolio Summary"),
+        BotCommand("scan", "🔍 Run Strategy #2 Scan & Trades"),
+        BotCommand("positions", "📈 Strategy #2 Open Holdings"),
+        BotCommand("history", "🤝 Strategy #2 Closed Trades"),
+        BotCommand("summary", "🏦 Strategy #2 Summary"),
         BotCommand("start", "🚀 Start & Register Chat")
     ]
     try:

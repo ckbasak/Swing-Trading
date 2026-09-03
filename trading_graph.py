@@ -36,13 +36,17 @@ def sync_portfolio_node(state: TradingState) -> Dict[str, Any]:
         account = portfolio_manager.get_account_details(sh)
         portfolio_value = account["Total Portfolio Value"]
         cash_balance = account["Cash Balance"]
-        risk_pct = account["Risk Percent"]
+        risk_pct = account.get("Risk Percent", 0.015)
+        # Migrate 1.0% to 1.5% for Strategy v2 if needed
+        if risk_pct == 0.01:
+            portfolio_manager.update_account_details(sh, {"Risk Percent": 0.015})
+            risk_pct = 0.015
         
         open_positions = portfolio_manager.get_open_positions(sh)
         
         logs.append(f"Portfolio Value: INR {portfolio_value:,.2f}")
         logs.append(f"Cash Balance: INR {cash_balance:,.2f}")
-        logs.append(f"Risk per trade: {risk_pct * 100}% (INR {portfolio_value * risk_pct:,.2f})")
+        logs.append(f"Risk per trade: {risk_pct * 100:.1f}% (INR {portfolio_value * risk_pct:,.2f})")
         
         return {
             "open_positions": open_positions,
@@ -57,7 +61,7 @@ def sync_portfolio_node(state: TradingState) -> Dict[str, Any]:
 
 def scan_market_node(state: TradingState) -> Dict[str, Any]:
     """
-    Node 2: Runs the Nifty 250 screener to find new breakout candidates.
+    Node 2: Runs the Nifty 50 screener to find new Strategy v2 breakout candidates.
     """
     logs = state.get("logs", [])
     logs.append("--- Node: Scanning Market ---")
@@ -69,7 +73,11 @@ def scan_market_node(state: TradingState) -> Dict[str, Any]:
         
         logs.append(f"Found {len(candidates)} breakout candidates.")
         for idx, c in enumerate(candidates):
-            logs.append(f"Candidate {idx+1}: {c['ticker']} | Close: {c['close']:.2f} | Volume Ratio: {c['volume_ratio']:.2f}x | RSI(14): {c.get('rsi_14', 0.0):.1f}")
+            logs.append(
+                f"Candidate {idx+1}: {c['ticker']} ({c.get('sector', 'Unknown')}) | "
+                f"Close: {c['close']:.2f} | Volume Ratio: {c['volume_ratio']:.2f}x | "
+                f"RSI(14): {c.get('rsi_14', 0.0):.1f} | ATR(14): {c.get('atr_14', 0.0):.2f}"
+            )
             
         return {
             "candidates": candidates,
@@ -81,8 +89,12 @@ def scan_market_node(state: TradingState) -> Dict[str, Any]:
 
 def calculate_positions_node(state: TradingState) -> Dict[str, Any]:
     """
-    Node 3: Enforces 1% risk position sizing, 90% max portfolio exposure guardrail,
-    and a daily purchase limit of 3 breakouts (strongest volume ratio first).
+    Node 3: Enforces Strategy v2 sizing & risk rules:
+    - 1.5% portfolio risk per trade
+    - Stop Loss sized to 2× ATR(14) below entry (no fixed clamp)
+    - Sector Concentration Limit: Max 3 open positions per sector
+    - 90% max portfolio exposure guardrail (10% cash buffer)
+    - Daily purchase limit of 3 breakouts (strongest volume ratio first)
     """
     logs = state.get("logs", [])
     logs.append("--- Node: Calculating Position Sizing ---")
@@ -106,8 +118,14 @@ def calculate_positions_node(state: TradingState) -> Dict[str, Any]:
     max_open_value = portfolio_value * 0.90
     
     existing_tickers = {p["Ticker"] for p in open_positions}
-    trades_to_execute = []
     
+    # Track existing open positions per sector (v2: Max 3 per sector)
+    sector_counts: Dict[str, int] = {}
+    for p in open_positions:
+        sec = screener.get_stock_sector(p.get("Ticker", ""))
+        sector_counts[sec] = sector_counts.get(sec, 0) + 1
+        
+    trades_to_execute = []
     remaining_cash = cash
     buy_count = 0
     
@@ -116,31 +134,40 @@ def calculate_positions_node(state: TradingState) -> Dict[str, Any]:
     
     for c in sorted_candidates:
         ticker = c["ticker"]
+        candidate_sector = c.get("sector") or screener.get_stock_sector(ticker)
         
         # Skip if already in holdings (Double Buy Blocker)
         if ticker in existing_tickers:
             logs.append(f"Skipping {ticker}: Already in holdings.")
             continue
             
-        # Daily purchase limit guardrail
+        # Daily purchase limit guardrail (Max 3 buys per day)
         if buy_count >= 3:
             logs.append(f"Skipping {ticker}: Daily purchase limit of 3 trades reached.")
             continue
             
-        entry_price = c["close"]
-        initial_sl = c["sma_20"]
-        
-        # Calculate Risk Per Share
-        risk_per_share = entry_price - initial_sl
-        
-        # Safe-guard: Minimum 3% risk buffer if 20 SMA is too close to Close price
-        min_risk = entry_price * 0.03
-        if risk_per_share <= min_risk:
-            initial_sl = entry_price * 0.97
-            risk_per_share = entry_price - initial_sl
-            logs.append(f"SL adjusted to 3% limit for {ticker} (Initial SL was too tight: {c['sma_20']:.2f})")
+        # Sector concentration guardrail (v2: Max 3 open positions per sector)
+        current_sector_positions = sector_counts.get(candidate_sector, 0)
+        if current_sector_positions >= 3:
+            logs.append(f"Skipping {ticker}: Sector concentration limit reached (Already 3 open in {candidate_sector}).")
+            continue
             
-        # 1% Risk Sizing Rule: Quantity = Risk Per Trade / Risk Per Share
+        entry_price = c["close"]
+        
+        # Strategy v2 Stop-loss: 2x ATR(14) below entry, no fixed clamp
+        atr_14 = c.get("atr_14")
+        if atr_14 is not None and atr_14 > 0:
+            risk_per_share = 2.0 * atr_14
+            initial_sl = entry_price - risk_per_share
+        else:
+            risk_per_share = max(entry_price - c.get("sma_20", entry_price * 0.95), entry_price * 0.03)
+            initial_sl = entry_price - risk_per_share
+            
+        if risk_per_share <= 0:
+            logs.append(f"Skipping {ticker}: Risk per share is <= 0.")
+            continue
+            
+        # Sizing Rule (1.5% Risk per trade): Quantity = Risk Per Trade / Risk Per Share
         qty = math.floor(risk_per_trade / risk_per_share)
         
         if qty <= 0:
@@ -173,21 +200,31 @@ def calculate_positions_node(state: TradingState) -> Dict[str, Any]:
                 continue
             logs.append(f"Scaled down quantity for {ticker} to {qty} due to cash limit.")
             
-        target = entry_price + (2 * risk_per_share) # 1:2 Risk to Reward
+        # Profit target: fixed 1:2 risk-to-reward ratio
+        target = entry_price + (2.0 * risk_per_share)
         
         trades_to_execute.append({
             "ticker": ticker,
             "entry_price": entry_price,
             "quantity": qty,
-            "initial_sl": initial_sl,
-            "target": target,
-            "cost": total_cost
+            "initial_sl": round(initial_sl, 2),
+            "target": round(target, 2),
+            "cost": round(total_cost, 2),
+            "sector": candidate_sector,
+            "atr_14": round(atr_14, 2) if atr_14 else 0.0
         })
         
+        # Update trackers
         remaining_cash -= total_cost
         open_value += total_cost
         buy_count += 1
-        logs.append(f"Prepared trade: Buy {qty} shares of {ticker} @ {entry_price:.2f} (SL: {initial_sl:.2f}, Target: {target:.2f}, Cost: {total_cost:.2f})")
+        sector_counts[candidate_sector] = sector_counts.get(candidate_sector, 0) + 1
+        
+        sl_pct = ((entry_price - initial_sl) / entry_price) * 100.0
+        logs.append(
+            f"Prepared trade: Buy {qty} shares of {ticker} ({candidate_sector}) @ {entry_price:.2f} "
+            f"(SL: {initial_sl:.2f} [-{sl_pct:.2f}%], Target: {target:.2f}, Cost: ₹{total_cost:,.2f})"
+        )
         
     return {
         "trades_to_execute": trades_to_execute,
@@ -295,7 +332,7 @@ def format_scan_report(state: Dict[str, Any]) -> str:
             sync_logs.append(log)
             
     report = []
-    report.append(f"📊 **NSE Swing Trading Scan Report**")
+    report.append(f"📊 **NSE Swing Trading Scan Report (System #2 - Strategy v2)**")
     report.append(f"📅 *Date: {date_str} | Time: {time_str}*")
     report.append(f"📡 *Data Engine: {source_badge}*")
     report.append("")
@@ -322,8 +359,12 @@ def format_scan_report(state: Dict[str, Any]) -> str:
         for idx, c in enumerate(candidates, 1):
             comp_name = screener.get_company_name(c['ticker'])
             sym = c['ticker'].replace(".NS", "")
-            report.append(f"{idx}. 🏢 **{comp_name}** (`{sym}`)")
-            report.append(f"   💵 Price: ₹{c['close']:.2f} | 📊 Vol Ratio: {c['volume_ratio']:.2f}x | ⚡ RSI(14): {c.get('rsi_14', 0.0):.1f}")
+            sector = c.get('sector') or screener.get_stock_sector(c['ticker'])
+            report.append(f"{idx}. 🏢 **{comp_name}** (`{sym}`) — *{sector}*")
+            report.append(
+                f"   💵 Price: ₹{c['close']:.2f} | 📊 Vol Ratio: {c['volume_ratio']:.2f}x | "
+                f"⚡ RSI(14): {c.get('rsi_14', 0.0):.1f} | 📏 ATR(14): ₹{c.get('atr_14', 0.0):.2f}"
+            )
     else:
         report.append("• No new breakout candidates found.")
     report.append("")
@@ -334,8 +375,12 @@ def format_scan_report(state: Dict[str, Any]) -> str:
         for idx, t in enumerate(trades, 1):
             comp_name = screener.get_company_name(t['ticker'])
             sym = t['ticker'].replace(".NS", "")
-            report.append(f"{idx}. 🏢 **{comp_name}** (`{sym}`)")
-            report.append(f"   📦 Qty: {t['quantity']} | 🏷️ Entry: ₹{t['entry_price']:.2f} | 🛡️ SL: ₹{t['initial_sl']:.2f} | 🎯 Target: ₹{t['target']:.2f}")
+            sector = t.get('sector') or screener.get_stock_sector(t['ticker'])
+            report.append(f"{idx}. 🏢 **{comp_name}** (`{sym}`) — *{sector}*")
+            report.append(
+                f"   📦 Qty: {t['quantity']} | 🏷️ Entry: ₹{t['entry_price']:.2f} | "
+                f"🛡️ SL (2×ATR): ₹{t['initial_sl']:.2f} | 🎯 Target (1:2): ₹{t['target']:.2f}"
+            )
     else:
         report.append("• No new trades executed.")
     report.append("")

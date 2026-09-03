@@ -49,15 +49,17 @@ graph TD
    * **AI News Sentiment Guardrail (Macro):** Queries news for `"Nifty 50 Index India"` and calls **Gemini 3.6-flash**. If macro sentiment is **NEGATIVE** (e.g., market-wide selloff, geopolitical panic), disables all new breakout entries for the day and logs a clear warning notice.
    * Identifies quantitative breakout candidates meeting all 3 criteria:
      1. **Price Breakout:** Today's Close > Today's 20 SMA AND Yesterday's Close <= Yesterday's 20 SMA.
-     2. **Volume Confirmation:** Today's Volume > 2.0 * 20-day Volume SMA.
+     2. **Volume Confirmation (v2):** Today's Volume > 2.5 * 20-day Volume SMA (> 250% breakout threshold to cut noisy signals).
      3. **RSI Filter:** Today's 14-period RSI (Wilder's smoothed) is between 50 and 70 (inclusive).
+   * Calculates 14-period Wilder ATR and initial Stop Loss at **2× ATR(14) below entry** (no fixed clamp).
    * For qualifying breakout candidates, verifies individual stock news sentiment; discards candidates with **NEGATIVE** sentiment.
 
 3. **`Calculate Sizing Node` (Risk Management & Exposure Guardrails):**
-   * Enforces strict **1% Risk-per-Trade sizing**:
-     $$\text{Quantity} = \left\lfloor \frac{\text{Total Portfolio Value} \times 0.01}{\text{Entry Price} - \text{Initial SL}} \right\rfloor$$
+   * Enforces strict **1.5% Risk-per-Trade sizing (v2)**:
+     $$\text{Quantity} = \left\lfloor \frac{\text{Total Portfolio Value} \times 0.015}{2 \times \text{ATR}(14)} \right\rfloor$$
+   * **Sector Concentration Limit (v2):** Restricts active holdings to a **maximum of 3 open positions per sector** to cap correlated exposure when breakouts cluster.
    * **Double Buy Blocker:** Rejects candidates that already exist as active `OPEN` positions in Google Sheets.
-   * **Stop Loss Distance Validation:** Verifies that the initial Stop Loss is between **3% and 15%** of the Entry Price (discards noise-prone tight stops and high-risk wide stops).
+   * **Volatility-Adaptive Stop Loss (v2):** Sets stop loss to `Entry Price - 2 * ATR(14)` with no fixed clamp, adapting to each stock's volatility profile.
    * **90% Max Portfolio Allocation (10% Cash Buffer):** Limits total open position value to **90% of total portfolio value**, scaling down purchase quantities or skipping entries if cash is insufficient.
    * **Daily Purchase Limit:** Limits new entries to a **maximum of 3 buys per day**, prioritizing the candidates with the highest volume breakout ratios first.
 
@@ -94,7 +96,7 @@ The database is hosted on Google Sheets under the spreadsheet name **`NSE_Swing_
 | :--- | :--- | :--- |
 | `Total Portfolio Value` | Float (e.g. `1000000.00`) | Cash Balance + Current Value of Open Positions |
 | `Cash Balance` | Float (e.g. `1000000.00`) | Liquid unallocated cash available for trading |
-| `Risk Percent` | Float (`0.01`) | Risk percentage per trade (1%) |
+| `Risk Percent` | Float (`0.015`) | Risk percentage per trade (1.5% in Strategy v2) |
 | `Initial Capital` | Float (`1000000.00`) | Capital baseline for CAGR & XIRR calculations |
 
 ### Worksheet 3: `"TelegramChats"` (1 Column)
@@ -110,10 +112,10 @@ The database is hosted on Google Sheets under the spreadsheet name **`NSE_Swing_
 | :--- | :--- | :--- | :--- |
 | **DhanHQ Fallback Engine** | Data Feed | Automatic fallback to `yfinance` if credentials expire or network times out | Prevents bot crashes & downtime |
 | **Double Buy Blocker** | Portfolio | Checks database and rejects duplicate ticker purchases | Prevents single-stock overexposure |
+| **Sector Concentration Limit** | Portfolio | Max **3 open positions per sector** | Caps correlated systemic risk when sector breakouts cluster |
 | **Max Portfolio Allocation** | Portfolio | Restricts open holdings to **90% of total portfolio value** | Guarantees **minimum 10% cash buffer** |
 | **Daily Purchase Limit** | Sizer | Maximum **3 breakout buys** per scan (highest volume ratio first) | Prevents capital exhaustion on bull runs |
-| **SL Tightness Guard** | Sizer | Rejects entries where Stop Loss distance is **< 3%** | Prevents premature stops from daily noise |
-| **SL Bloat Guard** | Sizer | Rejects entries where Stop Loss distance is **> 15%** | Discards bloated, high-risk trades |
+| **Volatility-Adaptive Stop Loss** | Sizer | Stop loss set at **2× ATR(14) below entry** (no fixed clamp) | Sizes stops to actual volatility, cutting avg loss |
 | **Penny Stock Filter** | Screener | Discards stocks priced **< ₹20** | Filters micro-cap pump-and-dump stocks |
 | **Liquidity Filter** | Screener | Discards stocks with 20-day Volume SMA **< 50,000 shares** | Eliminates low-liquidity slippage traps |
 | **Google Sheets 429 Retry** | Database | 2-second exponential sleep retry on `429 Too Many Requests` | Prevents quota exhaustion crashes |
@@ -188,32 +190,35 @@ Build a complete, production-grade NSE Swing Trading & Portfolio Manager in Pyth
 - `dhan_client.py`: Integrates DhanHQ API ('dhanhq'). Downloads and caches the Dhan NSE Scrip Master CSV ('https://images.dhan.co/api-data/api-scrip-master.csv') in memory to map symbols (e.g. 'RELIANCE' -> 2885). Provides get_dhan_ltp(tickers) for zero-latency live quotes with graceful fallback to yfinance if unconfigured.
 - `sentiment_analyzer.py`: Connects to Google News RSS search feed for a ticker or macro index, parses XML for the top 5 recent headlines, and calls Gemini model "gemini-3.6-flash" to return 'POSITIVE', 'NEUTRAL', or 'NEGATIVE' sentiment.
 - `screener.py`: Fetches Nifty 50 symbols from NSE, downloads 60d daily historical data in parallel via yfinance, and filters for breakouts. Includes official Company Name mappings (e.g. 'HCL Technologies Ltd.' for 'HCLTECH.NS'). Checks macro and stock-specific news sentiment before qualifying candidates. Filters out penny stocks (Price < 20) and low-volume stocks (Vol SMA 20 < 50,000).
-- `portfolio_manager.py`: Google Sheets database operations. Handles sheets initialization, fetching open/closed positions, registering chat IDs, adding positions, closing positions, calculating performance metrics (Total Return, CAGR, XIRR, PnL %), and syncing live quotes from DhanHQ (with yfinance fallback). Implements retry_gspread for 429 rate limit backoff. In add_position, blocks duplicates and checks Stop Loss percentage (3% - 15%).
-- `trading_graph.py`: Builds a stateful LangGraph workflow representing the trading cycle (Sync Portfolio -> Scan Market -> Position Sizer -> Execute Trades) and formats a text-based scan report with IST timestamps and Company Names. Sizer enforces max 90% portfolio exposure (10% cash buffer), max 3 daily purchases, and minimum 3% SL buffer.
+- `portfolio_manager.py`: Google Sheets database operations. Handles sheets initialization, fetching open/closed positions, registering chat IDs, adding positions, closing positions, calculating performance metrics (Total Return, CAGR, XIRR, PnL %), and syncing live quotes from DhanHQ (with yfinance fallback). Implements retry_gspread for 429 rate limit backoff. In add_position, blocks duplicates, enforces Sector Concentration limit (max 3/sector), and validates stop loss (2x ATR below entry, no fixed clamp).
+- `trading_graph.py`: Builds a stateful LangGraph workflow representing the trading cycle (Sync Portfolio -> Scan Market -> Position Sizer -> Execute Trades) and formats a text-based scan report with IST timestamps, Company Names, and Sector classifications. Sizer enforces 1.5% risk per trade, 2x ATR(14) stop loss, max 3 open per sector, max 90% portfolio exposure (10% cash buffer), and max 3 daily purchases.
 - `bot.py`: Telegram Bot handler and cron scheduler. Implements interactive InlineKeyboardMarkup button menus, native BotCommand menu registration, IST Date/Time timestamps, Company Names, and commands (/menu, /scan, /positions, /history, /summary, /start).
-- `app.py`: Streamlit frontend dashboard displaying KPI cards for Value, Cash, Unrealized/Realized PnL, Total Return, CAGR, XIRR, Closed Trades table with PnL % and win rate metrics, and Plotly charts.
+- `app.py`: Streamlit frontend dashboard displaying KPI cards for Value, Cash, Unrealized/Realized PnL, Total Return, CAGR, XIRR, Closed Trades table with PnL % and win rate metrics, sector concentration charts, and Plotly charts.
 - `start.sh`: Shell script launching `python -u bot.py &` in the background and `streamlit run app.py --server.port $PORT --server.address 0.0.0.0 --server.fileWatcherType none --server.headless true` in the foreground.
 - `Procfile`: Contains `web: sh start.sh`
 - `requirements.txt`: Dependencies (streamlit, python-telegram-bot[all], gspread, google-auth, yfinance, pandas, numpy, langgraph, pytz, plotly, requests, google-generativeai, dhanhq).
 
-2. STRATEGY SPECIFICATIONS:
+2. STRATEGY SPECIFICATIONS (v2 Optimized):
 - Tickers: Nifty 50 Index (fetched from 'https://archives.nseindia.com/content/indices/ind_nifty50list.csv'). Symbol suffix is '.NS'.
 - Entry Conditions:
   - Price breakout: Today's Close > Today's 20 SMA AND Yesterday's Close <= Yesterday's 20 SMA.
-  - Volume breakout: Today's Volume > 2.0 * 20-day Volume SMA.
+  - Volume breakout: Today's Volume > 2.5 * 20-day Volume SMA (> 250% threshold).
   - RSI Filter: Today's 14-period RSI (Wilder's smoothed) must be between 50 and 70 (inclusive).
 - Exit Conditions:
   - Target: Entry Price + 2 * (Entry Price - Initial SL) [1:2 Risk-to-Reward Ratio].
-  - Trailing Stop: 20 EMA. Move Stop Loss up to 20 EMA if 20 EMA > current SL. Exit trade if live price <= Current SL.
+  - Trailing Stop: 20 EMA. Move Stop Loss up to 20 EMA if 20 EMA > current SL. Exit trade if live price <= Current SL (stop only moves up, never down).
+  - AI News Sentiment: If micro news is NEGATIVE, tighten SL to today's low.
 
 3. GOOGLE SHEETS SCHEMAS:
 Create 'NSE_Swing_Trading_Portfolio' with tabs:
 - 'Holdings' (14 Columns): Ticker, Entry Date, Entry Price, Quantity, Entry Value, Initial SL, Current SL, Target, Status, Exit Date, Exit Price, Exit Value, PnL, Exit Reason.
-- 'Account' (2 Columns): Parameter (Total Portfolio Value, Cash Balance, Risk Percent, Initial Capital) and Value.
+- 'Account' (2 Columns): Parameter (Total Portfolio Value, Cash Balance, Risk Percent [0.015], Initial Capital) and Value.
 - 'TelegramChats' (1 Column): ChatID.
 
-4. RISK MANAGEMENT & SIZING:
-- Risk Amount: 1% of 'Total Portfolio Value' from Account sheet.
-- Quantity: Risk Amount / (Entry Price - Initial SL).
+4. RISK MANAGEMENT & SIZING (v2):
+- Risk Amount: 1.5% of 'Total Portfolio Value' from Account sheet.
+- Stop-Loss: 2× ATR(14) below entry, no fixed clamp.
+- Quantity: Risk Amount / (2 * ATR(14)).
+- Sector Concentration Limit: Maximum 3 open positions per sector.
 - Capital Scaling: Ensure max 90% allocation limit; scale down if cash insufficient. Max 3 buys per day.
 ```

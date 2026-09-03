@@ -6,6 +6,7 @@ import yfinance as yf
 import plotly.express as px
 import plotly.graph_objects as go
 import portfolio_manager
+import screener
 
 st.set_page_config(
     page_title="NSE Swing Trading Dashboard",
@@ -146,8 +147,9 @@ if account is not None and holdings is not None:
             else:
                 open_df["Entry Value"] = pd.to_numeric(open_df["Entry Value"], errors='coerce')
                 
+            open_df["Sector"] = open_df["Ticker"].map(screener.get_stock_sector)
             display_columns = [
-                "Ticker", "Entry Date", "Entry Price", "Quantity", "Entry Value",
+                "Ticker", "Sector", "Entry Date", "Entry Price", "Quantity", "Entry Value",
                 "Current Price", "Current SL", "Target", "Unrealized PnL", "PnL %"
             ]
             st.dataframe(
@@ -182,6 +184,7 @@ if account is not None and holdings is not None:
             closed_df["Exit Price"] = pd.to_numeric(closed_df["Exit Price"], errors='coerce')
             closed_df["Quantity"] = pd.to_numeric(closed_df["Quantity"], errors='coerce')
             closed_df["Entry Value"] = closed_df["Entry Price"] * closed_df["Quantity"]
+            closed_df["Sector"] = closed_df["Ticker"].map(screener.get_stock_sector)
             
             if "Exit Value" not in closed_df.columns or closed_df["Exit Value"].isna().all():
                 if "Sell Value" in closed_df.columns and not closed_df["Sell Value"].isna().all():
@@ -208,7 +211,7 @@ if account is not None and holdings is not None:
             st.divider()
             
             display_closed = [
-                "Ticker", "Entry Date", "Entry Price", "Quantity", "Entry Value",
+                "Ticker", "Sector", "Entry Date", "Entry Price", "Quantity", "Entry Value",
                 "Exit Date", "Exit Price", "Exit Value", "PnL", "PnL %", "Exit Reason"
             ]
             st.dataframe(
@@ -243,8 +246,18 @@ if account is not None and holdings is not None:
                 st.info("No open holdings to display allocation chart.")
                 
         with c2:
-            # Bar chart of realized PnL per stock
-            if not closed_df.empty:
+            # Sector Concentration Chart
+            if not open_df.empty:
+                sector_df = open_df.groupby("Sector")["Current Value"].sum().reset_index()
+                fig_sector = px.pie(
+                    sector_df, 
+                    values='Current Value', 
+                    names='Sector', 
+                    title='Sector Concentration (Max 3 Positions / Sector)',
+                    hole=0.4
+                )
+                st.plotly_chart(fig_sector, use_container_width=True)
+            elif not closed_df.empty:
                 grouped_closed = closed_df.groupby("Ticker")["PnL"].sum().reset_index()
                 fig_bar = px.bar(
                     grouped_closed, 
@@ -256,6 +269,6 @@ if account is not None and holdings is not None:
                 )
                 st.plotly_chart(fig_bar, use_container_width=True)
             else:
-                st.info("No closed trades to display performance chart.")
+                st.info("No trades to display performance chart.")
 else:
     st.info("Welcome! Please set up your Google Sheets database and add configurations to load the dashboard.")

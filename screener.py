@@ -71,6 +71,64 @@ COMPANY_NAME_CACHE: Dict[str, str] = {
     "WIPRO.NS": "Wipro Ltd."
 }
 
+# Comprehensive Cache for Nifty 50 Sectors / Industries
+SECTOR_CACHE: Dict[str, str] = {
+    "ADANIENT.NS": "Metals & Mining",
+    "ADANIPORTS.NS": "Services",
+    "APOLLOHOSP.NS": "Healthcare",
+    "ASIANPAINT.NS": "Consumer Durables",
+    "AXISBANK.NS": "Financial Services",
+    "BAJAJ-AUTO.NS": "Automobile and Auto Components",
+    "BAJFINANCE.NS": "Financial Services",
+    "BAJAJFINSV.NS": "Financial Services",
+    "BEL.NS": "Capital Goods",
+    "BHARTIARTL.NS": "Telecommunication",
+    "CIPLA.NS": "Healthcare",
+    "COALINDIA.NS": "Oil Gas & Consumable Fuels",
+    "DRREDDY.NS": "Healthcare",
+    "EICHERMOT.NS": "Automobile and Auto Components",
+    "ETERNAL.NS": "Consumer Services",
+    "GRASIM.NS": "Construction Materials",
+    "HCLTECH.NS": "Information Technology",
+    "HDFCBANK.NS": "Financial Services",
+    "HDFCLIFE.NS": "Financial Services",
+    "HINDALCO.NS": "Metals & Mining",
+    "HINDUNILVR.NS": "Fast Moving Consumer Goods",
+    "ICICIBANK.NS": "Financial Services",
+    "INDIGO.NS": "Services",
+    "INDUSINDBK.NS": "Financial Services",
+    "INFY.NS": "Information Technology",
+    "ITC.NS": "Fast Moving Consumer Goods",
+    "JIOFIN.NS": "Financial Services",
+    "JSWSTEEL.NS": "Metals & Mining",
+    "KOTAKBANK.NS": "Financial Services",
+    "LICI.NS": "Financial Services",
+    "LT.NS": "Construction",
+    "LTIM.NS": "Information Technology",
+    "M&M.NS": "Automobile and Auto Components",
+    "MARUTI.NS": "Automobile and Auto Components",
+    "MAXHEALTH.NS": "Healthcare",
+    "NESTLEIND.NS": "Fast Moving Consumer Goods",
+    "NTPC.NS": "Power",
+    "ONGC.NS": "Oil Gas & Consumable Fuels",
+    "POWERGRID.NS": "Power",
+    "RELIANCE.NS": "Oil Gas & Consumable Fuels",
+    "SBILIFE.NS": "Financial Services",
+    "SBIN.NS": "Financial Services",
+    "SHRIRAMFIN.NS": "Financial Services",
+    "SUNPHARMA.NS": "Healthcare",
+    "TATACONSUM.NS": "Fast Moving Consumer Goods",
+    "TATAMOTORS.NS": "Automobile and Auto Components",
+    "TATASTEEL.NS": "Metals & Mining",
+    "TCS.NS": "Information Technology",
+    "TECHM.NS": "Information Technology",
+    "TITAN.NS": "Consumer Durables",
+    "TMPV.NS": "Automobile and Auto Components",
+    "TRENT.NS": "Consumer Services",
+    "ULTRACEMCO.NS": "Construction Materials",
+    "WIPRO.NS": "Information Technology"
+}
+
 def get_company_name(ticker: str) -> str:
     """
     Returns the official company name for an NSE ticker symbol.
@@ -79,6 +137,15 @@ def get_company_name(ticker: str) -> str:
     if not sym.endswith(".NS"):
         sym = f"{sym}.NS"
     return COMPANY_NAME_CACHE.get(sym, sym.replace(".NS", ""))
+
+def get_stock_sector(ticker: str) -> str:
+    """
+    Returns the official industry/sector classification for an NSE ticker symbol.
+    """
+    sym = ticker.strip().upper()
+    if not sym.endswith(".NS"):
+        sym = f"{sym}.NS"
+    return SECTOR_CACHE.get(sym, "Diversified")
 
 def get_nifty_250_tickers() -> List[str]:
     """
@@ -93,12 +160,16 @@ def get_nifty_250_tickers() -> List[str]:
         if response.status_code == 200:
             df = pd.read_csv(io.StringIO(response.text))
             if 'Symbol' in df.columns:
-                if 'Company Name' in df.columns:
-                    for _, row in df.iterrows():
-                        s = str(row['Symbol']).strip().upper()
-                        c = str(row['Company Name']).strip()
-                        if s and c:
-                            COMPANY_NAME_CACHE[f"{s}.NS"] = c
+                for _, row in df.iterrows():
+                    s = str(row['Symbol']).strip().upper()
+                    c = str(row['Company Name']).strip() if 'Company Name' in df.columns else ""
+                    ind = str(row['Industry']).strip() if 'Industry' in df.columns else ""
+                    if s:
+                        ticker_ns = f"{s}.NS"
+                        if c:
+                            COMPANY_NAME_CACHE[ticker_ns] = c
+                        if ind:
+                            SECTOR_CACHE[ticker_ns] = ind
                             
                 symbols = df['Symbol'].tolist()
                 # Format for yfinance
@@ -135,13 +206,31 @@ def calculate_rsi(series: pd.Series, period: int = 14) -> pd.Series:
     rsi = 100 - (100 / (1 + rs))
     return rsi
 
+def calculate_atr(df: pd.DataFrame, period: int = 14) -> pd.Series:
+    """
+    Calculates the Average True Range (ATR) using Wilder's smoothing technique.
+    """
+    high = df['High']
+    low = df['Low']
+    prev_close = df['Close'].shift(1)
+    
+    tr1 = high - low
+    tr2 = (high - prev_close).abs()
+    tr3 = (low - prev_close).abs()
+    
+    tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
+    atr = tr.ewm(alpha=1/period, adjust=False).mean()
+    return atr
+
 def screen_stocks(tickers: List[str], logs: List[str] = None) -> List[Dict[str, Any]]:
     """
-    Screens the list of tickers for a 20 DMA Breakout with Volume and RSI confirmation:
+    Screens the list of tickers for Strategy v2:
     1. Today's close > Today's 20 DMA
     2. Yesterday's close <= Yesterday's 20 DMA
-    3. Today's volume > 2.0 * 20-day average volume
+    3. Today's volume > 2.5 * 20-day average volume (> 250% breakout threshold)
     4. 14-day RSI is between 50 and 70 (bullish momentum but not overbought)
+    5. Initial SL sized to 2 * ATR(14) below entry (no fixed clamp)
+    6. Sector mapped for portfolio concentration limits (Max 3/sector)
     """
     if logs is None:
         logs = []
@@ -159,7 +248,7 @@ def screen_stocks(tickers: List[str], logs: List[str] = None) -> List[Dict[str, 
     breakout_candidates = []
     
     # Download data in batches to be fast
-    # Period 60d is sufficient to calculate 20 DMA (and 20 EMA) and 14-day RSI
+    # Period 60d is sufficient to calculate 20 DMA (and 20 EMA), 14-day RSI, and 14-day ATR
     print(f"Downloading historical data for {len(tickers)} tickers...")
     try:
         data = yf.download(
@@ -188,14 +277,18 @@ def screen_stocks(tickers: List[str], logs: List[str] = None) -> List[Dict[str, 
             if len(df) < 25:
                 continue
             
-            # Calculate daily moving averages & RSI
+            # Calculate daily moving averages, RSI, and ATR(14)
             df['20_SMA'] = df['Close'].rolling(window=20).mean()
             df['20_EMA'] = df['Close'].ewm(span=20, adjust=False).mean()
             df['Vol_SMA_20'] = df['Volume'].rolling(window=20).mean()
             df['RSI_14'] = calculate_rsi(df['Close'], 14)
+            df['ATR_14'] = calculate_atr(df, 14)
             
             # Check for NaN in indicators
-            if df['20_SMA'].isna().iloc[-1] or df['Vol_SMA_20'].isna().iloc[-1] or df['RSI_14'].isna().iloc[-1]:
+            if (df['20_SMA'].isna().iloc[-1] or 
+                df['Vol_SMA_20'].isna().iloc[-1] or 
+                df['RSI_14'].isna().iloc[-1] or 
+                df['ATR_14'].isna().iloc[-1]):
                 continue
                 
             # Current values (last row)
@@ -205,6 +298,8 @@ def screen_stocks(tickers: List[str], logs: List[str] = None) -> List[Dict[str, 
             ema_today = df['20_EMA'].iloc[-1]
             vol_sma_today = df['Vol_SMA_20'].iloc[-1]
             rsi_today = df['RSI_14'].iloc[-1]
+            atr_today = df['ATR_14'].iloc[-1]
+            
             # Data validation guardrails: block penny stocks (< Rs 20) and low volume (< 50,000 shares)
             if close_today < 20.0:
                 continue
@@ -214,9 +309,12 @@ def screen_stocks(tickers: List[str], logs: List[str] = None) -> List[Dict[str, 
             close_yesterday = df['Close'].iloc[-2]
             sma_yesterday = df['20_SMA'].iloc[-2]
             
-            # Conditions
+            # Conditions for Strategy v2:
+            # 1. Price Breakout over 20 SMA
             price_breakout = (close_yesterday <= sma_yesterday) and (close_today > sma_today)
-            volume_confirmed = vol_today > (2.0 * vol_sma_today)
+            # 2. Volume threshold upgraded to > 2.5x (250%) of 20-day avg volume
+            volume_confirmed = vol_today > (2.5 * vol_sma_today)
+            # 3. 14-period RSI between 50 and 70
             rsi_confirmed = 50 <= rsi_today <= 70
             
             if price_breakout and volume_confirmed and rsi_confirmed:
@@ -229,6 +327,12 @@ def screen_stocks(tickers: List[str], logs: List[str] = None) -> List[Dict[str, 
                     logs.append(msg)
                     continue
                     
+                # v2 Stop-loss: 2x ATR(14) below entry, no fixed clamp
+                initial_sl = float(close_today - (2.0 * atr_today))
+                risk_per_share = float(2.0 * atr_today)
+                target = float(close_today + (2.0 * risk_per_share)) # 1:2 Risk to Reward
+                sector = get_stock_sector(ticker)
+                
                 breakout_candidates.append({
                     "ticker": ticker,
                     "close": float(close_today),
@@ -237,7 +341,11 @@ def screen_stocks(tickers: List[str], logs: List[str] = None) -> List[Dict[str, 
                     "sma_20": float(sma_today),
                     "ema_20": float(ema_today),
                     "volume_ratio": float(vol_today / vol_sma_today),
-                    "rsi_14": float(rsi_today)
+                    "rsi_14": float(rsi_today),
+                    "atr_14": float(atr_today),
+                    "initial_sl": initial_sl,
+                    "target": target,
+                    "sector": sector
                 })
         except Exception as e:
             # Silently catch individual ticker errors
