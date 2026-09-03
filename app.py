@@ -1,4 +1,21 @@
 import os
+# Auto-load .env if available
+def _load_env():
+    env_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+    if os.path.exists(env_file):
+        try:
+            from dotenv import load_dotenv
+            load_dotenv(env_file)
+        except Exception:
+            with open(env_file, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith("#") and "=" in line:
+                        k, v = line.split("=", 1)
+                        if k.strip() not in os.environ:
+                            os.environ[k.strip()] = v.strip().strip("'").strip('"')
+_load_env()
+
 import streamlit as st
 import gc
 import pandas as pd
@@ -8,14 +25,14 @@ import plotly.graph_objects as go
 import portfolio_manager
 
 st.set_page_config(
-    page_title="NSE Swing Trading Dashboard",
+    page_title="NSE Swing Trading Dashboard #1 (Classic Breakout)",
     page_icon="📈",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-st.title("📈 NSE Multi-Agent Swing Trading Dashboard")
-st.markdown("Automated 20 DMA Breakout System for Nifty 50 Universe")
+st.title("📈 NSE Swing Trading Dashboard (Project #1: Classic Breakout)")
+st.markdown("Automated Quantitative System: 20-SMA Breakout • >2.0x Volume • Trailing 20-EMA • 1.0% Risk")
 
 # Refresh Button
 if st.sidebar.button("🔄 Sync & Refresh Portfolio"):

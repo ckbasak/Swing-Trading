@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>NSE Swing Trading - Trade Candlestick Analysis</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    .candlestick-wick { stroke-width: 1.5; }
+    .candle-green { fill: #10B981; stroke: #059669; }
+    .candle-red { fill: #EF4444; stroke: #DC2626; }
+    .level-entry { stroke: #10B981; stroke-dasharray: 4 3; stroke-width: 2; }
+    .level-sl { stroke: #EF4444; stroke-dasharray: 4 3; stroke-width: 2; }
+    .level-target { stroke: #3B82F6; stroke-dasharray: 4 3; stroke-width: 2; }
+    .line-sma { stroke: #F59E0B; stroke-width: 1.5; fill: none; }
+    .line-ema { stroke: #8B5CF6; stroke-width: 1.5; fill: none; }
+  </style>
+</head>
+<body class="bg-[var(--background)] text-[var(--foreground)] antialiased p-4 md:p-6">
+
+  <!-- Header -->
+  <div class="max-w-7xl mx-auto mb-6">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[var(--card)] p-5 rounded-2xl border border-[var(--border)] shadow-sm">
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="text-2xl">📊</span>
+          <h1 class="text-xl font-bold tracking-tight text-[var(--foreground)]">Trade Candlestick Analysis (Last 1–2 Weeks)</h1>
+        </div>
+        <p class="text-sm text-[var(--muted-foreground)] mt-1">
+          Detailed price action, 20 SMA breakout entries, 20 EMA trailing stops, and exit analysis for all portfolio trades.
+        </p>
+      </div>
+      
+      <!-- Filter Tabs -->
+      <div class="flex items-center gap-2 bg-[var(--background)] p-1 rounded-xl border border-[var(--border)]">
+        <button onclick="setFilter('ALL')" id="tab-ALL" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] transition">
+          All Trades (11)
+        </button>
+        <button onclick="setFilter('OPEN')" id="tab-OPEN" class="px-3 py-1.5 text-xs font-semibold rounded-lg text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition">
+          🟢 Open (2)
+        </button>
+        <button onclick="setFilter('CLOSED')" id="tab-CLOSED" class="px-3 py-1.5 text-xs font-semibold rounded-lg text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition">
+          ⚪ Closed (9)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content Layout -->
+  <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
+    
+    <!-- Sidebar: Stock Selector List -->
+    <div class="lg:col-span-4 flex flex-col gap-3 max-h-[800px] overflow-y-auto pr-1" id="stock-list-container">
+      <!-- Generated via JS -->
+    </div>
+    
+    <!-- Main Display: Candlestick Chart & Details -->
+    <div class="lg:col-span-8 flex flex-col gap-4">
+      <div class="bg-[var(--card)] p-5 rounded-2xl border border-[var(--border)] shadow-sm" id="chart-card">
+        <!-- Stock Details Header -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-[var(--border)] pb-4 mb-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <span id="stock-status-badge" class="px-2.5 py-0.5 text-xs font-bold rounded-full"></span>
+              <h2 id="stock-title" class="text-lg font-bold text-[var(--foreground)]"></h2>
+            </div>
+            <p id="stock-ticker-sub" class="text-xs text-[var(--muted-foreground)] mt-0.5"></p>
+          </div>
+          <div id="stock-pnl-badge" class="text-right">
+            <!-- PnL Header -->
+          </div>
+        </div>
+
+        <!-- Metrics Grid -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+          <div class="bg-[var(--background)] p-3 rounded-xl border border-[var(--border)]">
+            <span class="text-[10px] uppercase font-bold text-[var(--muted-foreground)] tracking-wider">Entry Price</span>
+            <div id="metric-entry" class="text-sm font-bold text-[var(--foreground)] mt-0.5"></div>
+            <div id="metric-entry-date" class="text-[10px] text-[var(--muted-foreground)]"></div>
+          </div>
+          <div class="bg-[var(--background)] p-3 rounded-xl border border-[var(--border)]">
+            <span class="text-[10px] uppercase font-bold text-[var(--muted-foreground)] tracking-wider">Stop Loss (SL)</span>
+            <div id="metric-sl" class="text-sm font-bold text-red-500 mt-0.5"></div>
+            <div id="metric-sl-type" class="text-[10px] text-[var(--muted-foreground)]"></div>
+          </div>
+          <div class="bg-[var(--background)] p-3 rounded-xl border border-[var(--border)]">
+            <span class="text-[10px] uppercase font-bold text-[var(--muted-foreground)] tracking-wider">Target (1:2)</span>
+            <div id="metric-target" class="text-sm font-bold text-blue-500 mt-0.5"></div>
+            <div class="text-[10px] text-[var(--muted-foreground)]">Fixed 1:2 R:R</div>
+          </div>
+          <div class="bg-[var(--background)] p-3 rounded-xl border border-[var(--border)]">
+            <span class="text-[10px] uppercase font-bold text-[var(--muted-foreground)] tracking-wider">Exit / Status</span>
+            <div id="metric-exit" class="text-sm font-bold mt-0.5"></div>
+            <div id="metric-exit-reason" class="text-[10px] text-[var(--muted-foreground)]"></div>
+          </div>
+        </div>
+
+        <!-- Chart Container -->
+        <div class="w-full bg-[var(--background)] p-4 rounded-xl border border-[var(--border)] relative">
+          <div class="flex items-center justify-between text-xs mb-3 text-[var(--muted-foreground)]">
+            <div class="flex items-center gap-3">
+              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 bg-emerald-500 rounded-sm"></span> Bullish Candle</span>
+              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 bg-rose-500 rounded-sm"></span> Bearish Candle</span>
+              <span class="flex items-center gap-1"><span class="w-3 h-0.5 bg-amber-500 inline-block"></span> 20 SMA</span>
+              <span class="flex items-center gap-1"><span class="w-3 h-0.5 bg-purple-500 inline-block"></span> 20 EMA</span>
+            </div>
+            <div class="text-[11px]">Hover over candle to inspect OHLC</div>
+          </div>
+
+          <!-- SVG Candlestick Chart Area -->
+          <div id="svg-chart-wrapper" class="w-full overflow-x-auto">
+            <!-- SVG rendered here -->
+          </div>
+
+          <!-- Tooltip Popup -->
+          <div id="chart-tooltip" class="hidden absolute bg-[var(--card)] border border-[var(--border)] rounded-lg p-2.5 text-xs shadow-lg pointer-events-none z-10">
+          </div>
+        </div>
+
+        <!-- Trade Narrative / Why SL Hit Explainer -->
+        <div class="mt-4 p-4 rounded-xl bg-[var(--background)] border border-[var(--border)]">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-[var(--muted-foreground)] mb-1">Trade Execution & Stop Loss Analysis</h4>
+          <p id="trade-narrative" class="text-xs text-[var(--foreground)] leading-relaxed"></p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const tradesData = [{"id": 1, "ticker": "MEDANTA.NS", "symbol": "MEDANTA", "company_name": "MEDANTA", "status": "OPEN", "entry_date": "2026-08-27", "entry_price": 1458.900024, "qty": 30, "initial_sl": 1425.571118, "current_sl": 1437.27, "target": 1525.557837, "exit_date": "", "exit_price": null, "exit_reason": "", "pnl": 0.0, "pnl_pct": 0.0, "candles": [{"date": "2026-08-18", "open": 1415.7, "high": 1447.0, "low": 1410.9, "close": 1442.7, "volume": 309148, "sma20": 1417.43, "ema20": 1412.3}, {"date": "2026-08-19", "open": 1442.9, "high": 1445.0, "low": 1412.0, "close": 1417.2, "volume": 80452, "sma20": 1420.64, "ema20": 1412.76}, {"date": "2026-08-20", "open": 1420.0, "high": 1429.6, "low": 1401.0, "close": 1408.2, "volume": 120892, "sma20": 1422.17, "ema20": 1412.33}, {"date": "2026-08-21", "open": 1408.2, "high": 1414.7, "low": 1401.0, "close": 1409.7, "volume": 117802, "sma20": 1424.13, "ema20": 1412.08}, {"date": "2026-08-24", "open": 1400.1, "high": 1411.1, "low": 1395.7, "close": 1405.5, "volume": 92480, "sma20": 1424.07, "ema20": 1411.45}, {"date": "2026-08-25", "open": 1402.0, "high": 1414.0, "low": 1393.0, "close": 1404.4, "volume": 69432, "sma20": 1424.25, "ema20": 1410.78}, {"date": "2026-08-26", "open": 1410.0, "high": 1476.0, "low": 1410.0, "close": 1458.9, "volume": 606668, "sma20": 1425.57, "ema20": 1415.36}, {"date": "2026-08-27", "open": 1466.2, "high": 1544.0, "low": 1455.2, "close": 1508.9, "volume": 1109587, "sma20": 1430.22, "ema20": 1424.27}, {"date": "2026-08-28", "open": 1520.5, "high": 1531.4, "low": 1462.1, "close": 1472.2, "volume": 404295, "sma20": 1433.58, "ema20": 1428.84}, {"date": "2026-08-31", "open": 1465.0, "high": 1490.4, "low": 1456.8, "close": 1479.7, "volume": 246468, "sma20": 1435.34, "ema20": 1433.68}, {"date": "2026-09-01", "open": 1480.9, "high": 1500.1, "low": 1448.2, "close": 1458.1, "volume": 256307, "sma20": 1436.52, "ema20": 1436.01}, {"date": "2026-09-02", "open": 1455.0, "high": 1482.6, "low": 1440.0, "close": 1444.9, "volume": 224420, "sma20": 1438.27, "ema20": 1436.85}]}, {"id": 2, "ticker": "DALBHARAT.NS", "symbol": "DALBHARAT", "company_name": "DALBHARAT", "status": "CLOSED", "entry_date": "2026-08-27", "entry_price": 1898.0, "qty": 18, "initial_sl": 1843.009991, "current_sl": 1848.81, "target": 2007.980017, "exit_date": "2026-08-29", "exit_price": 1845.300049, "exit_reason": "Stop Loss Hit", "pnl": -948.6, "pnl_pct": -2.78, "candles": [{"date": "2026-08-18", "open": 1850.0, "high": 1858.4, "low": 1831.6, "close": 1837.1, "volume": 246659, "sma20": 1831.18, "ema20": 1827.72}, {"date": "2026-08-19", "open": 1837.1, "high": 1875.0, "low": 1825.0, "close": 1875.0, "volume": 276847, "sma20": 1831.72, "ema20": 1832.23}, {"date": "2026-08-20", "open": 1875.0, "high": 1925.0, "low": 1864.0, "close": 1897.0, "volume": 582875, "sma20": 1833.83, "ema20": 1838.4}, {"date": "2026-08-21", "open": 1897.0, "high": 1912.5, "low": 1871.9, "close": 1880.0, "volume": 339192, "sma20": 1837.29, "ema20": 1842.36}, {"date": "2026-08-24", "open": 1881.9, "high": 1905.1, "low": 1845.9, "close": 1853.0, "volume": 361388, "sma20": 1838.62, "ema20": 1843.37}, {"date": "2026-08-25", "open": 1854.8, "high": 1854.8, "low": 1780.1, "close": 1824.0, "volume": 513247, "sma20": 1839.26, "ema20": 1841.53}, {"date": "2026-08-26", "open": 1815.0, "high": 1913.0, "low": 1808.0, "close": 1898.0, "volume": 332647, "sma20": 1843.01, "ema20": 1846.91}, {"date": "2026-08-27", "open": 1874.9, "high": 1905.0, "low": 1859.2, "close": 1876.2, "volume": 211084, "sma20": 1847.11, "ema20": 1849.7}, {"date": "2026-08-28", "open": 1876.2, "high": 1876.2, "low": 1832.3, "close": 1845.3, "volume": 72320, "sma20": 1849.39, "ema20": 1849.28}, {"date": "2026-08-31", "open": 1847.8, "high": 1897.8, "low": 1795.0, "close": 1856.2, "volume": 2142193, "sma20": 1849.97, "ema20": 1849.94}, {"date": "2026-09-01", "open": 1886.0, "high": 1886.0, "low": 1795.0, "close": 1806.6, "volume": 85376, "sma20": 1848.95, "ema20": 1845.81}, {"date": "2026-09-02", "open": 1801.9, "high": 1802.0, "low": 1760.2, "close": 1773.1, "volume": 58870, "sma20": 1845.7, "ema20": 1838.88}]}, {"id": 3, "ticker": "ADANIPOWER.NS", "symbol": "ADANIPOWER", "company_name": "ADANIPOWER", "status": "CLOSED", "entry_date": "2026-08-29", "entry_price": 215.0, "qty": 136, "initial_sl": 207.6949997, "current_sl": 209.02, "target": 229.6100006, "exit_date": "2026-08-31", "exit_price": 208.7100067, "exit_reason": "Stop Loss Hit", "pnl": -855.44, "pnl_pct": -2.93, "candles": [{"date": "2026-08-18", "open": 203.8, "high": 208.67, "low": 203.57, "close": 205.58, "volume": 19181716, "sma20": 209.58, "ema20": 209.73}, {"date": "2026-08-19", "open": 205.9, "high": 205.9, "low": 202.69, "close": 204.02, "volume": 10553545, "sma20": 208.94, "ema20": 209.19}, {"date": "2026-08-20", "open": 204.5, "high": 205.48, "low": 202.8, "close": 204.0, "volume": 10829931, "sma20": 208.53, "ema20": 208.69}, {"date": "2026-08-21", "open": 203.99, "high": 205.5, "low": 202.83, "close": 205.5, "volume": 10503673, "sma20": 208.12, "ema20": 208.39}, {"date": "2026-08-24", "open": 205.2, "high": 205.6, "low": 202.57, "close": 203.7, "volume": 9498733, "sma20": 207.61, "ema20": 207.94}, {"date": "2026-08-25", "open": 203.06, "high": 206.8, "low": 201.43, "close": 206.33, "volume": 14258939, "sma20": 207.51, "ema20": 207.79}, {"date": "2026-08-26", "open": 206.96, "high": 213.5, "low": 206.57, "close": 207.2, "volume": 23035619, "sma20": 207.39, "ema20": 207.73}, {"date": "2026-08-27", "open": 209.15, "high": 217.4, "low": 207.3, "close": 215.0, "volume": 70024737, "sma20": 207.69, "ema20": 208.43}, {"date": "2026-08-28", "open": 215.92, "high": 216.5, "low": 210.91, "close": 212.63, "volume": 14256352, "sma20": 207.76, "ema20": 208.83}, {"date": "2026-08-31", "open": 212.37, "high": 213.13, "low": 198.0, "close": 198.0, "volume": 53907969, "sma20": 206.98, "ema20": 207.79}, {"date": "2026-09-01", "open": 202.0, "high": 205.79, "low": 201.31, "close": 204.36, "volume": 38032254, "sma20": 206.7, "ema20": 207.47}, {"date": "2026-09-02", "open": 202.59, "high": 207.7, "low": 200.12, "close": 207.7, "volume": 18171438, "sma20": 206.63, "ema20": 207.49}]}, {"id": 4, "ticker": "CGPOWER.NS", "symbol": "CGPOWER", "company_name": "CGPOWER", "status": "CLOSED", "entry_date": "2026-08-29", "entry_price": 897.9000244, "qty": 49, "initial_sl": 877.8524994, "current_sl": 881.63, "target": 937.9950745, "exit_date": "2026-08-31", "exit_price": 880.7000122, "exit_reason": "Stop Loss Hit", "pnl": -842.8, "pnl_pct": -1.92, "candles": [{"date": "2026-08-18", "open": 898.8, "high": 900.0, "low": 889.0, "close": 894.2, "volume": 1568655, "sma20": 873.98, "ema20": 886.02}, {"date": "2026-08-19", "open": 885.85, "high": 886.0, "low": 860.2, "close": 863.05, "volume": 4061889, "sma20": 871.49, "ema20": 883.83}, {"date": "2026-08-20", "open": 868.55, "high": 876.3, "low": 862.65, "close": 876.3, "volume": 2197796, "sma20": 871.11, "ema20": 883.11}, {"date": "2026-08-21", "open": 876.3, "high": 880.95, "low": 865.0, "close": 867.0, "volume": 1311542, "sma20": 871.08, "ema20": 881.58}, {"date": "2026-08-24", "open": 867.0, "high": 877.5, "low": 865.35, "close": 877.5, "volume": 1296211, "sma20": 871.09, "ema20": 881.19}, {"date": "2026-08-25", "open": 873.1, "high": 882.5, "low": 867.0, "close": 878.5, "volume": 1629938, "sma20": 872.81, "ema20": 880.93}, {"date": "2026-08-26", "open": 880.0, "high": 882.5, "low": 865.05, "close": 865.05, "volume": 922161, "sma20": 874.59, "ema20": 879.42}, {"date": "2026-08-27", "open": 871.4, "high": 898.75, "low": 870.2, "close": 897.9, "volume": 5431054, "sma20": 877.85, "ema20": 881.18}, {"date": "2026-08-28", "open": 896.45, "high": 896.45, "low": 878.2, "close": 889.0, "volume": 2230616, "sma20": 879.13, "ema20": 881.93}, {"date": "2026-08-31", "open": 884.15, "high": 916.0, "low": 875.0, "close": 916.0, "volume": 3393030, "sma20": 883.63, "ema20": 885.17}, {"date": "2026-09-01", "open": 901.95, "high": 903.55, "low": 881.6, "close": 885.5, "volume": 2969058, "sma20": 883.9, "ema20": 885.2}, {"date": "2026-09-02", "open": 878.05, "high": 881.4, "low": 870.0, "close": 877.75, "volume": 2060605, "sma20": 883.31, "ema20": 884.49}]}, {"id": 5, "ticker": "ADANIENSOL.NS", "symbol": "ADANIENSOL", "company_name": "ADANIENSOL", "status": "CLOSED", "entry_date": "2026-08-29", "entry_price": 1617.0, "qty": 30, "initial_sl": 1584.66, "current_sl": 1599.01, "target": 1681.68, "exit_date": "2026-08-29", "exit_price": 1581.400024, "exit_reason": "Stop Loss Hit", "pnl": -1068.0, "pnl_pct": -2.2, "candles": [{"date": "2026-08-18", "open": 1589.0, "high": 1630.0, "low": 1583.1, "close": 1603.0, "volume": 2294009, "sma20": 1643.23, "ema20": 1628.13}, {"date": "2026-08-19", "open": 1604.8, "high": 1604.8, "low": 1536.5, "close": 1540.7, "volume": 3477602, "sma20": 1634.05, "ema20": 1619.81}, {"date": "2026-08-20", "open": 1550.0, "high": 1561.0, "low": 1538.6, "close": 1548.5, "volume": 2182920, "sma20": 1627.28, "ema20": 1613.01}, {"date": "2026-08-21", "open": 1556.9, "high": 1559.5, "low": 1527.3, "close": 1541.9, "volume": 2335751, "sma20": 1619.27, "ema20": 1606.24}, {"date": "2026-08-24", "open": 1543.9, "high": 1562.0, "low": 1527.0, "close": 1555.1, "volume": 1718421, "sma20": 1611.85, "ema20": 1601.37}, {"date": "2026-08-25", "open": 1554.9, "high": 1594.5, "low": 1532.0, "close": 1594.5, "volume": 2043772, "sma20": 1609.1, "ema20": 1600.72}, {"date": "2026-08-26", "open": 1617.0, "high": 1637.0, "low": 1570.5, "close": 1570.5, "volume": 3719296, "sma20": 1604.24, "ema20": 1597.84}, {"date": "2026-08-27", "open": 1590.0, "high": 1617.7, "low": 1581.9, "close": 1617.0, "volume": 4514708, "sma20": 1602.14, "ema20": 1599.66}, {"date": "2026-08-28", "open": 1610.0, "high": 1611.9, "low": 1566.9, "close": 1581.4, "volume": 1647674, "sma20": 1598.94, "ema20": 1597.92}, {"date": "2026-08-31", "open": 1589.0, "high": 1592.9, "low": 1417.4, "close": 1417.4, "volume": 35589890, "sma20": 1587.46, "ema20": 1580.73}, {"date": "2026-09-01", "open": 1435.0, "high": 1444.4, "low": 1373.3, "close": 1382.0, "volume": 8161918, "sma20": 1574.26, "ema20": 1561.8}, {"date": "2026-09-02", "open": 1374.6, "high": 1401.0, "low": 1348.0, "close": 1396.6, "volume": 4213663, "sma20": 1561.99, "ema20": 1546.07}]}, {"id": 6, "ticker": "GODREJPROP.NS", "symbol": "GODREJPROP", "company_name": "GODREJPROP", "status": "CLOSED", "entry_date": "2026-08-29", "entry_price": 2069.399902, "qty": 24, "initial_sl": 2028.011904, "current_sl": 2042.82, "target": 2152.175898, "exit_date": "2026-08-31", "exit_price": 2012.300049, "exit_reason": "Stop Loss Hit", "pnl": -1370.4, "pnl_pct": -2.76, "candles": [{"date": "2026-08-18", "open": 2045.1, "high": 2055.2, "low": 1990.1, "close": 1997.4, "volume": 687150, "sma20": 2065.21, "ema20": 2051.81}, {"date": "2026-08-19", "open": 1997.4, "high": 2009.8, "low": 1970.0, "close": 2007.3, "volume": 424483, "sma20": 2062.02, "ema20": 2047.57}, {"date": "2026-08-20", "open": 2011.0, "high": 2041.9, "low": 2001.3, "close": 2020.0, "volume": 285777, "sma20": 2061.46, "ema20": 2044.95}, {"date": "2026-08-21", "open": 2020.0, "high": 2039.8, "low": 2013.2, "close": 2035.0, "volume": 277201, "sma20": 2062.26, "ema20": 2044.0}, {"date": "2026-08-24", "open": 2035.0, "high": 2047.9, "low": 2028.3, "close": 2039.9, "volume": 261818, "sma20": 2060.81, "ema20": 2043.61}, {"date": "2026-08-25", "open": 2035.1, "high": 2049.0, "low": 2011.5, "close": 2049.0, "volume": 384390, "sma20": 2056.43, "ema20": 2044.12}, {"date": "2026-08-26", "open": 2055.0, "high": 2088.5, "low": 2035.1, "close": 2035.1, "volume": 700923, "sma20": 2050.39, "ema20": 2043.26}, {"date": "2026-08-27", "open": 2035.0, "high": 2095.0, "low": 2023.9, "close": 2069.4, "volume": 1142681, "sma20": 2048.31, "ema20": 2045.75}, {"date": "2026-08-28", "open": 2075.4, "high": 2083.3, "low": 2024.5, "close": 2029.1, "volume": 329143, "sma20": 2044.48, "ema20": 2044.17}, {"date": "2026-08-31", "open": 2025.0, "high": 2025.0, "low": 1962.6, "close": 2014.7, "volume": 707158, "sma20": 2040.73, "ema20": 2041.36}, {"date": "2026-09-01", "open": 2023.2, "high": 2023.2, "low": 1965.0, "close": 1978.0, "volume": 329259, "sma20": 2037.95, "ema20": 2035.33}, {"date": "2026-09-02", "open": 1950.0, "high": 1970.7, "low": 1908.9, "close": 1970.7, "volume": 769875, "sma20": 2031.54, "ema20": 2029.17}]}, {"id": 7, "ticker": "BAJAJHFL.NS", "symbol": "BAJAJHFL", "company_name": "BAJAJHFL", "status": "CLOSED", "entry_date": "2026-08-29", "entry_price": 85.29000092, "qty": 585, "initial_sl": 83.5842009, "current_sl": 85.07, "target": 88.70160095, "exit_date": "2026-08-29", "exit_price": 85.0, "exit_reason": "Stop Loss Hit", "pnl": -169.65, "pnl_pct": -0.34, "candles": [{"date": "2026-08-18", "open": 84.58, "high": 84.9, "low": 84.07, "close": 84.36, "volume": 1890650, "sma20": 85.55, "ema20": 85.56}, {"date": "2026-08-19", "open": 84.0, "high": 85.16, "low": 83.85, "close": 85.01, "volume": 2898978, "sma20": 85.53, "ema20": 85.51}, {"date": "2026-08-20", "open": 86.0, "high": 86.82, "low": 85.32, "close": 85.59, "volume": 5039653, "sma20": 85.57, "ema20": 85.52}, {"date": "2026-08-21", "open": 85.99, "high": 85.99, "low": 84.8, "close": 84.85, "volume": 1840929, "sma20": 85.6, "ema20": 85.45}, {"date": "2026-08-24", "open": 84.85, "high": 85.11, "low": 83.96, "close": 84.05, "volume": 3005233, "sma20": 85.53, "ema20": 85.32}, {"date": "2026-08-25", "open": 84.0, "high": 84.33, "low": 83.78, "close": 84.02, "volume": 1822737, "sma20": 85.44, "ema20": 85.2}, {"date": "2026-08-26", "open": 84.07, "high": 84.5, "low": 84.02, "close": 84.07, "volume": 1525563, "sma20": 85.27, "ema20": 85.09}, {"date": "2026-08-27", "open": 84.05, "high": 85.4, "low": 83.9, "close": 85.29, "volume": 4358067, "sma20": 85.21, "ema20": 85.11}, {"date": "2026-08-28", "open": 85.71, "high": 85.79, "low": 84.76, "close": 85.0, "volume": 1693097, "sma20": 85.15, "ema20": 85.1}, {"date": "2026-08-31", "open": 85.0, "high": 85.0, "low": 83.92, "close": 84.02, "volume": 2146707, "sma20": 85.01, "ema20": 84.99}, {"date": "2026-09-01", "open": 84.0, "high": 84.1, "low": 82.6, "close": 82.85, "volume": 3146554, "sma20": 84.8, "ema20": 84.79}, {"date": "2026-09-02", "open": 82.82, "high": 83.06, "low": 81.71, "close": 82.78, "volume": 2271632, "sma20": 84.59, "ema20": 84.6}]}, {"id": 8, "ticker": "KPITTECH.NS", "symbol": "KPITTECH", "company_name": "KPITTECH", "status": "CLOSED", "entry_date": "2026-08-29", "entry_price": 609.4000244, "qty": 81, "initial_sl": 597.2120239, "current_sl": 598.96, "target": 633.7760254, "exit_date": "2026-08-31", "exit_price": 593.5499878, "exit_reason": "Stop Loss Hit", "pnl": -1283.85, "pnl_pct": -2.6, "candles": [{"date": "2026-08-18", "open": 609.0, "high": 609.05, "low": 596.0, "close": 596.65, "volume": 1619307, "sma20": 602.63, "ema20": 601.38}, {"date": "2026-08-19", "open": 602.85, "high": 608.1, "low": 585.5, "close": 589.1, "volume": 1451052, "sma20": 604.57, "ema20": 600.21}, {"date": "2026-08-20", "open": 595.0, "high": 601.25, "low": 590.05, "close": 592.9, "volume": 641737, "sma20": 606.9, "ema20": 599.51}, {"date": "2026-08-21", "open": 592.9, "high": 594.85, "low": 586.05, "close": 589.3, "volume": 904430, "sma20": 607.45, "ema20": 598.54}, {"date": "2026-08-24", "open": 589.35, "high": 595.9, "low": 581.0, "close": 583.1, "volume": 1117937, "sma20": 607.59, "ema20": 597.07}, {"date": "2026-08-25", "open": 583.1, "high": 592.0, "low": 577.0, "close": 592.0, "volume": 1582973, "sma20": 607.32, "ema20": 596.58}, {"date": "2026-08-26", "open": 593.0, "high": 596.2, "low": 587.45, "close": 590.0, "volume": 918198, "sma20": 605.15, "ema20": 595.96}, {"date": "2026-08-27", "open": 589.5, "high": 592.9, "low": 579.65, "close": 588.0, "volume": 1063360, "sma20": 605.31, "ema20": 595.2}, {"date": "2026-08-28", "open": 590.0, "high": 613.45, "low": 589.4, "close": 609.4, "volume": 5637989, "sma20": 606.11, "ema20": 596.55}, {"date": "2026-08-31", "open": 609.4, "high": 610.0, "low": 585.0, "close": 585.0, "volume": 2324629, "sma20": 604.65, "ema20": 595.45}, {"date": "2026-09-01", "open": 585.2, "high": 594.3, "low": 581.0, "close": 590.0, "volume": 1026752, "sma20": 603.14, "ema20": 594.93}, {"date": "2026-09-02", "open": 588.0, "high": 589.9, "low": 579.1, "close": 588.0, "volume": 714958, "sma20": 601.65, "ema20": 594.27}]}, {"id": 9, "ticker": "CONCOR.NS", "symbol": "CONCOR", "company_name": "CONCOR", "status": "CLOSED", "entry_date": "2026-08-29", "entry_price": 516.0, "qty": 96, "initial_sl": 505.68, "current_sl": 511.84, "target": 536.64, "exit_date": "2026-08-31", "exit_price": 510.2999878, "exit_reason": "Stop Loss Hit", "pnl": -547.2, "pnl_pct": -1.1, "candles": [{"date": "2026-08-18", "open": 524.5, "high": 524.85, "low": 517.55, "close": 518.25, "volume": 419489, "sma20": 511.89, "ema20": 511.26}, {"date": "2026-08-19", "open": 518.55, "high": 519.65, "low": 511.55, "close": 514.35, "volume": 724297, "sma20": 513.61, "ema20": 511.55}, {"date": "2026-08-20", "open": 517.2, "high": 524.4, "low": 513.8, "close": 519.0, "volume": 696568, "sma20": 515.61, "ema20": 512.26}, {"date": "2026-08-21", "open": 523.0, "high": 523.0, "low": 512.15, "close": 515.05, "volume": 506883, "sma20": 517.56, "ema20": 512.53}, {"date": "2026-08-24", "open": 515.05, "high": 524.2, "low": 513.05, "close": 516.4, "volume": 1592382, "sma20": 517.93, "ema20": 512.9}, {"date": "2026-08-25", "open": 518.4, "high": 518.4, "low": 511.3, "close": 516.0, "volume": 559738, "sma20": 517.69, "ema20": 513.19}, {"date": "2026-08-26", "open": 515.65, "high": 524.25, "low": 514.75, "close": 517.0, "volume": 2059514, "sma20": 517.33, "ema20": 513.56}, {"date": "2026-08-27", "open": 517.0, "high": 518.0, "low": 493.05, "close": 493.05, "volume": 651195, "sma20": 515.8, "ema20": 511.6}, {"date": "2026-08-28", "open": 502.35, "high": 520.0, "low": 502.35, "close": 516.0, "volume": 4311023, "sma20": 515.41, "ema20": 512.02}, {"date": "2026-08-31", "open": 512.3, "high": 518.0, "low": 507.5, "close": 511.9, "volume": 1393626, "sma20": 514.83, "ema20": 512.01}, {"date": "2026-09-01", "open": 516.9, "high": 518.75, "low": 510.5, "close": 514.0, "volume": 1247573, "sma20": 514.78, "ema20": 512.2}, {"date": "2026-09-02", "open": 510.0, "high": 520.75, "low": 508.25, "close": 510.0, "volume": 2200028, "sma20": 514.46, "ema20": 511.99}]}, {"id": 10, "ticker": "HCLTECH.NS", "symbol": "HCLTECH", "company_name": "HCL Technologies Ltd.", "status": "CLOSED", "entry_date": "2026-09-01", "entry_price": 1351.400024, "qty": 24, "initial_sl": 1310.858024, "current_sl": 1331.5, "target": 1432.484026, "exit_date": "2026-09-02", "exit_price": 1320.699951, "exit_reason": "Stop Loss Hit", "pnl": -736.8, "pnl_pct": -2.27, "candles": [{"date": "2026-08-18", "open": 1318.0, "high": 1320.0, "low": 1292.5, "close": 1298.0, "volume": 3056990, "sma20": 1332.05, "ema20": 1314.99}, {"date": "2026-08-19", "open": 1309.0, "high": 1324.8, "low": 1301.4, "close": 1324.8, "volume": 1693632, "sma20": 1336.42, "ema20": 1315.92}, {"date": "2026-08-20", "open": 1339.7, "high": 1345.3, "low": 1318.4, "close": 1318.4, "volume": 1510868, "sma20": 1340.11, "ema20": 1316.16}, {"date": "2026-08-21", "open": 1319.9, "high": 1321.7, "low": 1302.5, "close": 1302.5, "volume": 1484443, "sma20": 1341.68, "ema20": 1314.86}, {"date": "2026-08-24", "open": 1302.5, "high": 1325.8, "low": 1301.0, "close": 1322.0, "volume": 1091648, "sma20": 1342.99, "ema20": 1315.54}, {"date": "2026-08-25", "open": 1322.0, "high": 1322.9, "low": 1294.4, "close": 1315.8, "volume": 1314934, "sma20": 1342.85, "ema20": 1315.56}, {"date": "2026-08-26", "open": 1319.5, "high": 1323.0, "low": 1296.6, "close": 1298.5, "volume": 834925, "sma20": 1340.56, "ema20": 1313.94}, {"date": "2026-08-27", "open": 1295.0, "high": 1304.7, "low": 1280.0, "close": 1282.0, "volume": 1936771, "sma20": 1337.02, "ema20": 1310.9}, {"date": "2026-08-28", "open": 1290.0, "high": 1334.2, "low": 1290.0, "close": 1316.1, "volume": 3459476, "sma20": 1335.48, "ema20": 1311.39}, {"date": "2026-08-31", "open": 1316.6, "high": 1322.6, "low": 1297.7, "close": 1312.2, "volume": 3125051, "sma20": 1332.24, "ema20": 1311.47}, {"date": "2026-09-01", "open": 1316.1, "high": 1368.0, "low": 1313.1, "close": 1351.4, "volume": 4031856, "sma20": 1331.32, "ema20": 1315.27}, {"date": "2026-09-02", "open": 1340.1, "high": 1349.3, "low": 1317.4, "close": 1331.5, "volume": 2739309, "sma20": 1330.39, "ema20": 1316.82}]}, {"id": 11, "ticker": "COALINDIA.NS", "symbol": "COALINDIA", "company_name": "Coal India Ltd.", "status": "OPEN", "entry_date": "2026-09-02", "entry_price": 416.2999878, "qty": 79, "initial_sl": 403.8109882, "current_sl": 407.69, "target": 441.2779871, "exit_date": "", "exit_price": null, "exit_reason": "", "pnl": 0.0, "pnl_pct": 0.0, "candles": [{"date": "2026-08-18", "open": 408.95, "high": 412.7, "low": 406.75, "close": 406.9, "volume": 7352659, "sma20": 413.44, "ema20": 413.65}, {"date": "2026-08-19", "open": 406.95, "high": 407.6, "low": 397.3, "close": 400.0, "volume": 6030203, "sma20": 412.3, "ema20": 412.35}, {"date": "2026-08-20", "open": 400.05, "high": 403.45, "low": 395.8, "close": 402.5, "volume": 5070984, "sma20": 411.36, "ema20": 411.41}, {"date": "2026-08-21", "open": 402.55, "high": 405.9, "low": 401.7, "close": 405.2, "volume": 10327739, "sma20": 410.53, "ema20": 410.82}, {"date": "2026-08-24", "open": 406.0, "high": 410.95, "low": 404.6, "close": 406.9, "volume": 8002459, "sma20": 409.78, "ema20": 410.44}, {"date": "2026-08-25", "open": 408.0, "high": 408.0, "low": 401.1, "close": 404.0, "volume": 8450049, "sma20": 409.74, "ema20": 409.83}, {"date": "2026-08-26", "open": 405.0, "high": 405.4, "low": 401.4, "close": 403.5, "volume": 5118183, "sma20": 409.69, "ema20": 409.23}, {"date": "2026-08-27", "open": 403.5, "high": 404.95, "low": 398.4, "close": 400.0, "volume": 4430005, "sma20": 409.1, "ema20": 408.35}, {"date": "2026-08-28", "open": 401.0, "high": 406.35, "low": 397.5, "close": 401.0, "volume": 38504284, "sma20": 408.45, "ema20": 407.65}, {"date": "2026-08-31", "open": 402.05, "high": 405.6, "low": 399.65, "close": 401.75, "volume": 7827528, "sma20": 407.73, "ema20": 407.09}, {"date": "2026-09-01", "open": 401.75, "high": 407.2, "low": 399.4, "close": 401.6, "volume": 6128444, "sma20": 406.93, "ema20": 406.56}, {"date": "2026-09-02", "open": 408.2, "high": 422.4, "low": 406.5, "close": 417.85, "volume": 34128070, "sma20": 407.05, "ema20": 407.64}]}];
+    let currentFilter = 'ALL';
+    let selectedTradeId = 1;
+
+    function setFilter(filter) {
+      currentFilter = filter;
+      ['ALL', 'OPEN', 'CLOSED'].forEach(t => {
+        const btn = document.getElementById('tab-' + t);
+        if (t === filter) {
+          btn.className = 'px-3 py-1.5 text-xs font-semibold rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] transition';
+        } else {
+          btn.className = 'px-3 py-1.5 text-xs font-semibold rounded-lg text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition';
+        }
+      });
+      renderStockList();
+    }
+
+    function renderStockList() {
+      const container = document.getElementById('stock-list-container');
+      container.innerHTML = '';
+
+      const filtered = tradesData.filter(t => {
+        if (currentFilter === 'ALL') return true;
+        return t.status === currentFilter;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = '<div class="p-4 text-center text-xs text-[var(--muted-foreground)]">No trades found.</div>';
+        return;
+      }
+
+      // Select first trade in filtered list if current not in it
+      if (!filtered.some(t => t.id === selectedTradeId)) {
+        selectedTradeId = filtered[0].id;
+      }
+
+      filtered.forEach(t => {
+        const isSelected = t.id === selectedTradeId;
+        const card = document.createElement('div');
+        const activeClass = isSelected 
+          ? 'border-[var(--primary)] bg-[var(--card)] shadow-md ring-1 ring-[var(--primary)]' 
+          : 'border-[var(--border)] bg-[var(--card)] hover:border-[var(--primary)] hover:bg-[var(--card)]/80';
+        
+        card.className = `p-3.5 rounded-xl border cursor-pointer transition flex items-center justify-between ${activeClass}`;
+        card.onclick = () => selectTrade(t.id);
+
+        const isGreen = t.pnl >= 0;
+        const pnlBadge = t.status === 'CLOSED'
+          ? `<span class="text-xs font-bold ${isGreen ? 'text-emerald-500' : 'text-rose-500'}">${t.pnl_pct > 0 ? '+' : ''}${t.pnl_pct}%</span>`
+          : `<span class="text-xs font-bold text-emerald-500">OPEN</span>`;
+
+        card.innerHTML = `
+          <div>
+            <div class="flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full ${t.status === 'OPEN' ? 'bg-emerald-500' : 'bg-gray-400'}"></span>
+              <span class="font-bold text-sm text-[var(--foreground)]">${t.symbol}</span>
+            </div>
+            <div class="text-[11px] text-[var(--muted-foreground)] truncate max-w-[170px] mt-0.5">${t.company_name}</div>
+          </div>
+          <div class="text-right">
+            ${pnlBadge}
+            <div class="text-[10px] text-[var(--muted-foreground)] mt-0.5">₹${t.entry_price.toFixed(1)}</div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      renderTradeDetails();
+    }
+
+    function selectTrade(id) {
+      selectedTradeId = id;
+      renderStockList();
+    }
+
+    function renderTradeDetails() {
+      const t = tradesData.find(x => x.id === selectedTradeId);
+      if (!t) return;
+
+      document.getElementById('stock-title').innerText = `${t.company_name} (${t.symbol})`;
+      document.getElementById('stock-ticker-sub').innerText = `NSE: ${t.ticker} | Position Size: ${t.qty} shares`;
+      
+      const statusBadge = document.getElementById('stock-status-badge');
+      if (t.status === 'OPEN') {
+        statusBadge.className = 'px-2.5 py-0.5 text-xs font-bold rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20';
+        statusBadge.innerText = '🟢 OPEN POSITION';
+      } else {
+        statusBadge.className = 'px-2.5 py-0.5 text-xs font-bold rounded-full bg-gray-500/10 text-gray-400 border border-gray-500/20';
+        statusBadge.innerText = '⚪ CLOSED POSITION';
+      }
+
+      const pnlBadge = document.getElementById('stock-pnl-badge');
+      if (t.status === 'CLOSED') {
+        const isPos = t.pnl >= 0;
+        pnlBadge.innerHTML = `
+          <div class="text-lg font-bold ${isPos ? 'text-emerald-500' : 'text-rose-500'}">${t.pnl > 0 ? '+' : ''}₹${t.pnl.toLocaleString('en-IN')}</div>
+          <div class="text-xs font-semibold ${isPos ? 'text-emerald-500' : 'text-rose-500'}">${t.pnl_pct > 0 ? '+' : ''}${t.pnl_pct}% Return</div>
+        `;
+      } else {
+        pnlBadge.innerHTML = `
+          <div class="text-sm font-bold text-emerald-500">Live Active</div>
+          <div class="text-xs text-[var(--muted-foreground)]">Tracking Trailing Stop</div>
+        `;
+      }
+
+      document.getElementById('metric-entry').innerText = `₹${t.entry_price.toFixed(2)}`;
+      document.getElementById('metric-entry-date').innerText = `Date: ${t.entry_date}`;
+      
+      document.getElementById('metric-sl').innerText = `₹${t.current_sl.toFixed(2)}`;
+      document.getElementById('metric-sl-type').innerText = t.current_sl > t.initial_sl ? 'Trailed (20 EMA)' : 'Initial (20 SMA)';
+
+      document.getElementById('metric-target').innerText = `₹${t.target.toFixed(2)}`;
+
+      const exitMetric = document.getElementById('metric-exit');
+      if (t.status === 'CLOSED' && t.exit_price) {
+        exitMetric.className = 'text-sm font-bold text-[var(--foreground)] mt-0.5';
+        exitMetric.innerText = `₹${t.exit_price.toFixed(2)}`;
+        document.getElementById('metric-exit-reason').innerText = `${t.exit_reason} (${t.exit_date})`;
+      } else {
+        exitMetric.className = 'text-sm font-bold text-emerald-500 mt-0.5';
+        exitMetric.innerText = 'Holding Active';
+        document.getElementById('metric-exit-reason').innerText = 'Monitoring Exits';
+      }
+
+      // Trade Narrative
+      const narrativeEl = document.getElementById('trade-narrative');
+      if (t.status === 'CLOSED') {
+        narrativeEl.innerHTML = `
+          <strong>Entry Logic:</strong> 20 SMA breakout on ${t.entry_date} @ ₹${t.entry_price.toFixed(2)} with Initial Stop Loss @ ₹${t.initial_sl.toFixed(2)}.<br>
+          <strong>Trailing Stop:</strong> Trailed upward to 20 EMA (₹${t.current_sl.toFixed(2)}) to protect gains.<br>
+          <strong>Exit Result:</strong> ${t.exit_reason} triggered on ${t.exit_date} at ₹${t.exit_price.toFixed(2)}. 
+          The 1% risk-management guardrail strictly capped the loss to <strong>₹${Math.abs(t.pnl).toFixed(2)} (${t.pnl_pct.toFixed(2)}%)</strong>, preventing further decline during market selling.
+        `;
+      } else {
+        narrativeEl.innerHTML = `
+          <strong>Entry Logic:</strong> Breakout confirmed on ${t.entry_date} @ ₹${t.entry_price.toFixed(2)}.<br>
+          <strong>Current Protection:</strong> Active trailing Stop Loss set at <strong>₹${t.current_sl.toFixed(2)}</strong>. Profit Target stands at <strong>₹${t.target.toFixed(2)}</strong> (1:2 R:R).
+        `;
+      }
+
+      renderSVGChart(t);
+    }
+
+    function renderSVGChart(t) {
+      const wrapper = document.getElementById('svg-chart-wrapper');
+      const candles = t.candles;
+      if (!candles || candles.length === 0) {
+        wrapper.innerHTML = '<div class="h-64 flex items-center justify-center text-xs text-[var(--muted-foreground)]">No candlestick data available.</div>';
+        return;
+      }
+
+      const width = 640;
+      const height = 280;
+      const margin = { top: 20, right: 60, bottom: 30, left: 15 };
+      const chartWidth = width - margin.left - margin.right;
+      const chartHeight = height - margin.top - margin.bottom;
+
+      // Determine price range
+      let minPrice = Math.min(...candles.map(c => c.low));
+      let maxPrice = Math.max(...candles.map(c => c.high));
+      
+      // Include entry, SL, Target in scale
+      if (t.entry_price) { minPrice = Math.min(minPrice, t.entry_price); maxPrice = Math.max(maxPrice, t.entry_price); }
+      if (t.current_sl) { minPrice = Math.min(minPrice, t.current_sl); maxPrice = Math.max(maxPrice, t.current_sl); }
+      if (t.target && t.target < maxPrice * 1.15) { maxPrice = Math.max(maxPrice, t.target); }
+
+      const padding = (maxPrice - minPrice) * 0.08;
+      minPrice -= padding;
+      maxPrice += padding;
+
+      const priceToY = (p) => chartHeight - ((p - minPrice) / (maxPrice - minPrice)) * chartHeight + margin.top;
+      const candleWidth = Math.max(8, (chartWidth / candles.length) * 0.6);
+      const stepX = chartWidth / candles.length;
+
+      let svg = `<svg width="100%" height="${height}" viewBox="0 0 ${width} ${height}" class="overflow-visible select-none">`;
+
+      // Horizontal grid lines & price labels
+      const numTicks = 5;
+      for (let i = 0; i <= numTicks; i++) {
+        const price = minPrice + (i / numTicks) * (maxPrice - minPrice);
+        const y = priceToY(price);
+        svg += `
+          <line x1="${margin.left}" y1="${y}" x2="${width - margin.right}" y2="${y}" stroke="var(--border)" stroke-width="1" stroke-dasharray="2 2" opacity="0.4" />
+          <text x="${width - margin.right + 6}" y="${y + 3.5}" fill="var(--muted-foreground)" font-size="10" font-family="sans-serif">₹${price.toFixed(1)}</text>
+        `;
+      }
+
+      // 20 SMA line path
+      let smaPoints = [];
+      let emaPoints = [];
+      candles.forEach((c, i) => {
+        const cx = margin.left + i * stepX + stepX / 2;
+        if (c.sma20) smaPoints.push(`${cx},${priceToY(c.sma20)}`);
+        if (c.ema20) emaPoints.push(`${cx},${priceToY(c.ema20)}`);
+      });
+
+      if (smaPoints.length > 1) {
+        svg += `<polyline points="${smaPoints.join(' ')}" class="line-sma" opacity="0.8" />`;
+      }
+      if (emaPoints.length > 1) {
+        svg += `<polyline points="${emaPoints.join(' ')}" class="line-ema" opacity="0.8" />`;
+      }
+
+      // Key Trade Levels (Entry, SL, Target)
+      if (t.entry_price) {
+        const yEntry = priceToY(t.entry_price);
+        svg += `
+          <line x1="${margin.left}" y1="${yEntry}" x2="${width - margin.right}" y2="${yEntry}" class="level-entry" />
+          <rect x="${width - margin.right + 2}" y="${yEntry - 8}" width="52" height="16" rx="3" fill="#10B981" />
+          <text x="${width - margin.right + 5}" y="${yEntry + 3.5}" fill="#FFFFFF" font-size="9" font-weight="bold">Entry: ${t.entry_price.toFixed(0)}</text>
+        `;
+      }
+
+      if (t.current_sl) {
+        const ySL = priceToY(t.current_sl);
+        svg += `
+          <line x1="${margin.left}" y1="${ySL}" x2="${width - margin.right}" y2="${ySL}" class="level-sl" />
+          <rect x="${width - margin.right + 2}" y="${ySL - 8}" width="48" height="16" rx="3" fill="#EF4444" />
+          <text x="${width - margin.right + 6}" y="${ySL + 3.5}" fill="#FFFFFF" font-size="9" font-weight="bold">SL: ${t.current_sl.toFixed(0)}</text>
+        `;
+      }
+
+      // Candlestick rendering
+      candles.forEach((c, i) => {
+        const cx = margin.left + i * stepX + stepX / 2;
+        const isUp = c.close >= c.open;
+        const colorClass = isUp ? 'candle-green' : 'candle-red';
+        const wickColor = isUp ? '#059669' : '#DC2626';
+        
+        const yHigh = priceToY(c.high);
+        const yLow = priceToY(c.low);
+        const yOpen = priceToY(c.open);
+        const yClose = priceToY(c.close);
+        
+        const bodyTop = Math.min(yOpen, yClose);
+        const bodyHeight = Math.max(2, Math.abs(yClose - yOpen));
+
+        // Highlight entry / exit date
+        const isEntryDay = c.date === t.entry_date;
+        const isExitDay = c.date === t.exit_date;
+
+        if (isEntryDay) {
+          svg += `<circle cx="${cx}" cy="${yLow + 12}" r="3.5" fill="#10B981" />`;
+          svg += `<text x="${cx}" y="${yLow + 24}" fill="#10B981" font-size="8" font-weight="bold" text-anchor="middle">ENTRY</text>`;
+        }
+        if (isExitDay) {
+          svg += `<circle cx="${cx}" cy="${yHigh - 12}" r="3.5" fill="#EF4444" />`;
+          svg += `<text x="${cx}" y="${yHigh - 16}" fill="#EF4444" font-size="8" font-weight="bold" text-anchor="middle">EXIT</text>`;
+        }
+
+        // Wick
+        svg += `<line x1="${cx}" y1="${yHigh}" x2="${cx}" y2="${yLow}" stroke="${wickColor}" class="candlestick-wick" />`;
+        
+        // Body
+        svg += `
+          <rect 
+            x="${cx - candleWidth / 2}" 
+            y="${bodyTop}" 
+            width="${candleWidth}" 
+            height="${bodyHeight}" 
+            rx="1" 
+            class="${colorClass}" 
+            onmouseenter="showTooltip(event, '${c.date}', ${c.open}, ${c.high}, ${c.low}, ${c.close}, ${c.volume})"
+            onmouseleave="hideTooltip()"
+          />
+        `;
+
+        // Date label on X axis (every 2-3 candles)
+        if (i % 2 === 0 || i === candles.length - 1) {
+          const shortDate = c.date.substring(5);
+          svg += `<text x="${cx}" y="${height - 8}" fill="var(--muted-foreground)" font-size="9" text-anchor="middle">${shortDate}</text>`;
+        }
+      });
+
+      svg += '</svg>';
+      wrapper.innerHTML = svg;
+    }
+
+    function showTooltip(evt, date, open, high, low, close, volume) {
+      const tip = document.getElementById('chart-tooltip');
+      tip.classList.remove('hidden');
+      tip.innerHTML = `
+        <div class="font-bold border-b border-[var(--border)] pb-1 mb-1">${date}</div>
+        <div class="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[11px]">
+          <span class="text-[var(--muted-foreground)]">Open:</span> <span>₹${open.toFixed(2)}</span>
+          <span class="text-[var(--muted-foreground)]">High:</span> <span>₹${high.toFixed(2)}</span>
+          <span class="text-[var(--muted-foreground)]">Low:</span> <span>₹${low.toFixed(2)}</span>
+          <span class="text-[var(--muted-foreground)]">Close:</span> <span class="font-bold">₹${close.toFixed(2)}</span>
+          <span class="text-[var(--muted-foreground)]">Vol:</span> <span>${volume.toLocaleString()}</span>
+        </div>
+      `;
+      const rect = evt.target.getBoundingClientRect();
+      const parentRect = document.getElementById('chart-card').getBoundingClientRect();
+      tip.style.left = (rect.left - parentRect.left + 15) + 'px';
+      tip.style.top = (rect.top - parentRect.top - 40) + 'px';
+    }
+
+    function hideTooltip() {
+      document.getElementById('chart-tooltip').classList.add('hidden');
+    }
+
+    // Initial render
+    setFilter('ALL');
+  </script>
+</body>
+</html>
