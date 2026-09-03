@@ -317,7 +317,7 @@ def run_backtest():
     nifty_final_return = ((final_nifty_close - initial_nifty) / initial_nifty) * 100
     
     # Save reports
-    workspace_dir = r"c:\Users\ckbas\Documents\antigravity\Test-AI-Swing-Trade"
+    workspace_dir = os.path.dirname(os.path.abspath(__file__))
     df_trades.to_csv(os.path.join(workspace_dir, "backtest_trades_history.csv"), index=False)
     df_equity.to_csv(os.path.join(workspace_dir, "backtest_equity_curve.csv"), index=False)
     
