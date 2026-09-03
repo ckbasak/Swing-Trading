@@ -72,15 +72,19 @@ def get_gspread_client() -> gspread.Client:
             
     raise ValueError("Google Service Account credentials not found in env var or local file.")
 
-def get_or_create_portfolio_sheet(client: gspread.Client, sheet_name: str = "NSE_Swing_Trading_Portfolio") -> gspread.Spreadsheet:
+def get_or_create_portfolio_sheet(client: gspread.Client, sheet_name: str = None) -> gspread.Spreadsheet:
     """
     Opens the spreadsheet by name, or creates it if it doesn't exist, initializing worksheets.
     """
+    target_name = sheet_name or os.environ.get("SPREADSHEET_NAME", "NSE_Swing_Trading_Portfolio_1")
     try:
-        sh = client.open(sheet_name)
+        sh = client.open(target_name)
     except gspread.SpreadsheetNotFound:
-        sh = client.create(sheet_name)
-        print(f"Created new Google Sheet: {sh.url}")
+        try:
+            sh = client.open("NSE_Swing_Trading_Portfolio")
+        except gspread.SpreadsheetNotFound:
+            sh = client.create(target_name)
+            print(f"Created new Google Sheet: {sh.url}")
         
     # Check/Create Holdings sheet
     try:
