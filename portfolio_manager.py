@@ -56,7 +56,13 @@ def get_gspread_client() -> gspread.Client:
     env_json = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON")
     if env_json:
         try:
-            info = json.loads(env_json)
+            s = env_json.strip()
+            if (s.startswith("'") and s.endswith("'")) or (s.startswith('"') and s.endswith('"')):
+                s = s[1:-1].strip()
+            info = json.loads(s)
+            if "private_key" in info and "\\n" in info["private_key"]:
+                info["private_key"] = info["private_key"].replace("\\n", "\n")
+            print(f"Loaded service account key_id: {info.get('private_key_id')}")
             creds = Credentials.from_service_account_info(info, scopes=SCOPES)
             return gspread.authorize(creds)
         except Exception as e:

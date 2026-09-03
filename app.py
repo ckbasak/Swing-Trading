@@ -36,6 +36,7 @@ st.markdown("Automated Quantitative System: 20-SMA Breakout • >2.0x Volume •
 
 # Refresh Button
 if st.sidebar.button("🔄 Sync & Refresh Portfolio"):
+    st.cache_data.clear()
     with st.spinner("Syncing portfolio targets and trailing stops..."):
         try:
             client = portfolio_manager.get_gspread_client()
@@ -48,7 +49,7 @@ if st.sidebar.button("🔄 Sync & Refresh Portfolio"):
             st.sidebar.error(f"Error syncing portfolio: {e}")
 
 # Load Sheets Data
-@st.cache_data(ttl=60)
+@st.cache_data(ttl=30)
 def load_data():
     try:
         client = portfolio_manager.get_gspread_client()
@@ -63,6 +64,19 @@ def load_data():
         return account, holdings
     except Exception as e:
         st.error(f"Error loading data from Google Sheets: {e}")
+        import json
+        env_val = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON", "").strip()
+        if env_val:
+            try:
+                if (env_val.startswith("'") and env_val.endswith("'")) or (env_val.startswith('"') and env_val.endswith('"')):
+                    env_val = env_val[1:-1]
+                kid = json.loads(env_val).get("private_key_id", "Unknown")
+                if kid.startswith("42cd"):
+                    st.warning(f"⚠️ Active Key ID on this server is OLD: `{kid}`. Please trigger 'Clear build cache & deploy' on Render.")
+                else:
+                    st.info(f"Active Service Account Key ID: `{kid}`")
+            except Exception:
+                pass
         return None, None
 
 account, holdings = load_data()
