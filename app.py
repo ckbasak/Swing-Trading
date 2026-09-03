@@ -9,14 +9,14 @@ import portfolio_manager
 import screener
 
 st.set_page_config(
-    page_title="NSE Swing Trading Dashboard",
+    page_title="NSE Swing Trading Dashboard #2 (Strategy v2)",
     page_icon="📈",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-st.title("📈 NSE Multi-Agent Swing Trading Dashboard")
-st.markdown("Automated 20 DMA Breakout System for Nifty 50 Universe")
+st.title("📈 NSE Swing Trading Dashboard (Strategy #2 Optimized)")
+st.markdown("Automated Quantitative System: 20-SMA Breakout • >2.5x Volume • 2× ATR Stops • Max 3/Sector")
 
 # Refresh Button
 if st.sidebar.button("🔄 Sync & Refresh Portfolio"):

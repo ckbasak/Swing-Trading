@@ -30,7 +30,7 @@ def register_chat(chat_id: int):
         sh = portfolio_manager.get_or_create_portfolio_sheet(client)
         try:
             _, _, chats_name = portfolio_manager.get_worksheet_names(sh)
-        ws = sh.worksheet(chats_name)
+            ws = sh.worksheet(chats_name)
         except gspread.WorksheetNotFound:
             _, _, chats_name = portfolio_manager.get_worksheet_names(sh)
             ws = sh.add_worksheet(title=chats_name, rows="100", cols="1")
@@ -51,7 +51,7 @@ def get_registered_chats() -> list:
         sh = portfolio_manager.get_or_create_portfolio_sheet(client)
         try:
             _, _, chats_name = portfolio_manager.get_worksheet_names(sh)
-        ws = sh.worksheet(chats_name)
+            ws = sh.worksheet(chats_name)
         except gspread.WorksheetNotFound:
             return []
         values = ws.get_all_values()

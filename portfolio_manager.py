@@ -105,7 +105,7 @@ def get_or_create_portfolio_sheet(client: gspread.Client, sheet_name: str = None
         account_ws.append_row(["Parameter", "Value"])
         account_ws.append_row(["Total Portfolio Value", "1000000"])
         account_ws.append_row(["Cash Balance", "1000000"])
-        account_ws.append_row(["Risk Percent", "0.01"])
+        account_ws.append_row(["Risk Percent", "0.015"])
         account_ws.append_row(["Initial Capital", "1000000"])
         
     # Check/Create TelegramChats sheet
@@ -132,7 +132,7 @@ def get_account_details(sh: gspread.Spreadsheet) -> Dict[str, float]:
     if "Initial Capital" not in details:
         details["Initial Capital"] = 1000000.0
     if "Risk Percent" not in details:
-        details["Risk Percent"] = 0.01
+        details["Risk Percent"] = 0.015
     return details
 
 def update_account_details(sh: gspread.Spreadsheet, updates: Dict[str, float]):
@@ -146,7 +146,7 @@ def update_account_details(sh: gspread.Spreadsheet, updates: Dict[str, float]):
     data = {
         "Total Portfolio Value": 1000000.0, 
         "Cash Balance": 1000000.0, 
-        "Risk Percent": 0.01,
+        "Risk Percent": 0.015,
         "Initial Capital": 1000000.0
     }
     for r in records:
@@ -184,17 +184,22 @@ def get_open_positions(sh: gspread.Spreadsheet) -> List[Dict[str, Any]]:
 def add_position(sh: gspread.Spreadsheet, ticker: str, entry_price: float, quantity: int, initial_sl: float, target: float) -> str:
     """
     Adds a new position to the Holdings worksheet and deducts cash.
+    Enforces Strategy v2 guardrails: Double Buy Blocker, Sector Concentration (max 3/sector), and valid SL range.
     """
     open_positions = get_open_positions(sh)
     existing_tickers = [p["Ticker"] for p in open_positions]
     if ticker in existing_tickers:
         return f"Blocked duplicate entry for {ticker}: already held as an active open position."
 
-    sl_pct = ((entry_price - initial_sl) / entry_price) * 100.0
-    if sl_pct < 3.0:
-        return f"Blocked {ticker} entry: Stop loss is too tight ({sl_pct:.2f}% < 3.0%). Minimum safety buffer required."
-    if sl_pct > 15.0:
-        return f"Blocked {ticker} entry: Stop loss is too wide ({sl_pct:.2f}% > 15.0%). Trade discarded per risk guidelines."
+    # Strategy v2 Sector Concentration Guardrail: Max 3 open positions per sector
+    sector = screener.get_stock_sector(ticker)
+    sector_open_count = sum(1 for p in open_positions if screener.get_stock_sector(p.get("Ticker", "")) == sector)
+    if sector_open_count >= 3:
+        return f"Blocked {ticker} entry: Sector '{sector}' already has {sector_open_count} open positions (Max 3 allowed in Strategy v2)."
+
+    # Strategy v2: Volatility-based SL (no fixed 3%-15% clamp), validates valid SL below entry
+    if initial_sl <= 0 or initial_sl >= entry_price:
+        return f"Blocked {ticker} entry: Invalid initial Stop Loss ₹{initial_sl:.2f} for entry ₹{entry_price:.2f}."
 
     holdings_name, _, _ = get_worksheet_names(sh)
     ws = sh.worksheet(holdings_name)
