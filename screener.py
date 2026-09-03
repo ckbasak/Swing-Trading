@@ -1,3 +1,12 @@
+import sys
+try:
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    if hasattr(sys.stderr, 'reconfigure'):
+        sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+except Exception:
+    pass
+
 import os
 import gc
 import io
@@ -238,12 +247,12 @@ def screen_stocks(tickers: List[str], logs: List[str] = None) -> List[Dict[str, 
     # 1. Macro Sentiment Check: Skip entries if Nifty index news is negative
     nifty_sentiment = sentiment_analyzer.get_news_sentiment("Nifty 50 Index India")
     if nifty_sentiment == "NEGATIVE":
-        msg = "⚠️ Macro Risk Alert: Nifty 50 News Sentiment is NEGATIVE. New breakout entries are paused to protect capital against broad market selling."
+        msg = "[!] Macro Risk Alert: Nifty 50 News Sentiment is NEGATIVE. New breakout entries are paused to protect capital against broad market selling."
         print(msg)
         logs.append(msg)
         return []
     else:
-        logs.append(f"📡 Macro Market Sentiment: {nifty_sentiment} (Trading active).")
+        logs.append(f"[i] Macro Market Sentiment: {nifty_sentiment} (Trading active).")
 
     breakout_candidates = []
     
@@ -256,7 +265,8 @@ def screen_stocks(tickers: List[str], logs: List[str] = None) -> List[Dict[str, 
             period="60d", 
             interval="1d", 
             group_by="ticker", 
-            threads=False
+            threads=True,
+            progress=False
         )
     except Exception as e:
         print(f"Error during batch download: {e}")
@@ -322,7 +332,7 @@ def screen_stocks(tickers: List[str], logs: List[str] = None) -> List[Dict[str, 
                 clean_sym = ticker.replace(".NS", "")
                 stock_sentiment = sentiment_analyzer.get_news_sentiment(f"{clean_sym} stock news NSE")
                 if stock_sentiment == "NEGATIVE":
-                    msg = f"⚠️ Discarded {ticker}: Stock News Sentiment is NEGATIVE."
+                    msg = f"[!] Discarded {ticker}: Stock News Sentiment is NEGATIVE."
                     print(msg)
                     logs.append(msg)
                     continue
