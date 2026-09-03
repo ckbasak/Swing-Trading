@@ -1,12 +1,12 @@
 # AI-Swing-Trade-2: Independent System Setup & Multi-Project Architecture
 
-This document describes how **Project 1 (`Test-AI-Swing-Trade`)** and **Project 2 (`AI-Swing-Trade-2`)** run side-by-side with complete runtime, database, and Telegram bot isolation while sharing common authentication credentials.
+This document describes how **Project 1 (`AI-Swing-Trade-1`)** and **Project 2 (`AI-Swing-Trade-2`)** run side-by-side with complete runtime, database, and Telegram bot isolation while sharing common authentication credentials.
 
 ---
 
 ## 🏛️ Multi-Project Architecture Matrix
 
-| Component | Project 1: `Test-AI-Swing-Trade` | Project 2: `AI-Swing-Trade-2` | Isolation / Sharing Mechanism |
+| Component | Project 1: `AI-Swing-Trade-1` | Project 2: `AI-Swing-Trade-2` | Isolation / Sharing Mechanism |
 | :--- | :--- | :--- | :--- |
 | **Strategy Engine** | **Strategy v1:** 20 SMA Breakout + 2.0x Volume + 14 RSI (50-70) + 20 EMA Trailing SL + 1:2 Fixed Target | **Strategy v2:** 20 SMA Breakout + 2.5x Volume + 14 RSI + 2*ATR(14) Stop Loss + Sector Limits (Max 3/sector) | **Independent:** Code inside each project directory |
 | **Google Sheets Database** | Worksheets: `Holdings`, `Account`, `TelegramChats` | Worksheets: `Holdings_v2`, `Account_v2`, `TelegramChats_v2` (or dedicated sheet `NSE_Swing_Trading_Portfolio_2`) | **Isolated Database:** Shared Google Cloud Service Account (`service_account.json`) |
