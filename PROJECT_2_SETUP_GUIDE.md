@@ -9,7 +9,7 @@ This document describes how **Project 1 (`AI-Swing-Trade-1`)** and **Project 2 (
 | Component | Project 1: `AI-Swing-Trade-1` | Project 2: `AI-Swing-Trade-2` | Isolation / Sharing Mechanism |
 | :--- | :--- | :--- | :--- |
 | **Strategy Engine** | **Strategy v1:** 20 SMA Breakout + 2.0x Volume + 14 RSI (50-70) + 20 EMA Trailing SL + 1:2 Fixed Target | **Strategy v2:** 20 SMA Breakout + 2.5x Volume + 14 RSI + 2*ATR(14) Stop Loss + Sector Limits (Max 3/sector) | **Independent:** Code inside each project directory |
-| **Google Sheets Database** | Worksheets: `Holdings`, `Account`, `TelegramChats` | Worksheets: `Holdings_v2`, `Account_v2`, `TelegramChats_v2` (or dedicated sheet `NSE_Swing_Trading_Portfolio_2`) | **Isolated Database:** Shared Google Cloud Service Account (`service_account.json`) |
+| **Google Sheets Database** | Sheet: `NSE_Swing_Trading_Portfolio_1`<br>Tabs: `Holdings`, `Account`, `TelegramChats` | Sheet: `NSE_Swing_Trading_Portfolio_2`<br>Tabs: `Holdings`, `Account`, `TelegramChats` | **Separate Google Sheets:** Each project has its own dedicated spreadsheet in Google Drive |
 | **Telegram Bot** | Bot #1 (`@ai_swing_trade_1_bot` / `AI Swing Trade 1`) | Bot #2 (`@ai_swing_trade_2_bot` / `AI Swing Trade 2`) | **Isolated Bot:** Separate Bot Tokens & Handlers |
 | **Streamlit Dashboard** | Title: `NSE Swing Trading Dashboard #1 (Classic Breakout)` | Title: `NSE Swing Trading Dashboard #2 (Strategy v2)` | **Independent Web App:** Distinct dashboard views & KPIs |
 | **Gemini AI News Filter** | Shared `GEMINI_API_KEY` | Shared `GEMINI_API_KEY` | **Shared Credentials:** Zero redundant API keys |
@@ -22,19 +22,19 @@ This document describes how **Project 1 (`AI-Swing-Trade-1`)** and **Project 2 (
 * **Project 1 Bot**: Name: **`AI Swing Trade 1`** | Target Username: **`@ai_swing_trade_1_bot`**
 * **Project 2 Bot**: Name: **`AI Swing Trade 2`** | Target Username: **`@ai_swing_trade_2_bot`**
 
-## 🗄️ 2. Google Sheets Database Options
+## 🗄️ 2. Separate Google Sheets Databases
 
-Project 2 comes pre-configured with zero setup required:
-* **Default Mode (Active Now):** Uses the existing shared spreadsheet `NSE_Swing_Trading_Portfolio` with dedicated, isolated worksheets:
-  - `Holdings_v2` — Tracks all open and closed trades for Strategy #2.
-  - `Account_v2` — Manages cash balance and portfolio valuation for Strategy #2 (starts at ₹10,00,000).
-  - `TelegramChats_v2` — Subscribes users specifically to Strategy #2 alerts.
-* **Optional Separate Spreadsheet Mode:** If you ever want a completely separate Google Sheet file in your Drive:
-  1. Create a blank Google Sheet in your personal Google Drive named `NSE_Swing_Trading_Portfolio_2`.
-  2. Click **Share** and add your Service Account email as **Editor**:
-     `sheets-editor@swing-trade-system-506815.iam.gserviceaccount.com`
-  3. Set environment variable `SPREADSHEET_NAME = "NSE_Swing_Trading_Portfolio_2"`.
-  4. The system will automatically create `Holdings`, `Account`, and `TelegramChats` inside that new sheet!
+Both projects now use completely separate Google Spreadsheets in your Google Drive:
+
+* **Project 1 Database**: **`NSE_Swing_Trading_Portfolio_1`**
+  - URL: `https://docs.google.com/spreadsheets/d/1SGGgkcVqef04xHMxCpb__qFgrUGyVtsJjgvysapbb6c`
+  - Worksheets: `Holdings`, `Account`, `TelegramChats`
+  - Strategy: Classic Breakout (1.0% Risk)
+
+* **Project 2 Database**: **`NSE_Swing_Trading_Portfolio_2`**
+  - URL: `https://docs.google.com/spreadsheets/d/1kBLrVqC8JLNY_n_ktVKyQs9CaE6u69_3Zq6vXriLcCc`
+  - Worksheets: `Holdings`, `Account`, `TelegramChats`
+  - Strategy: Strategy v2 Optimized (1.5% Risk, 2× ATR Stops, Max 3/Sector)
 
 ---
 
