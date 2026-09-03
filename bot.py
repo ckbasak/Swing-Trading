@@ -395,7 +395,10 @@ async def history_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # Callback Query Handler for Inline Buttons
 async def menu_button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    await query.answer() # Acknowledge button press immediately
+    try:
+        await query.answer() # Acknowledge button press immediately
+    except Exception:
+        pass # Ignore expired callback query timeout
     
     chat_id = update.effective_chat.id
     action = query.data
