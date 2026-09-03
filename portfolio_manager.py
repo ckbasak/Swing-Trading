@@ -13,6 +13,23 @@ import screener
 from google.oauth2.service_account import Credentials
 from typing import List, Dict, Any, Tuple
 
+# Auto-load .env if available
+def _load_env():
+    env_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+    if os.path.exists(env_file):
+        try:
+            from dotenv import load_dotenv
+            load_dotenv(env_file)
+        except Exception:
+            with open(env_file, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith("#") and "=" in line:
+                        k, v = line.split("=", 1)
+                        if k.strip() not in os.environ:
+                            os.environ[k.strip()] = v.strip().strip("'").strip('"')
+_load_env()
+
 def retry_gspread(func, *args, **kwargs):
     """
     Executes a gspread operation with automatic 2-second sleep retry on 429 rate limits.
