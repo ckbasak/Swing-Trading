@@ -10,24 +10,17 @@ This document describes how **Project 1 (`Test-AI-Swing-Trade`)** and **Project 
 | :--- | :--- | :--- | :--- |
 | **Strategy Engine** | **Strategy v1:** 20 SMA Breakout + 2.0x Volume + 14 RSI (50-70) + 20 EMA Trailing SL + 1:2 Fixed Target | **Strategy v2:** 20 SMA Breakout + 2.5x Volume + 14 RSI + 2*ATR(14) Stop Loss + Sector Limits (Max 3/sector) | **Independent:** Code inside each project directory |
 | **Google Sheets Database** | Worksheets: `Holdings`, `Account`, `TelegramChats` | Worksheets: `Holdings_v2`, `Account_v2`, `TelegramChats_v2` (or dedicated sheet `NSE_Swing_Trading_Portfolio_2`) | **Isolated Database:** Shared Google Cloud Service Account (`service_account.json`) |
-| **Telegram Bot** | Bot #1 (e.g. `@nse_swing_123_bot`) | Bot #2 (Dedicated Telegram Bot Token from `@BotFather`) | **Isolated Bot:** Env var `TELEGRAM_BOT_TOKEN_2` or `TELEGRAM_BOT_TOKEN` |
-| **Streamlit Dashboard** | Title: `NSE Swing Trading System #1 (Classic Breakout)` | Title: `NSE Swing Trading System #2 (Strategy v2 ATR & Sector Limits)` | **Independent Web App:** Distinct dashboard views & KPIs |
+| **Telegram Bot** | Bot #1 (`@ai_swing_trade_1_bot` / `AI Swing Trade 1`) | Bot #2 (`@ai_swing_trade_2_bot` / `AI Swing Trade 2`) | **Isolated Bot:** Separate Bot Tokens & Handlers |
+| **Streamlit Dashboard** | Title: `NSE Swing Trading Dashboard #1 (Classic Breakout)` | Title: `NSE Swing Trading Dashboard #2 (Strategy v2)` | **Independent Web App:** Distinct dashboard views & KPIs |
 | **Gemini AI News Filter** | Shared `GEMINI_API_KEY` | Shared `GEMINI_API_KEY` | **Shared Credentials:** Zero redundant API keys |
 | **DhanHQ Broker Quotes** | Shared `DHAN_CLIENT_ID` & `DHAN_ACCESS_TOKEN` | Shared `DHAN_CLIENT_ID` & `DHAN_ACCESS_TOKEN` | **Shared Credentials:** Single broker data feed |
 
 ---
 
-## 🤖 1. Setting Up Telegram Bot #2
+## 🤖 1. Telegram Bots Configuration
 
-To create a separate Telegram Bot for Project 2:
-1. Open Telegram and message **`@BotFather`**.
-2. Send `/newbot`.
-3. Choose a name (e.g., `NSE Swing Trader 2`) and username (e.g., `nse_swing_v2_bot`).
-4. Copy the API Token provided by BotFather.
-5. In your Project 2 environment (or Render Web Service #2), set:
-   * `TELEGRAM_BOT_TOKEN_2 = [Your Bot 2 Token]` (or `TELEGRAM_BOT_TOKEN`)
-
----
+* **Project 1 Bot**: Name: **`AI Swing Trade 1`** | Target Username: **`@ai_swing_trade_1_bot`**
+* **Project 2 Bot**: Name: **`AI Swing Trade 2`** | Target Username: **`@ai_swing_trade_2_bot`**
 
 ## 🗄️ 2. Google Sheets Database Options
 
