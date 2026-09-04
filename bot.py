@@ -3,6 +3,7 @@ import pytz
 import datetime
 import logging
 import asyncio
+import requests
 import gspread
 import yfinance as yf
 from telegram import Update, BotCommand, InlineKeyboardButton, InlineKeyboardMarkup
@@ -742,6 +743,19 @@ async def market_hours_sync_job(context: ContextTypes.DEFAULT_TYPE):
         except Exception as e:
             logger.error(f"Error during intraday market sync: {e}")
 
+async def render_keep_alive_job(context: ContextTypes.DEFAULT_TYPE):
+    """Pings the Render public endpoint every 9 minutes to keep the free service perpetually warm."""
+    render_url = os.environ.get("RENDER_EXTERNAL_URL") or os.environ.get("RENDER_SERVICE_URL") or "https://nse-swing-trading.onrender.com"
+    target = f"{render_url.rstrip('/')}/_stcore/health"
+    loop = asyncio.get_running_loop()
+    try:
+        def _ping():
+            return requests.get(target, timeout=25)
+        res = await loop.run_in_executor(None, _ping)
+        logger.info(f"Render keep-alive ping to {target} -> HTTP {res.status_code}")
+    except Exception as e:
+        logger.debug(f"Render keep-alive ping error: {e}")
+
 def main():
     if not TELEGRAM_BOT_TOKEN:
         logger.error("No TELEGRAM_BOT_TOKEN environment variable set. Exiting.")
@@ -781,6 +795,10 @@ def main():
     # Configure Repeating Job to run every 5 minutes (300 seconds) during market hours
     app.job_queue.run_repeating(market_hours_sync_job, interval=300, first=10, job_kwargs={"misfire_grace_time": 60})
     logger.info("Intraday market hours sync job scheduled (every 5 minutes).")
+
+    # Configure Keep-Alive Job to run every 9 minutes (540 seconds) to prevent Render sleep
+    app.job_queue.run_repeating(render_keep_alive_job, interval=540, first=30, job_kwargs={"misfire_grace_time": 60})
+    logger.info("Render keep-alive job scheduled (every 9 minutes).")
     
     # Start bot
     logger.info("Starting Telegram Bot poll...")
