@@ -181,7 +181,7 @@ SWING_OUTLOOK: [1-2 sentences with actionable implications for short-term swing 
 
         try:
             model = genai.GenerativeModel("gemini-3.6-flash")
-            response = model.generate_content(prompt, request_options={"timeout": 12.0})
+            response = model.generate_content(prompt, request_options={"timeout": 20.0})
             raw_text = response.text.strip()
             
             # Parse structured response
