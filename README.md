@@ -43,7 +43,7 @@ An institutional-grade, multi-agent automated swing trading and portfolio manage
 
 ## 🚀 Deployment & Environment Variables
 
-Deployed on Render as a Python Web Service (https://ai-swing-trade-1.onrender.com).
+Deployed on Render as a Python Web Service (https://swing-trading-xpmp.onrender.com).
 
 | Variable | Description |
 | :--- | :--- |
