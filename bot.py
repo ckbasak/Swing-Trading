@@ -116,17 +116,56 @@ async def menu_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode="Markdown"
     )
 
+def is_market_hours() -> bool:
+    """Returns True if currently within NSE market hours (Mon-Fri, 9:15 AM - 3:30 PM IST)."""
+    try:
+        from zoneinfo import ZoneInfo
+        tz = ZoneInfo("Asia/Kolkata")
+    except ImportError:
+        tz = pytz.timezone("Asia/Kolkata")
+    now = datetime.datetime.now(tz)
+    if now.weekday() > 4:  # Saturday or Sunday
+        return False
+    start_time = datetime.time(9, 15)
+    end_time = datetime.time(15, 30)
+    return start_time <= now.time() <= end_time
+
 async def scan_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
-    await context.bot.send_message(chat_id=chat_id, text="🔍 **Executing Swing Trading Scan...** This might take 1-2 minutes.")
+    in_market = is_market_hours()
+    mode_text = "Live Market Scan" if in_market else "After-Market (AMO) Scan"
+    await context.bot.send_message(
+        chat_id=chat_id, 
+        text=f"🔍 **Executing {mode_text}...** Scanning Nifty universe (Preview Mode)."
+    )
     
     loop = asyncio.get_event_loop()
     try:
-        state = await loop.run_in_executor(None, trading_graph.run_trading_system)
-        report = trading_graph.format_scan_report(state)
+        # Manual scan runs with execute_trades=False (preview without auto-buying)
+        state = await loop.run_in_executor(None, lambda: trading_graph.run_trading_system(execute_trades=False))
+        report = trading_graph.format_scan_report(state, is_scheduled=False, is_amo=(not in_market))
+        
+        trades = state.get("trades_to_execute", [])
+        if trades:
+            # Store pending proposals for confirmation
+            context.bot_data[f"pending_trades_{chat_id}"] = trades
+            
+            if in_market:
+                confirm_btn = InlineKeyboardButton("🚀 Confirm & Execute Market Entry", callback_data="confirm_market_entry")
+            else:
+                confirm_btn = InlineKeyboardButton("🌙 Confirm & Execute AMO Entry", callback_data="confirm_amo_entry")
+                
+            reply_markup = InlineKeyboardMarkup([
+                [confirm_btn],
+                [InlineKeyboardButton("❌ Discard", callback_data="discard_entry")],
+                [InlineKeyboardButton("🎛️ Return to Main Menu", callback_data="cmd_menu")]
+            ])
+        else:
+            reply_markup = get_main_menu_keyboard()
+            
         await context.bot.send_message(
             chat_id=chat_id, 
             text=report, 
-            reply_markup=get_main_menu_keyboard(),
+            reply_markup=reply_markup,
             parse_mode="Markdown"
         )
     except Exception as e:
@@ -411,12 +450,73 @@ async def menu_button_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         await history_action(chat_id, context)
     elif action == "cmd_summary":
         await summary_action(chat_id, context)
+    elif action in ["confirm_market_entry", "confirm_amo_entry"]:
+        is_amo_flag = (action == "confirm_amo_entry")
+        pending = context.bot_data.pop(f"pending_trades_{chat_id}", None)
+        if not pending:
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text="⚠️ No pending trades found to execute (order may have expired or already been placed). Run /scan again.",
+                reply_markup=get_main_menu_keyboard()
+            )
+            return
+            
+        action_name = "AMO Entry" if is_amo_flag else "Market Entry"
+        await context.bot.send_message(chat_id=chat_id, text=f"⏳ Executing {len(pending)} {action_name} trade(s)...")
+        
+        loop = asyncio.get_event_loop()
+        try:
+            client = await loop.run_in_executor(None, portfolio_manager.get_gspread_client)
+            sh = await loop.run_in_executor(None, portfolio_manager.get_or_create_portfolio_sheet, client)
+            success_logs = []
+            for t in pending:
+                res = await loop.run_in_executor(
+                    None,
+                    lambda t=t: portfolio_manager.add_position(
+                        sh,
+                        ticker=t["ticker"],
+                        entry_price=t["entry_price"],
+                        qty=t["quantity"],
+                        initial_sl=t["initial_sl"],
+                        target=t["target"]
+                    )
+                )
+                success_logs.append(res)
+                
+            header = "🌙 **AMO Orders Successfully Placed in Portfolio!**" if is_amo_flag else "🚀 **Live Market Orders Successfully Executed!**"
+            msg = f"{header}\n\n" + "\n".join(f"• {log}" for log in success_logs)
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text=msg,
+                reply_markup=get_main_menu_keyboard(),
+                parse_mode="Markdown"
+            )
+        except Exception as e:
+            logger.error(f"Error executing manual entries: {e}")
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text=f"❌ Error executing entries: {e}",
+                reply_markup=get_main_menu_keyboard()
+            )
+    elif action == "discard_entry":
+        context.bot_data.pop(f"pending_trades_{chat_id}", None)
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text="🗑️ Proposed trades discarded. No entries were added to your portfolio.",
+            reply_markup=get_main_menu_keyboard()
+        )
+    elif action == "cmd_menu":
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text="🎛️ **Main Control Menu:**",
+            reply_markup=get_main_menu_keyboard()
+        )
 
 # Post Init Hook: Registers Native Telegram Menu Commands
 async def post_init_setup(application: Application):
     commands = [
         BotCommand("menu", "🎛️ Show Interactive Button Menu"),
-        BotCommand("scan", "🔍 Run Breakout Scan & Trades"),
+        BotCommand("scan", "🔍 Run Breakout Scan (Preview)"),
         BotCommand("positions", "📈 View Open Holdings & PnL"),
         BotCommand("history", "🤝 View Closed Trades & PnL %"),
         BotCommand("summary", "🏦 View Portfolio Summary"),
@@ -430,12 +530,13 @@ async def post_init_setup(application: Application):
 
 # Daily Cron Job
 async def daily_scan_job(context: ContextTypes.DEFAULT_TYPE):
-    logger.info("Starting scheduled daily scan job...")
+    logger.info("Starting scheduled daily scan job (Auto-Execution)...")
     
     loop = asyncio.get_event_loop()
     try:
-        state = await loop.run_in_executor(None, trading_graph.run_trading_system)
-        report = trading_graph.format_scan_report(state)
+        # Scheduled run executes trades automatically into Google Sheets
+        state = await loop.run_in_executor(None, lambda: trading_graph.run_trading_system(execute_trades=True))
+        report = trading_graph.format_scan_report(state, is_scheduled=True)
         
         # Notify all registered chats
         chat_ids = await loop.run_in_executor(None, get_registered_chats)

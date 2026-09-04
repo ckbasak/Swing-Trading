@@ -8,13 +8,14 @@ import screener
 import portfolio_manager
 import dhan_client
 
-class TradingState(TypedDict):
+class TradingState(TypedDict, total=False):
     candidates: List[Dict[str, Any]]
     open_positions: List[Dict[str, Any]]
     portfolio_value: float
     cash_balance: float
     risk_per_trade: float
     trades_to_execute: List[Dict[str, Any]]
+    execute_trades: bool
     logs: List[str]
 
 def sync_portfolio_node(state: TradingState) -> Dict[str, Any]:
@@ -196,11 +197,15 @@ def calculate_positions_node(state: TradingState) -> Dict[str, Any]:
 
 def execute_trades_node(state: TradingState) -> Dict[str, Any]:
     """
-    Node 4: Appends buy orders to the Google Sheet holdings.
+    Node 4: Appends buy orders to the Google Sheet holdings if execute_trades is True.
     """
     logs = state.get("logs", [])
     logs.append("--- Node: Executing Trades ---")
     
+    if not state.get("execute_trades", True):
+        logs.append("Auto-execution skipped (Manual Scan Preview Mode). Trades prepared for user confirmation.")
+        return {"logs": logs}
+        
     trades = state.get("trades_to_execute", [])
     if not trades:
         logs.append("No new trades to execute.")
@@ -248,9 +253,10 @@ def build_trading_workflow():
     # Compile
     return workflow.compile()
 
-def run_trading_system() -> Dict[str, Any]:
+def run_trading_system(execute_trades: bool = True) -> Dict[str, Any]:
     """
     Helper function to execute the compiled LangGraph workflow.
+    Set execute_trades=False for manual scans to only preview candidates without adding to portfolio.
     """
     app = build_trading_workflow()
     initial_state = {
@@ -260,14 +266,16 @@ def run_trading_system() -> Dict[str, Any]:
         "cash_balance": 0.0,
         "risk_per_trade": 0.0,
         "trades_to_execute": [],
+        "execute_trades": execute_trades,
         "logs": ["System Execution Started."]
     }
     result = app.invoke(initial_state)
     return result
 
-def format_scan_report(state: Dict[str, Any]) -> str:
+def format_scan_report(state: Dict[str, Any], is_scheduled: bool = False, is_amo: bool = False) -> str:
     """
     Formats the final state dictionary into a clean, human-readable report for Telegram.
+    Differentiates between Scheduled Daily Scans and Manual Scans (Live Market vs AMO).
     """
     from datetime import datetime
     import pytz
@@ -295,7 +303,14 @@ def format_scan_report(state: Dict[str, Any]) -> str:
             sync_logs.append(log)
             
     report = []
-    report.append(f"📊 **NSE Swing Trading Scan Report**")
+    if is_scheduled:
+        report.append("⏰ **Scheduled Daily Scan Report (Auto-Execution)**")
+    else:
+        if is_amo:
+            report.append("🌙 **Manual Market Scan Report (After-Market / AMO Mode)**")
+        else:
+            report.append("🔍 **Manual Market Scan Report (Live Market Hours Preview)**")
+            
     report.append(f"📅 *Date: {date_str} | Time: {time_str}*")
     report.append(f"📡 *Data Engine: {source_badge}*")
     report.append("")
@@ -329,15 +344,29 @@ def format_scan_report(state: Dict[str, Any]) -> str:
     report.append("")
     
     trades = state.get("trades_to_execute", [])
-    report.append(f"🚀 **Trades Executed ({len(trades)}):**")
-    if trades:
-        for idx, t in enumerate(trades, 1):
-            comp_name = screener.get_company_name(t['ticker'])
-            sym = t['ticker'].replace(".NS", "")
-            report.append(f"{idx}. 🏢 **{comp_name}** (`{sym}`)")
-            report.append(f"   📦 Qty: {t['quantity']} | 🏷️ Entry: ₹{t['entry_price']:.2f} | 🛡️ SL: ₹{t['initial_sl']:.2f} | 🎯 Target: ₹{t['target']:.2f}")
+    if is_scheduled:
+        report.append(f"🚀 **Trades Executed ({len(trades)}):**")
+        if trades:
+            for idx, t in enumerate(trades, 1):
+                comp_name = screener.get_company_name(t['ticker'])
+                sym = t['ticker'].replace(".NS", "")
+                report.append(f"{idx}. 🏢 **{comp_name}** (`{sym}`)")
+                report.append(f"   📦 Qty: {t['quantity']} | 🏷️ Entry: ₹{t['entry_price']:.2f} | 🛡️ SL: ₹{t['initial_sl']:.2f} | 🎯 Target: ₹{t['target']:.2f}")
+        else:
+            report.append("• No new trades executed.")
     else:
-        report.append("• No new trades executed.")
+        trade_label = "Proposed AMO Trades (Awaiting Confirmation)" if is_amo else "Proposed Market Trades (Awaiting Confirmation)"
+        report.append(f"🎯 **{trade_label} ({len(trades)}):**")
+        if trades:
+            for idx, t in enumerate(trades, 1):
+                comp_name = screener.get_company_name(t['ticker'])
+                sym = t['ticker'].replace(".NS", "")
+                report.append(f"{idx}. 🏢 **{comp_name}** (`{sym}`)")
+                report.append(f"   📦 Qty: {t['quantity']} | 🏷️ Entry: ₹{t['entry_price']:.2f} | 🛡️ SL: ₹{t['initial_sl']:.2f} | 🎯 Target: ₹{t['target']:.2f} | 💳 Cost: ₹{t.get('cost', t['entry_price'] * t['quantity']):,.2f}")
+            action_name = "AMO Order" if is_amo else "Live Market Order"
+            report.append(f"\n👉 *No entries have been executed. Tap below to confirm {action_name}.*")
+        else:
+            report.append("• No trades proposed.")
     report.append("")
     
     # Gather skips and execution notices
