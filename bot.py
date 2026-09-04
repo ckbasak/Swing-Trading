@@ -780,14 +780,27 @@ def main():
     except ImportError:
         tz = pytz.timezone("Asia/Kolkata")
         
+    # Configure Morning Scan Job to run at 8:00 AM IST daily
+    morning_time = datetime.time(hour=8, minute=0, second=0, tzinfo=tz)
+    app.job_queue.run_daily(
+        daily_scan_job,
+        time=morning_time,
+        days=(0, 1, 2, 3, 4, 5, 6), # Every day
+        name="morning_scan_8am",
+        job_kwargs={"misfire_grace_time": 180}
+    )
+    logger.info("Morning scan job scheduled for 08:00 IST daily.")
+
+    # Configure Market Close Scan Job to run daily at 3:25 PM IST (Monday through Friday)
     time_to_run = datetime.time(hour=15, minute=25, second=0, tzinfo=tz)
     app.job_queue.run_daily(
         daily_scan_job, 
         time=time_to_run,
-        days=(1, 2, 3, 4, 5), # Monday through Friday
+        days=(0, 1, 2, 3, 4), # Monday through Friday
+        name="closing_scan_325pm",
         job_kwargs={"misfire_grace_time": 120}
     )
-    logger.info("Daily scan job scheduled for 15:25 IST (Mon-Fri).")
+    logger.info("Market close scan job scheduled for 15:25 IST (Mon-Fri).")
     
     # Configure Repeating Job to run every 5 minutes (300 seconds) during market hours
     app.job_queue.run_repeating(market_hours_sync_job, interval=300, first=10, job_kwargs={"misfire_grace_time": 60})
