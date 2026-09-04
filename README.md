@@ -1,4 +1,4 @@
-﻿# 📈 System #2: Strategy v2 (Optimized) Quantitative Swing Trading Engine
+# 📈 System #2: Strategy v2 (Optimized) Quantitative Swing Trading Engine
 
 An institutional-grade, multi-agent quantitative swing trading and portfolio management system optimized for the **NSE Nifty 50** universe. Features volatility-adaptive stop sizing (2× ATR), sector concentration caps, LangGraph stateful orchestration, Google Sheets database, Streamlit dashboard, and interactive Telegram bot with Gemini 3.6-flash sentiment analysis.
 
@@ -12,7 +12,7 @@ An institutional-grade, multi-agent quantitative swing trading and portfolio man
 | **Price Breakout** | Today's Close $> \text{20 SMA}$ & Yesterday $\le \text{20 SMA}$ | Early capture of upward momentum breakout |
 | **Volume Confirmation** | **$> 2.5\times$ (250%)** of 20-day Volume SMA | Cuts false breakout noise; captures institutional volume accumulation |
 | **RSI Filter** | 14-period Wilder smoothed RSI between 50 and 70 | Filters out overbought entries |
-| **Stop-Loss Method** | ** \times \text{ATR}(14)$ below entry** (no fixed clamp) | Volatility-adaptive stop tailored to each stock's price behavior |
+| **Stop-Loss Method** | **$2 \times \text{ATR}(14)$ below entry** (no fixed clamp) | Volatility-adaptive stop tailored to each stock's price behavior |
 | **Profit Target** | Fixed 1:2 Risk-to-Reward ratio | Mathematical expectancy where winners are double the risk |
 | **Risk per Trade** | **1.5% of total portfolio value** | Sizing up on high-conviction, lower-frequency setups |
 | **Sector Limits** | **Max 3 open positions per sector** | Caps systemic correlated exposure when sector breakouts cluster |
