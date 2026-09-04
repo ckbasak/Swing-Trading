@@ -13,6 +13,7 @@ import portfolio_manager
 import trading_graph
 import dhan_client
 import screener
+import sentiment_analyzer
 
 # Configure logging
 logging.basicConfig(
@@ -37,7 +38,7 @@ def _load_env():
                             os.environ[k.strip()] = v.strip().strip("'").strip('"')
 _load_env()
 
-# Fetch Token from env
+# Fetch Token from env (check for dedicated Bot Token 2 first)
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN_2") or os.environ.get("TELEGRAM_BOT_TOKEN")
 
 # Helper functions for dynamic Telegram chat registration in Google Sheets
@@ -82,11 +83,14 @@ def get_main_menu_keyboard():
     keyboard = [
         [
             InlineKeyboardButton("🔍 Run Market Scan", callback_data="cmd_scan"),
-            InlineKeyboardButton("📈 Open Positions", callback_data="cmd_positions")
+            InlineKeyboardButton("📰 AI News Sentiment", callback_data="cmd_news")
         ],
         [
-            InlineKeyboardButton("🤝 Trade History", callback_data="cmd_history"),
+            InlineKeyboardButton("📈 Open Positions", callback_data="cmd_positions"),
             InlineKeyboardButton("🏦 Portfolio Summary", callback_data="cmd_summary")
+        ],
+        [
+            InlineKeyboardButton("🤝 Trade History", callback_data="cmd_history")
         ]
     ]
     return InlineKeyboardMarkup(keyboard)
@@ -100,6 +104,13 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     welcome_text = (
         "🤖 **Welcome to NSE Multi-Agent Swing Trading Bot (System #2 - Strategy v2)!** 🤖\n\n"
         "You are registered for automated daily market breakout scans (**3:25 PM IST**) and intraday exit alerts.\n\n"
+        "**Available Commands:**\n"
+        "• `/scan` - Run breakout scan in preview mode\n"
+        "• `/news` - Detailed AI News Sentiment for holdings / market\n"
+        "• `/news <TICKER>` - Detailed AI News Sentiment for any stock (e.g. `/news RELIANCE`)\n"
+        "• `/positions` - View Strategy #2 active holdings & PnL\n"
+        "• `/summary` - View account balance & risk allocation\n"
+        "• `/history` - View closed trades history\n\n"
         "🎛️ **Quick Action Menu:** Tap any button below or use the chat menu button `[/]`:"
     )
     await update.message.reply_text(
@@ -433,6 +444,130 @@ async def history_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
 async def history_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await history_action(update.effective_chat.id, context)
 
+async def news_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE, query_arg: str = None):
+    """
+    Executes AI News Sentiment Analysis in full detail (Strategy #2):
+    - If query_arg is provided, analyzes that specific stock or query (e.g. RELIANCE, TATAMOTORS, NIFTY).
+    - If query_arg is None:
+      - Analyzes all active open holdings from Strategy #2 Google Sheet.
+      - If no open holdings exist, analyzes Nifty 50 benchmark market sentiment.
+    """
+    loop = asyncio.get_event_loop()
+    
+    if query_arg:
+        target_raw = query_arg.strip()
+        target_upper = target_raw.upper()
+        
+        # Format stock symbol
+        if not target_upper.endswith(".NS") and not any(ch in target_upper for ch in [" ", "^"]):
+            ticker_ns = f"{target_upper}.NS"
+        else:
+            ticker_ns = target_upper
+            
+        comp_name = screener.get_company_name(ticker_ns)
+        query_text = comp_name if comp_name and comp_name != ticker_ns else target_raw
+        
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=f"⏳ *Analyzing live news & running Gemini AI sentiment for {query_text}...*",
+            parse_mode="Markdown"
+        )
+        
+        try:
+            detailed = await loop.run_in_executor(
+                None,
+                lambda: sentiment_analyzer.get_detailed_news_sentiment(query_text, ticker=ticker_ns)
+            )
+            report = sentiment_analyzer.format_detailed_sentiment_report(detailed)
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text=report,
+                reply_markup=get_main_menu_keyboard(),
+                parse_mode="Markdown"
+            )
+        except Exception as e:
+            logger.error(f"Error analyzing news for {query_arg}: {e}")
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text=f"❌ Error analyzing news sentiment: {e}",
+                reply_markup=get_main_menu_keyboard()
+            )
+        return
+
+    # No argument passed: check Strategy #2 open holdings in Google Sheets
+    await context.bot.send_message(
+        chat_id=chat_id,
+        text="⏳ *Scanning active portfolio holdings & live market news for AI Sentiment...*",
+        parse_mode="Markdown"
+    )
+    
+    try:
+        client = await loop.run_in_executor(None, portfolio_manager.get_gspread_client)
+        sh = await loop.run_in_executor(None, portfolio_manager.get_or_create_portfolio_sheet, client)
+        open_pos = await loop.run_in_executor(None, portfolio_manager.get_open_positions, sh)
+        
+        if open_pos:
+            tickers = [p["Ticker"] for p in open_pos]
+            analyzed_count = min(len(tickers), 3)
+            for idx in range(analyzed_count):
+                ticker = tickers[idx]
+                comp_name = screener.get_company_name(ticker)
+                sector = screener.get_stock_sector(ticker)
+                query_text = comp_name if comp_name and comp_name != ticker else ticker.replace(".NS", "")
+                
+                detailed = await loop.run_in_executor(
+                    None,
+                    lambda q=query_text, t=ticker: sentiment_analyzer.get_detailed_news_sentiment(q, ticker=t)
+                )
+                report = sentiment_analyzer.format_detailed_sentiment_report(detailed)
+                holding_header = f"💼 *Strategy #2 Active Holding #{idx+1} of {len(tickers)}* (Sector: _{sector}_)\n"
+                await context.bot.send_message(
+                    chat_id=chat_id,
+                    text=holding_header + report,
+                    parse_mode="Markdown"
+                )
+                
+            extra_buttons = []
+            if len(tickers) > 3:
+                for rem_t in tickers[3:]:
+                    sym = rem_t.replace(".NS", "")
+                    extra_buttons.append([InlineKeyboardButton(f"📊 Analyze {sym}", callback_data=f"news_ticker_{rem_t}")])
+            extra_buttons.append([InlineKeyboardButton("🌐 Analyze Nifty 50 Benchmark", callback_data="news_market")])
+            extra_buttons.append([InlineKeyboardButton("🎛️ Main Menu", callback_data="cmd_menu")])
+            
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text="💡 *Tip: To check any other stock, type:* `/news <TICKER>` *(e.g. /news RELIANCE, /news TATAMOTORS)*",
+                reply_markup=InlineKeyboardMarkup(extra_buttons),
+                parse_mode="Markdown"
+            )
+        else:
+            # No open positions: analyze Nifty 50 benchmark
+            detailed = await loop.run_in_executor(
+                None,
+                lambda: sentiment_analyzer.get_detailed_news_sentiment("Nifty 50 Indian stock market", ticker="^NSEI")
+            )
+            report = sentiment_analyzer.format_detailed_sentiment_report(detailed)
+            intro = "ℹ️ *No active open holdings in Strategy #2 portfolio. Displaying Benchmark Market Sentiment:*\n\n"
+            tip = "\n\n💡 *Tip: You can analyze news sentiment for any specific stock anytime by typing:* `/news <TICKER>` *(e.g. /news RELIANCE, /news TATAMOTORS, /news HDFCBANK).*"
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text=intro + report + tip,
+                reply_markup=get_main_menu_keyboard(),
+                parse_mode="Markdown"
+            )
+    except Exception as e:
+        logger.error(f"Error fetching portfolio news sentiment: {e}")
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=f"❌ Error fetching news sentiment: {e}",
+            reply_markup=get_main_menu_keyboard()
+        )
+
+async def news_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query_arg = " ".join(context.args).strip() if context.args else None
+    await news_action(update.effective_chat.id, context, query_arg=query_arg)
+
 # Callback Query Handler for Inline Buttons
 async def menu_button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -452,6 +587,13 @@ async def menu_button_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         await history_action(chat_id, context)
     elif action == "cmd_summary":
         await summary_action(chat_id, context)
+    elif action == "cmd_news":
+        await news_action(chat_id, context, query_arg=None)
+    elif action == "news_market":
+        await news_action(chat_id, context, query_arg="Nifty 50")
+    elif action.startswith("news_ticker_"):
+        ticker = action.replace("news_ticker_", "")
+        await news_action(chat_id, context, query_arg=ticker)
     elif action in ["confirm_market_entry", "confirm_amo_entry"]:
         is_amo_flag = (action == "confirm_amo_entry")
         pending = context.bot_data.pop(f"pending_trades_{chat_id}", None)
@@ -519,6 +661,7 @@ async def post_init_setup(application: Application):
     commands = [
         BotCommand("menu", "🎛️ Show Interactive Button Menu"),
         BotCommand("scan", "🔍 Run Strategy #2 Scan (Preview)"),
+        BotCommand("news", "📰 AI News Sentiment (Holdings / Market)"),
         BotCommand("positions", "📈 Strategy #2 Open Holdings"),
         BotCommand("history", "🤝 Strategy #2 Closed Trades"),
         BotCommand("summary", "🏦 Strategy #2 Summary"),
@@ -611,6 +754,7 @@ def main():
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CommandHandler("menu", menu_command))
     app.add_handler(CommandHandler("scan", scan_command))
+    app.add_handler(CommandHandler(["news", "sentiment"], news_command))
     app.add_handler(CommandHandler(["positions", "position"], positions_command))
     app.add_handler(CommandHandler(["history", "closed", "trades"], history_command))
     app.add_handler(CommandHandler("summary", summary_command))
