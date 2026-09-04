@@ -123,23 +123,34 @@ The database is hosted on Google Sheets under the spreadsheet name **`NSE_Swing_
 
 ## 🎛️ 4. Telegram Bot Commands & Interactive Menu System
 
-The Telegram Bot (`@nse_swing_123_bot`) features an interactive touch menu, exact IST timestamps, full company names, and a native command menu bar:
+The Telegram Bot (`@nse_swing_123_bot`) features an interactive touch menu, exact IST timestamps, full company names, real-time news sentiment cards, and a native command menu bar:
 
 ### Native Menu Bar (`[/]` Popup):
 * `🎛️ /menu` — Displays the interactive touch button hub.
-* `🔍 /scan` — Runs an immediate breakout scan with IST time, AI news sentiment, and executes orders.
-* `📈 /positions` — Displays open positions with real-time Dhan/Yahoo tick quotes, Company Names, SL, Target, and Unrealized PnL.
+* `🔍 /scan` — Runs an on-demand breakout scan in **Preview Mode** (does NOT auto-execute orders into Google Sheets).
+  * **During Market Hours (9:15 AM – 3:30 PM IST):** Provides `[🚀 Confirm & Execute Market Entry]` and `[❌ Discard]`.
+  * **After-Market Hours / Weekends:** Provides `[🌙 Confirm & Execute AMO Entry]` and `[❌ Discard]`.
+* `📰 /news` — Generates in-depth **AI News Sentiment Reports** powered by **Gemini 3.6-flash**:
+  * `/news`: Automatically analyzes news sentiment for all active open holdings (or Nifty 50 benchmark if no open holdings).
+  * `/news <TICKER>`: Generates stock-specific sentiment for any NSE stock (e.g. `/news RELIANCE`, `/news TATAMOTORS`).
+* `📈 /positions` — Displays open positions with real-time tick quotes, Company Names, SL, Target, and Unrealized PnL.
 * `🤝 /history` — Displays all closed trades with Company Names, Entry, Exit, Realized PnL (₹), and **`PnL %`**.
 * `🏦 /summary` — Summarizes Portfolio Value, Cash, Realized PnL, Win Rate %, Total Return %, CAGR %, and XIRR %.
 * `🚀 /start` — Welcome guide and dynamic chat registration.
 
+### Automated Background Schedules:
+* **⏰ Scheduled Daily Scan (3:25 PM IST Mon–Fri):** Automatically executes qualified breakout orders into Google Sheets and broadcasts reports tagged as `⏰ Scheduled Daily Scan Report (Auto-Execution)`.
+* **🔔 Intraday Market Sync (Every 5 min, 9:15 AM – 3:30 PM IST):** Trails stop-loss upward to 20 EMA, checks live exits, and sends instant `🔔 Intraday Exit Alert` messages.
+
 ### Interactive Button Hub:
 ```text
 ┌───────────────────────────────┬───────────────────────────────┐
-│     🔍 Run Market Scan        │       📈 Open Positions       │
+│     🔍 Run Market Scan        │     📰 AI News Sentiment      │
 ├───────────────────────────────┼───────────────────────────────┤
-│     🤝 Trade History          │       🏦 Portfolio Summary    │
-└───────────────────────────────┴───────────────────────────────┘
+│     📈 Open Positions         │     🏦 Portfolio Summary      │
+├───────────────────────────────┴───────────────────────────────┤
+│                     🤝 Trade History                          │
+└───────────────────────────────────────────────────────────────┘
 ```
 
 ---
