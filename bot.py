@@ -515,14 +515,24 @@ def main():
     # Register callback query handler for interactive buttons
     app.add_handler(CallbackQueryHandler(menu_button_callback))
     
-    # Configure JobQueue to run daily at 3:25 PM IST (5 minutes before market close)
-    tz = pytz.timezone("Asia/Kolkata")
+    # Configure JobQueue to run daily at 3:25 PM IST (Monday through Friday)
+    try:
+        from zoneinfo import ZoneInfo
+        tz = ZoneInfo("Asia/Kolkata")
+    except ImportError:
+        tz = pytz.timezone("Asia/Kolkata")
+        
     time_to_run = datetime.time(hour=15, minute=25, second=0, tzinfo=tz)
-    app.job_queue.run_daily(daily_scan_job, time=time_to_run)
-    logger.info("Daily scan job scheduled for 15:25 IST.")
+    app.job_queue.run_daily(
+        daily_scan_job, 
+        time=time_to_run,
+        days=(1, 2, 3, 4, 5), # Monday through Friday
+        job_kwargs={"misfire_grace_time": 120}
+    )
+    logger.info("Daily scan job scheduled for 15:25 IST (Mon-Fri).")
     
     # Configure Repeating Job to run every 5 minutes (300 seconds) during market hours
-    app.job_queue.run_repeating(market_hours_sync_job, interval=300, first=10)
+    app.job_queue.run_repeating(market_hours_sync_job, interval=300, first=10, job_kwargs={"misfire_grace_time": 60})
     logger.info("Intraday market hours sync job scheduled (every 5 minutes).")
     
     # Start bot
