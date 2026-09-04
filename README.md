@@ -1,4 +1,4 @@
-﻿# 📈 System #1: Classic Breakout Quantitative Swing Trading Engine
+# 📈 System #1: Classic Breakout Quantitative Swing Trading Engine
 
 An institutional-grade, multi-agent automated swing trading and portfolio management system designed for the **NSE Nifty 50** universe. Features LangGraph stateful workflow execution, Google Sheets cloud database, Streamlit analytics dashboard, and an interactive Telegram bot with AI news sentiment analysis.
 
@@ -43,7 +43,7 @@ An institutional-grade, multi-agent automated swing trading and portfolio manage
 
 ## 🚀 Deployment & Environment Variables
 
-Deployed on Render as a Python Web Service (https://swing-trading-xpmp.onrender.com).
+Deployed on Render as a Python Web Service (https://ai-swing-trade-1.onrender.com).
 
 | Variable | Description |
 | :--- | :--- |

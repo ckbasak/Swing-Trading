@@ -181,7 +181,7 @@ The Telegram Bot (`@nse_swing_123_bot`) features an interactive touch menu, exac
 | **Telegram Bot** | `TELEGRAM_BOT_TOKEN` | `8723012283:AAFuddRfXL3-VNbeCdRRwKwoZ3438FaV0uo` | Render Environment |
 | **Telegram Bot** | Bot Username | `@nse_swing_123_bot` | Telegram App |
 | **Render Cloud** | Service ID | `srv-da86e4ugekts73ccfr20` | Render Dashboard |
-| **Render Cloud** | Public Web URL | `https://nse-swing-trading.onrender.com` | Browser / UptimeRobot |
+| **Render Cloud** | Public Web URL | `https://ai-swing-trade-1.onrender.com` | Browser / UptimeRobot |
 | **Google Sheets** | `GOOGLE_SERVICE_ACCOUNT_JSON` | JSON content of `service_account.json` | Render Environment |
 | **Google Sheets** | Service Account Email | `sheets-editor@swing-trade-system-506815.iam.gserviceaccount.com` | Google Cloud IAM |
 | **Google Sheets** | Sheet Name | `NSE_Swing_Trading_Portfolio` | Google Drive |
