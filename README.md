@@ -48,7 +48,7 @@ An institutional-grade, multi-agent quantitative swing trading and portfolio man
 
 ## 🚀 Deployment & Environment Variables
 
-Deployed on Render as a Python Web Service (https://nse-swing-trading.onrender.com).
+Deployed on Render as a Python Web Service (https://ai-swing-trade-2.onrender.com).
 
 | Variable | Description |
 | :--- | :--- |
