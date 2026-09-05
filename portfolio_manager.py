@@ -6,7 +6,7 @@ import math
 import time
 import pandas as pd
 import yfinance as yf
-from datetime import datetime
+from datetime import datetime, time, date
 import sentiment_analyzer
 import dhan_client
 from google.oauth2.service_account import Credentials
@@ -136,7 +136,123 @@ def get_or_create_portfolio_sheet(client: gspread.Client, sheet_name: str = None
         account_ws.append_row(["Risk Percent", "0.01"])
         account_ws.append_row(["Initial Capital", "1000000"])
         
+    # Check/Create Schedules sheet
+    get_schedules_worksheet(sh)
+    
     return sh
+
+def get_schedules_worksheet(sh: gspread.Spreadsheet) -> gspread.Worksheet:
+    """
+    Returns the 'Schedules' worksheet, creating it with headers and initial templates if not found.
+    """
+    try:
+        ws = sh.worksheet("Schedules")
+    except gspread.WorksheetNotFound:
+        ws = sh.add_worksheet(title="Schedules", rows="100", cols="6")
+        headers = ["Date", "Time", "Mode", "Status", "Last Run", "Notes"]
+        ws.append_row(headers)
+        ws.append_row(["DAILY", "08:00", "PREVIEW", "ACTIVE", "", "Morning Pre-Market Scan"])
+        ws.append_row(["DAILY", "15:25", "EXECUTE", "ACTIVE", "", "Daily Market Close Scan"])
+        ws.append_row(["TODAY", "18:00", "EXECUTE", "PAUSED", "", "Sample One-Time Custom Scan"])
+    return ws
+
+def get_pending_schedules(sh: gspread.Spreadsheet) -> List[Dict[str, Any]]:
+    """
+    Fetches all schedules from the 'Schedules' worksheet and returns rows eligible for execution.
+    """
+    try:
+        ws = get_schedules_worksheet(sh)
+        records = retry_gspread(ws.get_all_records)
+        items = []
+        for idx, r in enumerate(records):
+            status = str(r.get("Status", "")).strip().upper()
+            if status not in ("PENDING", "ACTIVE", "SCHEDULED"):
+                continue
+            items.append({
+                "row_idx": idx + 2,
+                "date": str(r.get("Date", "")).strip(),
+                "time": str(r.get("Time", "")).strip(),
+                "mode": str(r.get("Mode", "EXECUTE")).strip().upper(),
+                "status": status,
+                "last_run": str(r.get("Last Run", "")).strip(),
+                "notes": str(r.get("Notes", "")).strip()
+            })
+        return items
+    except Exception as e:
+        print(f"Error fetching pending schedules: {e}")
+        return []
+
+def update_schedule_status(sh: gspread.Spreadsheet, row_idx: int, status: str, last_run: str = None):
+    """
+    Updates the Status (col 4) and optionally Last Run (col 5) in the Schedules worksheet.
+    """
+    try:
+        ws = get_schedules_worksheet(sh)
+        retry_gspread(ws.update_cell, row_idx, 4, status)
+        if last_run is not None:
+            retry_gspread(ws.update_cell, row_idx, 5, last_run)
+    except Exception as e:
+        print(f"Error updating schedule status row {row_idx}: {e}")
+
+def is_schedule_due(item: Dict[str, Any], now_ist: datetime) -> bool:
+    """
+    Evaluates whether a schedule item is due to execute given current IST datetime.
+    """
+    date_val = item.get("date", "").strip().upper()
+    time_val = item.get("time", "").strip()
+    last_run = item.get("last_run", "").strip()
+    today_str = now_ist.strftime("%Y-%m-%d")
+    
+    if not time_val:
+        return False
+        
+    # Check if already executed today
+    if last_run.startswith(today_str):
+        return False
+        
+    # Evaluate Date condition
+    date_matches = False
+    if date_val in ("TODAY", ""):
+        date_matches = True
+    elif date_val == "DAILY":
+        date_matches = True
+    elif date_val in ("WEEKDAYS", "WEEKDAY", "MON-FRI"):
+        date_matches = (now_ist.weekday() < 5)
+    else:
+        for fmt in ("%Y-%m-%d", "%d-%m-%Y", "%d/%m/%Y"):
+            try:
+                parsed_d = datetime.strptime(date_val, fmt).date()
+                if parsed_d == now_ist.date():
+                    date_matches = True
+                    break
+            except ValueError:
+                pass
+                
+    if not date_matches:
+        return False
+        
+    # Evaluate Time condition (tolerance window: [target - 30s, target + 180s])
+    parsed_time = None
+    for fmt in ("%H:%M", "%H:%M:%S", "%I:%M %p", "%I:%M%p"):
+        try:
+            parsed_time = datetime.strptime(time_val, fmt).time()
+            break
+        except ValueError:
+            pass
+            
+    if not parsed_time:
+        return False
+        
+    target_dt = now_ist.replace(
+        hour=parsed_time.hour, 
+        minute=parsed_time.minute, 
+        second=0, 
+        microsecond=0
+    )
+    diff_seconds = (now_ist - target_dt).total_seconds()
+    
+    # Due if within -30s to +180s (3-minute window)
+    return -30 <= diff_seconds <= 180
 
 def get_account_details(sh: gspread.Spreadsheet) -> Dict[str, float]:
     """
