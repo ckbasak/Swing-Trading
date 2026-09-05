@@ -1,8 +1,51 @@
-# 📈 System #2: Strategy v2 (Optimized) Quantitative Swing Trading Engine
+# 📈 AI Swing Trading System #2: Strategy v2 (Optimized)
 
-An institutional-grade, multi-agent quantitative swing trading and portfolio management system optimized for the **NSE Nifty 50** universe. Features volatility-adaptive stop sizing (2× ATR), sector concentration caps, LangGraph stateful orchestration, Google Sheets database, Streamlit dashboard, and interactive Telegram bot with Gemini 3.6-flash sentiment analysis.
+[![Python 3.11+](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![Render](https://img.shields.io/badge/Render-Live_Web_App-46E3B7?style=for-the-badge&logo=render&logoColor=white)](https://ai-swing-trade-2.onrender.com)
+[![Telegram Bot](https://img.shields.io/badge/Telegram_Bot-@ai__swing__trade__2__bot-26A5E4?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/ai_swing_trade_2_bot)
+[![Google Sheets](https://img.shields.io/badge/Google_Sheets-Database-34A853?style=for-the-badge&logo=googlesheets&logoColor=white)](https://docs.google.com/)
+[![Gemini AI](https://img.shields.io/badge/Gemini_3.6--flash-News_Sentiment-8E75B2?style=for-the-badge&logo=google&logoColor=white)](https://ai.google.dev/)
+[![LangGraph](https://img.shields.io/badge/LangGraph-Stateful_Workflows-FF4B4B?style=for-the-badge)](https://langchain-ai.github.io/langgraph/)
+
+An institutional-grade, multi-agent quantitative swing trading and portfolio management system optimized for the **NSE Nifty 50** universe. Features volatility-adaptive stop sizing (2× ATR), sector concentration caps, LangGraph stateful orchestration, Google Sheets cloud database, Streamlit dashboard, and interactive Telegram bot with Gemini 3.6-flash sentiment analysis.
 
 ---
+
+## 📑 Table of Contents
+- [⚡ Strategy v2 (Optimized) Specifications](#-strategy-v2-optimized-upgrades--specifications)
+- [📐 Multi-Agent Architecture](#-multi-agent-architecture)
+- [🎛️ Telegram Bot Commands](#️-telegram-bot-commands-ai_swing_trade_2_bot)
+- [⏰ Automated Dynamic Schedules](#-automated-cron--dynamic-google-sheets-schedules)
+- [🚀 Deployment & Environment Variables](#-deployment--environment-variables)
+- [💻 Local Quickstart](#-local-quickstart)
+
+---
+
+## 📐 Multi-Agent Architecture
+
+```mermaid
+graph TD
+    Trigger([Cron Trigger / Telegram Command / Sheets Scheduler]) --> Node1[1. Sync Portfolio Node]
+    
+    subgraph Google Sheets Database
+        Holdings[(Holdings Worksheet)]
+        Account[(Account Worksheet)]
+        Schedules[(Schedules Worksheet)]
+        Chats[(TelegramChats Worksheet)]
+    end
+
+    Node1 <--> Holdings
+    Node1 <--> Account
+    Node1 --> Node2[2. Scan Market Node]
+    Node2 --> Node3[3. Calculate Sizing Node]
+    Node3 -->|1.5% Risk, 2×ATR, Max 3/Sector| Node4[4. Execute Trades Node]
+    
+    Node4 --> Holdings
+    Node4 --> Account
+    Node4 --> Broadcast([Telegram Bot & Streamlit Dashboard])
+    
+    Schedules -. Polled Every 60s .-> Node2
+```
 
 ## ⚡ Strategy v2 (Optimized) Upgrades & Specifications
 
@@ -73,4 +116,39 @@ Deployed on Render as a Python Web Service (**[ai-swing-trade-2.onrender.com](ht
 | `SPREADSHEET_NAME` | `NSE_Swing_Trading_Portfolio_2` |
 | `DHAN_CLIENT_ID` *(Optional)* | 10-digit DhanHQ Client ID |
 | `DHAN_ACCESS_TOKEN` *(Optional)* | Daily DhanHQ Access Token |
+
+---
+
+## 💻 Local Quickstart
+
+### 1. Clone & Switch Branch
+```bash
+git clone https://github.com/ckbasak/Swing-Trading.git
+cd Swing-Trading
+git checkout strategy-2
+```
+
+### 2. Environment Setup
+```bash
+python -m venv venv
+# Windows:
+.\venv\Scripts\activate
+# Linux/macOS:
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+### 3. Run Web Dashboard or Bot
+* **Start Streamlit Dashboard**:
+  ```bash
+  streamlit run app.py
+  ```
+* **Start Telegram Bot**:
+  ```bash
+  python bot.py
+  ```
+* **Start Production Supervisor**:
+  ```bash
+  sh start.sh
+  ```
 
