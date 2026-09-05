@@ -39,8 +39,14 @@ def _load_env():
                             os.environ[k.strip()] = v.strip().strip("'").strip('"')
 _load_env()
 
-# Fetch Token from env
-TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
+# Fetch Token from env (check TELEGRAM_BOT_TOKEN, TELEGRAM_BOT_TOKEN_1, BOT_TOKEN)
+TELEGRAM_BOT_TOKEN = (
+    os.environ.get("TELEGRAM_BOT_TOKEN") or 
+    os.environ.get("TELEGRAM_BOT_TOKEN_1") or 
+    os.environ.get("BOT_TOKEN")
+)
+if TELEGRAM_BOT_TOKEN:
+    TELEGRAM_BOT_TOKEN = TELEGRAM_BOT_TOKEN.strip().strip("'").strip('"')
 
 # Helper functions for dynamic Telegram chat registration in Google Sheets
 def register_chat(chat_id: int):
