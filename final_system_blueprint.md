@@ -104,6 +104,16 @@ The database is hosted on Google Sheets under the spreadsheet name **`NSE_Swing_
 | :--- | :--- |
 | `ChatID` | Registered Telegram Chat IDs that receive automated daily alerts and exit triggers |
 
+### Worksheet 4: `"Schedules"` (6 Columns)
+| Column | Parameter | Type | Description |
+| :---: | :--- | :--- | :--- |
+| **1** | `Date` | String | Recurrence rule (`DAILY`, `WEEKDAYS`) or date (`TODAY`, `YYYY-MM-DD`) |
+| **2** | `Time` | String | Target time in 24h Indian Standard Time (e.g. `09:00`, `15:25`, `18:30`) |
+| **3** | `Mode` | String | `EXECUTE` (auto order), `PREVIEW` (paper scan), or `SENTIMENT` / `NEWS` (AI briefing) |
+| **4** | `Status` | String | `ACTIVE` (recurring), `PENDING` (one-off), `RUNNING`, `COMPLETED`, `PAUSED` |
+| **5** | `Last Run` | String | Auto-updated execution timestamp (e.g. `2026-09-05 23:47:22 IST`) |
+| **6** | `Notes` | String | Specific stock ticker (`RELIANCE`), `Nifty 50`, or blank for portfolio holdings |
+
 ---
 
 ## 🛡️ 3. Comprehensive System Guardrails Matrix
@@ -120,6 +130,7 @@ The database is hosted on Google Sheets under the spreadsheet name **`NSE_Swing_
 | **Liquidity Filter** | Screener | Discards stocks with 20-day Volume SMA **< 50,000 shares** | Eliminates low-liquidity slippage traps |
 | **Google Sheets 429 Retry** | Database | 2-second exponential sleep retry on `429 Too Many Requests` | Prevents quota exhaustion crashes |
 | **Memory Leak Guard** | Runtime | Disables multithreading, clears TZ cache, forces `gc.collect()` | Prevents Render Free Tier 512MB RAM restarts |
+| **Self-Healing Supervisor** | Runtime | Auto-restart loop in `start.sh` recovering from Telegram 409 conflicts in 5s | Zero-downtime rolling deploys |
 
 ---
 
@@ -134,15 +145,18 @@ The Telegram Bot for System #2 (Strategy v2) features an interactive touch menu,
   * **After-Market Hours / Weekends:** Provides `[🌙 Confirm & Execute AMO Entry]` and `[❌ Discard]`.
 * `📰 /news` — Generates in-depth **AI News Sentiment Reports** powered by **Gemini 3.6-flash**:
   * `/news`: Automatically analyzes news sentiment for all active open Strategy #2 holdings (or Nifty 50 benchmark if no open holdings).
-  * `/news <TICKER>`: Generates stock-specific sentiment for any NSE stock (e.g. `/news RELIANCE`, `/news TATAMOTORS`).
+  * `/news <TICKER>`: Generates stock-specific sentiment for any NSE stock (e.g. `/news RELIANCE`, `/news TATAMOTORS`, `/news Nifty 50`).
 * `📈 /positions` — Displays Strategy #2 open holdings with real-time tick quotes, Company Names, Sector, SL (2×ATR), Target (1:2), and Unrealized PnL.
 * `🤝 /history` — Displays all closed trades with Company Names, Sector, Entry, Exit, Realized PnL (₹), and **`PnL %`**.
 * `🏦 /summary` — Summarizes Strategy #2 Portfolio Value, Cash, Realized PnL, Win Rate %, Total Return %, CAGR %, and XIRR %.
+* `📅 /schedules` — Displays all Google Sheets dynamic scan and sentiment schedules with target times and live DUE status.
 * `🚀 /start` — Welcome guide and dynamic chat registration.
 
 ### Automated Background Schedules:
+* **Dynamic Google Sheets Scheduler (Every 60 sec):** Scans the `Schedules` worksheet and executes any due `EXECUTE`, `PREVIEW`, or `SENTIMENT` scan automatically.
 * **⏰ Scheduled Daily Scan (3:25 PM IST Mon–Fri):** Automatically executes qualified breakout orders into `NSE_Swing_Trading_Portfolio_2` and broadcasts reports tagged as `⏰ Scheduled Daily Scan Report (Auto-Execution) — Strategy #2`.
 * **🔔 Intraday Market Sync (Every 5 min, 9:15 AM – 3:30 PM IST):** Trails stop-loss upward to 20 EMA, checks live exits, and sends instant `🔔 Intraday Exit Alert` messages.
+* **⚡ Render Keep-Alive (Every 9 min):** Pings `https://ai-swing-trade-2.onrender.com/_stcore/health` to prevent cloud idling.
 
 ### Interactive Button Hub:
 ```text
@@ -150,9 +164,9 @@ The Telegram Bot for System #2 (Strategy v2) features an interactive touch menu,
 │     🔍 Run Market Scan        │     📰 AI News Sentiment      │
 ├───────────────────────────────┼───────────────────────────────┤
 │     📈 Open Positions         │     🏦 Portfolio Summary      │
-├───────────────────────────────┴───────────────────────────────┤
-│                     🤝 Trade History                          │
-└───────────────────────────────────────────────────────────────┘
+├───────────────────────────────┼───────────────────────────────┤
+│     📅 Scan Schedules         │     🤝 Trade History          │
+└───────────────────────────────┴───────────────────────────────┘
 ```
 
 ---
@@ -180,15 +194,14 @@ The Telegram Bot for System #2 (Strategy v2) features an interactive touch menu,
 | :--- | :--- | :--- | :--- |
 | **Dhan Broker** | `DHAN_CLIENT_ID` | Your 10-digit Dhan Client ID | Render Environment |
 | **Dhan Broker** | `DHAN_ACCESS_TOKEN` | Generated from Dhan Web > Profile > DhanHQ APIs | Render Environment |
-| **Telegram Bot** | `TELEGRAM_BOT_TOKEN` | `8723012283:AAFuddRfXL3-VNbeCdRRwKwoZ3438FaV0uo` | Render Environment |
-| **Telegram Bot** | Bot Username | `@nse_swing_123_bot` | Telegram App |
-| **Render Cloud** | Service ID | `srv-da86e4ugekts73ccfr20` | Render Dashboard |
+| **Telegram Bot** | `TELEGRAM_BOT_TOKEN_2` | `8776408528:AAGexszfsf0DmRHFtS5CrPo_QmsN06QXc_A` | Render Environment |
+| **Telegram Bot** | Bot Username | `@ai_swing_trade_2_bot` | Telegram App |
 | **Render Cloud** | Public Web URL | `https://ai-swing-trade-2.onrender.com` | Browser / UptimeRobot |
 | **Google Sheets** | `GOOGLE_SERVICE_ACCOUNT_JSON` | JSON content of `service_account.json` | Render Environment |
 | **Google Sheets** | Service Account Email | `sheets-editor@swing-trade-system-506815.iam.gserviceaccount.com` | Google Cloud IAM |
-| **Google Sheets** | Sheet Name | `NSE_Swing_Trading_Portfolio` | Google Drive |
+| **Google Sheets** | Sheet Name | `NSE_Swing_Trading_Portfolio_2` | Google Drive |
 | **Gemini AI** | `GEMINI_API_KEY` | `[Your Gemini API Key]` | Render Environment |
-| **GitHub Repo** | Code Repository | `https://github.com/ckbas/Swing-Trading.git` | GitHub |
+| **GitHub Repo** | Code Repository (branch `strategy-2`) | `https://github.com/ckbas/Swing-Trading.git` | GitHub |
 
 ---
 
