@@ -21,8 +21,25 @@ import gc
 import pandas as pd
 import yfinance as yf
 import plotly.express as px
-import plotly.graph_objects as go
 import portfolio_manager
+import subprocess
+import sys
+
+# Failsafe background bot launcher (ensures bot.py runs even if Render Start Command only runs streamlit)
+@st.cache_resource
+def _ensure_bot_running():
+    if os.environ.get("BOT_STARTED_BY_SCRIPT") == "1":
+        return None
+    try:
+        bot_script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bot.py")
+        proc = subprocess.Popen([sys.executable, "-u", bot_script])
+        print(f"Spawned background Telegram bot daemon (PID: {proc.pid}) from app.py")
+        return proc
+    except Exception as e:
+        print(f"Error starting background bot from app.py: {e}")
+        return None
+
+_ensure_bot_running()
 
 st.set_page_config(
     page_title="NSE Swing Trading Dashboard #1 (Classic Breakout)",
