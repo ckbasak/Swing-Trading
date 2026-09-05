@@ -79,7 +79,14 @@ def load_data():
         # Get holdings
         holdings = portfolio_manager.get_all_holdings(sh)
         
-        return account, holdings
+        # Get schedules
+        try:
+            ws_sched = portfolio_manager.get_schedules_worksheet(sh)
+            schedules = ws_sched.get_all_records()
+        except Exception:
+            schedules = []
+        
+        return account, holdings, schedules
     except Exception as e:
         st.error(f"Error loading data from Google Sheets: {e}")
         import json
@@ -95,9 +102,9 @@ def load_data():
                     st.info(f"Active Service Account Key ID: `{kid}`")
             except Exception:
                 pass
-        return None, None
+        return None, None, None
 
-account, holdings = load_data()
+account, holdings, schedules = load_data()
 
 if account is not None and holdings is not None:
     # Convert holdings to DataFrame
@@ -180,7 +187,9 @@ if account is not None and holdings is not None:
     st.markdown("---")
     
     # Main Tabs
-    tab_open, tab_closed, tab_charts = st.tabs(["📈 Open Positions", "🤝 Closed Trades", "📊 Analytics & Charts"])
+    tab_open, tab_closed, tab_charts, tab_schedules = st.tabs([
+        "📈 Open Positions", "🤝 Closed Trades", "📊 Analytics & Charts", "📅 Scan Schedules"
+    ])
     
     with tab_open:
         st.subheader("Current Holdings")
@@ -318,5 +327,30 @@ if account is not None and holdings is not None:
                 st.plotly_chart(fig_bar, use_container_width=True)
             else:
                 st.info("No trades to display performance chart.")
+                
+    with tab_schedules:
+        st.subheader("📅 Automated & Custom Scan Schedules (Strategy #2)")
+        st.markdown(
+            "Configure schedules directly in your Google Sheet (**`NSE_Swing_Trading_Portfolio_2`** -> **`Schedules`** tab). "
+            "Render monitors the schedule table every 60 seconds."
+        )
+        
+        if schedules:
+            sched_df = pd.DataFrame(schedules)
+            st.dataframe(sched_df, use_container_width=True)
+        else:
+            st.info("No scan schedules found.")
+            
+        with st.expander("ℹ️ How to Add or Update Scan Schedules in Google Sheets"):
+            st.markdown("""
+            1. Open Google Sheet: **`NSE_Swing_Trading_Portfolio_2`**.
+            2. Switch to the **`Schedules`** tab.
+            3. Add or update a row:
+               - **Date**: `TODAY`, `YYYY-MM-DD` (e.g. `2026-09-05`), `DAILY`, or `WEEKDAYS`.
+               - **Time**: Target time in IST (24h format, e.g. `18:30`, `09:15`, `15:25`).
+               - **Mode**: `EXECUTE` (auto-execute buy orders) or `PREVIEW` (preview only).
+               - **Status**: `PENDING` (ready to run), `ACTIVE` (for daily recurrence), or `PAUSED`.
+            4. At that exact minute, Render will trigger the scan, update status to `COMPLETED`, record `Last Run`, and send the report to Telegram!
+            """)
 else:
     st.info("Welcome! Please set up your Google Sheets database and add configurations to load the dashboard.")

@@ -674,6 +674,82 @@ async def post_init_setup(application: Application):
     except Exception as e:
         logger.error(f"Error setting Telegram Bot commands: {e}")
 
+# Dynamic Google Sheets Schedules Job
+async def check_google_sheets_schedules_job(context: ContextTypes.DEFAULT_TYPE):
+    """
+    Checks the 'Schedules' worksheet in Google Sheets every 60 seconds.
+    If any pending schedule matches the current IST time, executes the scan
+    and dispatches the report to all registered Telegram chats.
+    """
+    loop = asyncio.get_event_loop()
+    try:
+        client = await loop.run_in_executor(None, portfolio_manager.get_gspread_client)
+        sh = await loop.run_in_executor(None, lambda: portfolio_manager.get_or_create_portfolio_sheet(client))
+        schedules = await loop.run_in_executor(None, lambda: portfolio_manager.get_pending_schedules(sh))
+        
+        if not schedules:
+            return
+            
+        tz = pytz.timezone("Asia/Kolkata")
+        now = datetime.datetime.now(tz)
+        
+        for item in schedules:
+            if portfolio_manager.is_schedule_due(item, now):
+                row_idx = item["row_idx"]
+                date_val = item["date"]
+                time_val = item["time"]
+                mode = item["mode"] # 'EXECUTE' or 'PREVIEW'
+                execute_trades = (mode == "EXECUTE")
+                logger.info(f"Triggering scheduled scan from Google Sheet (Row {row_idx}: {date_val} {time_val}, Mode={mode})...")
+                
+                # Mark as RUNNING immediately in sheet to prevent double triggers
+                await loop.run_in_executor(
+                    None,
+                    lambda: portfolio_manager.update_schedule_status(sh, row_idx, "RUNNING")
+                )
+                
+                try:
+                    state = await loop.run_in_executor(
+                        None,
+                        lambda: trading_graph.run_trading_system(execute_trades=execute_trades)
+                    )
+                    header = (
+                        f"⏰ *Dynamic Scheduled Scan Report (Google Sheets Trigger) — Strategy #2*\n"
+                        f"📅 Schedule: `{date_val}` at `{time_val} IST` | Mode: `{mode}`\n"
+                    )
+                    report = trading_graph.format_scan_report(state, is_scheduled=execute_trades)
+                    full_report = f"{header}\n{report}"
+                    
+                    chat_ids = await loop.run_in_executor(None, get_registered_chats)
+                    for cid in chat_ids:
+                        try:
+                            await context.bot.send_message(
+                                chat_id=cid,
+                                text=full_report,
+                                reply_markup=get_main_menu_keyboard(),
+                                parse_mode="Markdown"
+                            )
+                        except Exception as e:
+                            logger.error(f"Failed to send custom schedule report to {cid}: {e}")
+                            
+                    last_run_str = now.strftime("%Y-%m-%d %H:%M:%S IST")
+                    is_recurring = str(date_val).strip().upper() in ("DAILY", "WEEKDAYS", "WEEKDAY", "MON-FRI")
+                    new_status = "ACTIVE" if is_recurring else "COMPLETED"
+                    
+                    await loop.run_in_executor(
+                        None,
+                        lambda: portfolio_manager.update_schedule_status(sh, row_idx, new_status, last_run=last_run_str)
+                    )
+                    logger.info(f"Custom schedule row {row_idx} completed successfully (status -> {new_status}).")
+                except Exception as ex:
+                    logger.error(f"Error executing custom schedule row {row_idx}: {ex}")
+                    await loop.run_in_executor(
+                        None,
+                        lambda: portfolio_manager.update_schedule_status(sh, row_idx, "ERROR", last_run=f"Error: {ex}")
+                    )
+    except Exception as e:
+        logger.error(f"Error in check_google_sheets_schedules_job: {e}")
+
 # Daily Cron Job
 async def daily_scan_job(context: ContextTypes.DEFAULT_TYPE):
     logger.info("Starting scheduled daily scan job (Auto-Execution)...")
@@ -794,16 +870,15 @@ def main():
     )
     logger.info("Morning scan job scheduled for 08:00 IST daily.")
 
-    # Configure Cloud Test Scan Job to run at 17:40 IST today
-    test_time_1740 = datetime.time(hour=17, minute=40, second=0, tzinfo=tz)
-    app.job_queue.run_daily(
-        daily_scan_job,
-        time=test_time_1740,
-        days=(0, 1, 2, 3, 4, 5, 6),
-        name="test_scan_1740",
-        job_kwargs={"misfire_grace_time": 180}
+    # Configure Dynamic Google Sheets Scan Scheduler (polls every 60 seconds)
+    app.job_queue.run_repeating(
+        check_google_sheets_schedules_job,
+        interval=60,
+        first=15,
+        name="dynamic_sheets_scheduler",
+        job_kwargs={"misfire_grace_time": 45}
     )
-    logger.info("Cloud test scan job scheduled for 17:40 IST.")
+    logger.info("Dynamic Google Sheets Scan Scheduler active (polling every 60s).")
 
     # Configure Market Close Scan Job to run daily at 3:25 PM IST (Monday through Friday)
     time_to_run = datetime.time(hour=15, minute=25, second=0, tzinfo=tz)
