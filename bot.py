@@ -791,16 +791,16 @@ def main():
     )
     logger.info("Morning scan job scheduled for 08:00 IST daily.")
 
-    # Configure Cloud Test Scan Job to run at 15:20 IST today
-    test_time_1520 = datetime.time(hour=15, minute=20, second=0, tzinfo=tz)
+    # Configure Cloud Test Scan Job to run at 17:40 IST today
+    test_time_1740 = datetime.time(hour=17, minute=40, second=0, tzinfo=tz)
     app.job_queue.run_daily(
         daily_scan_job,
-        time=test_time_1520,
+        time=test_time_1740,
         days=(0, 1, 2, 3, 4, 5, 6),
-        name="test_scan_1520",
+        name="test_scan_1740",
         job_kwargs={"misfire_grace_time": 180}
     )
-    logger.info("Cloud test scan job scheduled for 15:20 IST.")
+    logger.info("Cloud test scan job scheduled for 17:40 IST.")
 
     # Configure Market Close Scan Job to run daily at 3:25 PM IST (Monday through Friday)
     time_to_run = datetime.time(hour=15, minute=25, second=0, tzinfo=tz)
