@@ -1,7 +1,10 @@
 import os
+import sys
+import time
 import pytz
 import datetime
 import logging
+from logging.handlers import RotatingFileHandler
 import asyncio
 import requests
 import gspread
@@ -16,10 +19,22 @@ import dhan_client
 import screener
 import sentiment_analyzer
 
-# Configure logging
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
-)
+# Configure logging with rotating file handler
+log_formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+root_logger = logging.getLogger()
+root_logger.setLevel(logging.INFO)
+
+console_handler = logging.StreamHandler(sys.stdout)
+console_handler.setFormatter(log_formatter)
+root_logger.addHandler(console_handler)
+
+try:
+    file_handler = RotatingFileHandler("bot.log", maxBytes=2*1024*1024, backupCount=2, encoding="utf-8")
+    file_handler.setFormatter(log_formatter)
+    root_logger.addHandler(file_handler)
+except Exception:
+    pass
+
 logger = logging.getLogger(__name__)
 
 # Auto-load .env if available
@@ -965,7 +980,23 @@ def main():
     
     # Start bot
     logger.info("Starting Telegram Bot poll...")
-    app.run_polling()
+    try:
+        with open("bot.pid", "w") as f:
+            f.write(str(os.getpid()))
+    except Exception:
+        pass
+    app.run_polling(drop_pending_updates=False)
+
+def run_forever():
+    while True:
+        try:
+            logger.info("Starting Telegram bot service...")
+            main()
+            logger.warning("main() returned. Restarting in 5s...")
+            time.sleep(5)
+        except Exception as e:
+            logger.error(f"Telegram bot exception: {e}. Reconnecting in 10s...", exc_info=True)
+            time.sleep(10)
 
 if __name__ == "__main__":
-    main()
+    run_forever()
