@@ -27,13 +27,16 @@ import subprocess
 import sys
 
 # Failsafe background bot launcher (ensures bot.py runs even if Render Start Command only runs streamlit)
-@st.cache_resource
 def _ensure_bot_running():
     if os.environ.get("BOT_STARTED_BY_SCRIPT") == "1":
-        return None
+        return "Started by start.sh"
+    if hasattr(_ensure_bot_running, "proc") and _ensure_bot_running.proc is not None:
+        if _ensure_bot_running.proc.poll() is None:
+            return _ensure_bot_running.proc
     try:
         bot_script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bot.py")
-        proc = subprocess.Popen([sys.executable, "-u", bot_script])
+        proc = subprocess.Popen([sys.executable, "-u", bot_script], env=os.environ.copy())
+        _ensure_bot_running.proc = proc
         print(f"Spawned background Telegram bot daemon (PID: {proc.pid}) from app.py")
         return proc
     except Exception as e:
@@ -51,6 +54,16 @@ st.set_page_config(
 
 st.title("📈 NSE Swing Trading Dashboard (Strategy #2 Optimized)")
 st.markdown("Automated Quantitative System: 20-SMA Breakout • >2.5x Volume • 2× ATR Stops • Max 3/Sector")
+
+# Bot Status Indicator in Sidebar
+bot_proc = _ensure_bot_running()
+if bot_proc:
+    st.sidebar.success("🤖 Telegram Bot: Active")
+else:
+    st.sidebar.warning("⚠️ Telegram Bot: Inactive")
+    if st.sidebar.button("▶️ Start Telegram Bot"):
+        _ensure_bot_running()
+        st.rerun()
 
 # Refresh Button
 if st.sidebar.button("🔄 Sync & Refresh Portfolio"):
