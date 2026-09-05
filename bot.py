@@ -498,6 +498,8 @@ async def schedules_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
             due_str = "🟢 **DUE NOW**" if due else "⏳ Waiting"
             msg += f"• **Row {s['row_idx']}:** `{s['date']}` at `{s['time']} IST`\n"
             msg += f"   Mode: `{s['mode']}` | Status: `{s['status']}`\n"
+            if s.get("notes"):
+                msg += f"   Notes: `{s['notes']}`\n"
             msg += f"   State: {due_str}\n\n"
             
         await context.bot.send_message(
@@ -750,11 +752,38 @@ async def post_init_setup(application: Application):
         logger.error(f"Error setting Telegram Bot commands: {e}")
 
 # Dynamic Google Sheets Schedules Job
+def resolve_sentiment_target(notes: str):
+    """
+    Parses the Notes column from Schedules to determine if a specific ticker
+    or market index is targeted for news sentiment analysis.
+    Returns ticker/query string, or None to fall back to portfolio holdings / market.
+    """
+    clean = notes.strip() if notes else ""
+    if not clean:
+        return None
+    lower = clean.lower()
+    if lower in ("market", "nifty", "nifty 50", "nifty50", "benchmark", "index"):
+        return "Nifty 50 Indian stock market"
+    if any(k in lower for k in ["holdings", "portfolio", "daily", "morning", "scan", "check", "sentiment", "news", "sample"]):
+        words = [w for w in clean.replace(",", " ").split() if w.lower() not in (
+            "sentiment", "news", "scan", "check", "daily", "morning", "preview", "mode", "for", "sample", "custom", "briefing"
+        )]
+        if words:
+            w0 = words[0]
+            if w0.lower() in ("market", "nifty", "nifty 50", "nifty50", "benchmark", "index"):
+                return "Nifty 50 Indian stock market"
+            if w0.lower() in ("holdings", "portfolio"):
+                return None
+            return w0
+        return None
+    return clean
+
 async def check_google_sheets_schedules_job(context: ContextTypes.DEFAULT_TYPE):
     """
     Checks the 'Schedules' worksheet in Google Sheets every 60 seconds.
     If any pending schedule matches the current IST time, executes the scan
     and dispatches the report to all registered Telegram chats.
+    Supports EXECUTE, PREVIEW, SENTIMENT, and NEWS modes.
     """
     loop = asyncio.get_event_loop()
     try:
@@ -773,9 +802,9 @@ async def check_google_sheets_schedules_job(context: ContextTypes.DEFAULT_TYPE):
                 row_idx = item["row_idx"]
                 date_val = item["date"]
                 time_val = item["time"]
-                mode = item["mode"] # 'EXECUTE' or 'PREVIEW'
-                execute_trades = (mode == "EXECUTE")
-                logger.info(f"Triggering scheduled scan from Google Sheet (Row {row_idx}: {date_val} {time_val}, Mode={mode})...")
+                mode = item["mode"] # 'EXECUTE', 'PREVIEW', 'SENTIMENT', 'NEWS'
+                notes = item.get("notes", "").strip()
+                logger.info(f"Triggering scheduled scan from Google Sheet (Row {row_idx}: {date_val} {time_val}, Mode={mode}, Notes={notes})...")
                 
                 # Mark as RUNNING immediately in sheet to prevent double triggers
                 await loop.run_in_executor(
@@ -784,29 +813,94 @@ async def check_google_sheets_schedules_job(context: ContextTypes.DEFAULT_TYPE):
                 )
                 
                 try:
-                    state = await loop.run_in_executor(
-                        None,
-                        lambda: trading_graph.run_trading_system(execute_trades=execute_trades)
-                    )
-                    header = (
-                        f"⏰ *Dynamic Scheduled Scan Report (Google Sheets Trigger)*\n"
-                        f"📅 Schedule: `{date_val}` at `{time_val} IST` | Mode: `{mode}`\n"
-                    )
-                    report = trading_graph.format_scan_report(state, is_scheduled=execute_trades)
-                    full_report = f"{header}\n{report}"
-                    
-                    chat_ids = await loop.run_in_executor(None, get_registered_chats)
-                    for cid in chat_ids:
-                        try:
-                            await context.bot.send_message(
-                                chat_id=cid,
-                                text=full_report,
-                                reply_markup=get_main_menu_keyboard(),
-                                parse_mode="Markdown"
-                            )
-                        except Exception as e:
-                            logger.error(f"Failed to send custom schedule report to {cid}: {e}")
+                    if mode in ("SENTIMENT", "NEWS"):
+                        target_query = resolve_sentiment_target(notes)
+                        header = (
+                            f"📰 *Dynamic Scheduled AI News Sentiment Briefing (Google Sheets Trigger)*\n"
+                            f"📅 Schedule: `{date_val}` at `{time_val} IST` | Mode: `{mode}`\n\n"
+                        )
+                        reports_to_send = []
+                        if target_query:
+                            target_raw = target_query.strip()
+                            target_upper = target_raw.upper()
+                            if not target_upper.endswith(".NS") and not any(ch in target_upper for ch in [" ", "^"]):
+                                ticker_ns = f"{target_upper}.NS"
+                            else:
+                                ticker_ns = target_upper
+                            comp_name = screener.get_company_name(ticker_ns)
+                            query_text = comp_name if comp_name and comp_name != ticker_ns else target_raw
                             
+                            detailed = await loop.run_in_executor(
+                                None,
+                                lambda: sentiment_analyzer.get_detailed_news_sentiment(query_text, ticker=ticker_ns)
+                            )
+                            rep = sentiment_analyzer.format_detailed_sentiment_report(detailed)
+                            reports_to_send.append(header + rep)
+                        else:
+                            open_pos = await loop.run_in_executor(None, portfolio_manager.get_open_positions, sh)
+                            if open_pos:
+                                tickers = [p["Ticker"] for p in open_pos]
+                                analyzed_count = min(len(tickers), 3)
+                                for idx in range(analyzed_count):
+                                    ticker = tickers[idx]
+                                    comp_name = screener.get_company_name(ticker)
+                                    query_text = comp_name if comp_name and comp_name != ticker else ticker.replace(".NS", "")
+                                    detailed = await loop.run_in_executor(
+                                        None,
+                                        lambda q=query_text, t=ticker: sentiment_analyzer.get_detailed_news_sentiment(q, ticker=t)
+                                    )
+                                    rep = sentiment_analyzer.format_detailed_sentiment_report(detailed)
+                                    holding_header = (
+                                        f"{header if idx == 0 else ''}"
+                                        f"💼 *Active Holding #{idx+1} of {len(tickers)}*\n"
+                                    )
+                                    reports_to_send.append(holding_header + rep)
+                            else:
+                                detailed = await loop.run_in_executor(
+                                    None,
+                                    lambda: sentiment_analyzer.get_detailed_news_sentiment("Nifty 50 Indian stock market", ticker="^NSEI")
+                                )
+                                rep = sentiment_analyzer.format_detailed_sentiment_report(detailed)
+                                intro = "ℹ️ *No active open holdings in portfolio. Displaying Benchmark Market Sentiment:*\n\n"
+                                reports_to_send.append(header + intro + rep)
+                                
+                        chat_ids = await loop.run_in_executor(None, get_registered_chats)
+                        for cid in chat_ids:
+                            for rep_msg in reports_to_send:
+                                try:
+                                    await context.bot.send_message(
+                                        chat_id=cid,
+                                        text=rep_msg,
+                                        reply_markup=get_main_menu_keyboard(),
+                                        parse_mode="Markdown"
+                                    )
+                                except Exception as e:
+                                    logger.error(f"Failed to send scheduled sentiment report to {cid}: {e}")
+                    else:
+                        execute_trades = (mode == "EXECUTE")
+                        state = await loop.run_in_executor(
+                            None,
+                            lambda: trading_graph.run_trading_system(execute_trades=execute_trades)
+                        )
+                        header = (
+                            f"⏰ *Dynamic Scheduled Scan Report (Google Sheets Trigger)*\n"
+                            f"📅 Schedule: `{date_val}` at `{time_val} IST` | Mode: `{mode}`\n"
+                        )
+                        report = trading_graph.format_scan_report(state, is_scheduled=execute_trades)
+                        full_report = f"{header}\n{report}"
+                        
+                        chat_ids = await loop.run_in_executor(None, get_registered_chats)
+                        for cid in chat_ids:
+                            try:
+                                await context.bot.send_message(
+                                    chat_id=cid,
+                                    text=full_report,
+                                    reply_markup=get_main_menu_keyboard(),
+                                    parse_mode="Markdown"
+                                )
+                            except Exception as e:
+                                logger.error(f"Failed to send custom schedule report to {cid}: {e}")
+                                
                     last_run_str = now.strftime("%Y-%m-%d %H:%M:%S IST")
                     is_recurring = str(date_val).strip().upper() in ("DAILY", "WEEKDAYS", "WEEKDAY", "MON-FRI")
                     new_status = "ACTIVE" if is_recurring else "COMPLETED"

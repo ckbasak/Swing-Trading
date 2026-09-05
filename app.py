@@ -398,11 +398,15 @@ if account is not None and holdings is not None:
             1. Open Google Sheet: **`NSE_Swing_Trading_Portfolio_1`**.
             2. Switch to the **`Schedules`** tab.
             3. Add or update a row:
-               - **Date**: `TODAY`, `YYYY-MM-DD` (e.g. `2026-09-05`), `DAILY`, or `WEEKDAYS`.
-               - **Time**: Target time in IST (24h format, e.g. `18:30`, `09:15`, `15:25`).
-               - **Mode**: `EXECUTE` (auto-execute buy orders) or `PREVIEW` (preview only).
-               - **Status**: `PENDING` (ready to run), `ACTIVE` (for daily recurrence), or `PAUSED`.
-            4. At that exact minute, Render will trigger the scan, update status to `COMPLETED`, record `Last Run`, and send the report to Telegram!
+               - **Date**: `TODAY`, `YYYY-MM-DD` (e.g. `2026-09-06`), `DAILY`, or `WEEKDAYS`.
+               - **Time**: Target time in IST (24h format, e.g. `09:00`, `15:25`, `18:30`).
+               - **Mode**: 
+                 - `EXECUTE`: Automated breakout scan with Dhan order placement.
+                 - `PREVIEW`: Paper/preview breakout scan only without real orders.
+                 - `SENTIMENT` or `NEWS`: Gemini AI market & stock sentiment briefing.
+               - **Status**: `PENDING` (ready to run once), `ACTIVE` (for daily recurrence), or `PAUSED`.
+               - **Notes**: For `SENTIMENT` mode, enter a stock ticker (e.g. `RELIANCE`, `TCS`), `Nifty 50` for benchmark, or leave blank to scan all open portfolio holdings!
+            4. At that exact minute, Render will trigger the scan/sentiment briefing, update status to `COMPLETED`, record `Last Run`, and send the report to Telegram!
             """)
 else:
     st.info("Welcome! Please set up your Google Sheets database and add configurations to load the dashboard.")
