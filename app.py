@@ -25,22 +25,49 @@ import portfolio_manager
 import subprocess
 import sys
 
-# Failsafe background bot launcher (ensures bot.py runs even if Render Start Command only runs streamlit)
+# Failsafe background bot launcher & health checker
+def is_bot_pid_alive() -> bool:
+    try:
+        pid_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bot.pid")
+        if os.path.exists(pid_file):
+            with open(pid_file, "r") as f:
+                pid_str = f.read().strip()
+            if pid_str and pid_str.isdigit():
+                pid = int(pid_str)
+                if sys.platform == "win32":
+                    import ctypes
+                    kernel32 = ctypes.windll.kernel32
+                    SYNCHRONIZE = 0x00100000
+                    process = kernel32.OpenProcess(SYNCHRONIZE, False, pid)
+                    if process:
+                        kernel32.CloseHandle(process)
+                        return True
+                    return False
+                else:
+                    try:
+                        os.kill(pid, 0)
+                        return True
+                    except (OSError, ProcessLookupError):
+                        return False
+    except Exception:
+        pass
+    return False
+
 def _ensure_bot_running():
-    if os.environ.get("BOT_STARTED_BY_SCRIPT") == "1":
-        return "Started by start.sh"
+    if is_bot_pid_alive():
+        return True
     if hasattr(_ensure_bot_running, "proc") and _ensure_bot_running.proc is not None:
         if _ensure_bot_running.proc.poll() is None:
-            return _ensure_bot_running.proc
+            return True
     try:
         bot_script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bot.py")
         proc = subprocess.Popen([sys.executable, "-u", bot_script], env=os.environ.copy())
         _ensure_bot_running.proc = proc
         print(f"Spawned background Telegram bot daemon (PID: {proc.pid}) from app.py")
-        return proc
+        return True
     except Exception as e:
         print(f"Error starting background bot from app.py: {e}")
-        return None
+        return False
 
 _ensure_bot_running()
 
@@ -55,14 +82,27 @@ st.title("📈 NSE Swing Trading Dashboard (Project #1: Classic Breakout)")
 st.markdown("Automated Quantitative System: 20-SMA Breakout • >2.0x Volume • Trailing 20-EMA • 1.0% Risk")
 
 # Bot Status Indicator in Sidebar
-bot_proc = _ensure_bot_running()
-if bot_proc:
+bot_alive = _ensure_bot_running()
+if bot_alive:
     st.sidebar.success("🤖 Telegram Bot: Active")
 else:
-    st.sidebar.warning("⚠️ Telegram Bot: Inactive")
+    st.sidebar.error("⚠️ Telegram Bot: Offline")
     if st.sidebar.button("▶️ Start Telegram Bot"):
         _ensure_bot_running()
         st.rerun()
+
+# Live Bot Logs expander in sidebar
+with st.sidebar.expander("📋 Bot Live Logs"):
+    log_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bot.log")
+    if os.path.exists(log_file):
+        try:
+            with open(log_file, "r", encoding="utf-8", errors="ignore") as f:
+                lines = f.readlines()
+            st.code("".join(lines[-25:]) if lines else "Log file empty.", language="text")
+        except Exception as e:
+            st.write(f"Error reading log: {e}")
+    else:
+        st.write("Initializing logs...")
 
 # Refresh Button
 if st.sidebar.button("🔄 Sync & Refresh Portfolio"):

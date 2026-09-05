@@ -212,6 +212,7 @@ def is_schedule_due(item: Dict[str, Any], now_ist: datetime) -> bool:
         
     # Evaluate Date condition
     date_matches = False
+    is_recurring = date_val in ("DAILY", "WEEKDAYS", "WEEKDAY", "MON-FRI")
     if date_val in ("TODAY", ""):
         date_matches = True
     elif date_val == "DAILY":
@@ -231,7 +232,7 @@ def is_schedule_due(item: Dict[str, Any], now_ist: datetime) -> bool:
     if not date_matches:
         return False
         
-    # Evaluate Time condition (tolerance window: [target - 30s, target + 180s])
+    # Evaluate Time condition
     parsed_time = None
     for fmt in ("%H:%M", "%H:%M:%S", "%I:%M %p", "%I:%M%p"):
         try:
@@ -251,8 +252,14 @@ def is_schedule_due(item: Dict[str, Any], now_ist: datetime) -> bool:
     )
     diff_seconds = (now_ist - target_dt).total_seconds()
     
-    # Due if within -60s to +600s (10-minute grace window for cloud wake-ups)
-    return -60 <= diff_seconds <= 600
+    # For one-time schedules (e.g. TODAY or specific date with PENDING status):
+    # Due as soon as the target time has arrived (>= -60s), ensuring wake-up delays don't cause missed runs
+    if not is_recurring:
+        return diff_seconds >= -60
+        
+    # For recurring schedules (DAILY / WEEKDAYS):
+    # Generous 30-minute grace window (-60s to +1800s)
+    return -60 <= diff_seconds <= 1800
 
 def get_account_details(sh: gspread.Spreadsheet) -> Dict[str, float]:
     """
