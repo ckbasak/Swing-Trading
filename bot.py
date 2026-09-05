@@ -990,7 +990,7 @@ async def market_hours_sync_job(context: ContextTypes.DEFAULT_TYPE):
 
 async def render_keep_alive_job(context: ContextTypes.DEFAULT_TYPE):
     """Pings the Render public endpoint every 9 minutes to keep the free service perpetually warm."""
-    render_url = os.environ.get("RENDER_EXTERNAL_URL") or os.environ.get("RENDER_SERVICE_URL") or "https://swing-trading-xpmp.onrender.com"
+    render_url = os.environ.get("RENDER_EXTERNAL_URL") or os.environ.get("RENDER_SERVICE_URL") or "https://ai-swing-trade-1.onrender.com"
     target = f"{render_url.rstrip('/')}/_stcore/health"
     loop = asyncio.get_running_loop()
     try:
