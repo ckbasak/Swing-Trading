@@ -262,8 +262,8 @@ def is_schedule_due(item: Dict[str, Any], now_ist: datetime) -> bool:
     )
     diff_seconds = (now_ist - target_dt).total_seconds()
     
-    # Due if within -30s to +180s (3-minute window)
-    return -30 <= diff_seconds <= 180
+    # Due if within -60s to +600s (10-minute grace window for cloud wake-ups)
+    return -60 <= diff_seconds <= 600
 
 def get_account_details(sh: gspread.Spreadsheet) -> Dict[str, float]:
     """

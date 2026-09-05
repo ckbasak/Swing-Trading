@@ -97,7 +97,8 @@ def get_main_menu_keyboard():
             InlineKeyboardButton("🏦 Portfolio Summary", callback_data="cmd_summary")
         ],
         [
-            InlineKeyboardButton("🤝 Trade History", callback_data="cmd_history")
+            InlineKeyboardButton("🤝 Trade History", callback_data="cmd_history"),
+            InlineKeyboardButton("📅 Scan Schedules", callback_data="cmd_schedules")
         ]
     ]
     return InlineKeyboardMarkup(keyboard)
@@ -117,7 +118,8 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "• `/news <TICKER>` - Detailed AI News Sentiment for any stock (e.g. `/news RELIANCE`)\n"
         "• `/positions` - View Strategy #2 active holdings & PnL\n"
         "• `/summary` - View account balance & risk allocation\n"
-        "• `/history` - View closed trades history\n\n"
+        "• `/history` - View closed trades history\n"
+        "• `/schedules` - View Google Sheets scan schedules\n\n"
         "🎛️ **Quick Action Menu:** Tap any button below or use the chat menu button `[/]`:"
     )
     await update.message.reply_text(
@@ -451,6 +453,58 @@ async def history_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
 async def history_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await history_action(update.effective_chat.id, context)
 
+async def schedules_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
+    tz = pytz.timezone("Asia/Kolkata")
+    now = datetime.datetime.now(tz)
+    
+    await context.bot.send_message(
+        chat_id=chat_id,
+        text=f"⏳ *Checking Strategy #2 Google Sheets scan schedules as of {now.strftime('%H:%M:%S IST')}...*",
+        parse_mode="Markdown"
+    )
+    
+    loop = asyncio.get_event_loop()
+    try:
+        client = await loop.run_in_executor(None, portfolio_manager.get_gspread_client)
+        sh = await loop.run_in_executor(None, lambda: portfolio_manager.get_or_create_portfolio_sheet(client))
+        schedules = await loop.run_in_executor(None, lambda: portfolio_manager.get_pending_schedules(sh))
+        
+        if not schedules:
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text="ℹ️ No pending schedules found in Google Sheets (`Schedules` worksheet).",
+                reply_markup=get_main_menu_keyboard()
+            )
+            return
+            
+        msg = f"📅 *Google Sheets Scan Schedules ({len(schedules)} Pending):*\n"
+        msg += f"⏱️ *Current Cloud Time:* `{now.strftime('%Y-%m-%d %H:%M:%S IST')}`\n\n"
+        
+        for s in schedules:
+            due = portfolio_manager.is_schedule_due(s, now)
+            due_str = "🟢 **DUE NOW**" if due else "⏳ Waiting"
+            msg += f"• **Row {s['row_idx']}:** `{s['date']}` at `{s['time']} IST`\n"
+            msg += f"   Mode: `{s['mode']}` | Status: `{s['status']}`\n"
+            msg += f"   State: {due_str}\n\n"
+            
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=msg,
+            reply_markup=get_main_menu_keyboard(),
+            parse_mode="Markdown"
+        )
+    except Exception as e:
+        logger.error(f"Error in schedules_action: {e}")
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=f"❌ *Error reading Google Sheets Schedules:*\n`{e}`",
+            reply_markup=get_main_menu_keyboard(),
+            parse_mode="Markdown"
+        )
+
+async def schedules_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await schedules_action(update.effective_chat.id, context)
+
 async def news_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE, query_arg: str = None):
     """
     Executes AI News Sentiment Analysis in full detail (Strategy #2):
@@ -594,6 +648,8 @@ async def menu_button_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         await history_action(chat_id, context)
     elif action == "cmd_summary":
         await summary_action(chat_id, context)
+    elif action == "cmd_schedules":
+        await schedules_action(chat_id, context)
     elif action == "cmd_news":
         await news_action(chat_id, context, query_arg=None)
     elif action == "news_market":
@@ -671,6 +727,7 @@ async def post_init_setup(application: Application):
         BotCommand("news", "📰 AI News Sentiment (Holdings / Market)"),
         BotCommand("positions", "📈 Strategy #2 Open Holdings"),
         BotCommand("history", "🤝 Strategy #2 Closed Trades"),
+        BotCommand("schedules", "📅 View Scan Schedules"),
         BotCommand("summary", "🏦 Strategy #2 Summary"),
         BotCommand("start", "🚀 Start & Register Chat")
     ]
@@ -853,6 +910,7 @@ def main():
     app.add_handler(CommandHandler(["news", "sentiment"], news_command))
     app.add_handler(CommandHandler(["positions", "position"], positions_command))
     app.add_handler(CommandHandler(["history", "closed", "trades"], history_command))
+    app.add_handler(CommandHandler(["schedules", "schedule"], schedules_command))
     app.add_handler(CommandHandler("summary", summary_command))
     
     # Register callback query handler for interactive buttons
