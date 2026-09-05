@@ -205,6 +205,23 @@ def update_schedule_status(sh: gspread.Spreadsheet, row_idx: int, status: str, l
     except Exception as e:
         print(f"Error updating schedule status row {row_idx}: {e}")
 
+def log_cloud_event(sh: gspread.Spreadsheet, source: str, message: str):
+    """
+    Records diagnostic cloud runtime events into the 'DebugLogs' worksheet.
+    """
+    try:
+        log_tab = "DebugLogs"
+        try:
+            ws = sh.worksheet(log_tab)
+        except gspread.WorksheetNotFound:
+            ws = sh.add_worksheet(title=log_tab, rows="500", cols="3")
+            ws.append_row(["Timestamp IST", "Source", "Message"])
+        tz = pytz.timezone("Asia/Kolkata")
+        now_str = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
+        retry_gspread(ws.append_row, [now_str, source, message])
+    except Exception as e:
+        print(f"Error writing cloud event log: {e}")
+
 def is_schedule_due(item: Dict[str, Any], now_ist: datetime) -> bool:
     """
     Evaluates whether a schedule item is due to execute given current IST datetime.

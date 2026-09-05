@@ -65,9 +65,21 @@ def _ensure_bot_running():
         proc = subprocess.Popen([sys.executable, "-u", bot_script], env=os.environ.copy())
         _ensure_bot_running.proc = proc
         print(f"Spawned background Telegram bot daemon (PID: {proc.pid}) from app.py")
+        try:
+            client = portfolio_manager.get_gspread_client()
+            sh = portfolio_manager.get_or_create_portfolio_sheet(client)
+            portfolio_manager.log_cloud_event(sh, "app.py", f"Spawned bot.py daemon from app.py (PID {proc.pid})")
+        except Exception:
+            pass
         return True
     except Exception as e:
         print(f"Error starting background bot from app.py: {e}")
+        try:
+            client = portfolio_manager.get_gspread_client()
+            sh = portfolio_manager.get_or_create_portfolio_sheet(client)
+            portfolio_manager.log_cloud_event(sh, "app.py", f"Failed to spawn bot: {e}")
+        except Exception:
+            pass
         return False
 
 _ensure_bot_running()

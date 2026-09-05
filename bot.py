@@ -983,8 +983,11 @@ def main():
     try:
         with open("bot.pid", "w") as f:
             f.write(str(os.getpid()))
-    except Exception:
-        pass
+        client = portfolio_manager.get_gspread_client()
+        sh = portfolio_manager.get_or_create_portfolio_sheet(client)
+        portfolio_manager.log_cloud_event(sh, "bot.py", f"Bot application online (PID {os.getpid()})")
+    except Exception as e:
+        logger.debug(f"Startup log notice: {e}")
     app.run_polling(drop_pending_updates=False)
 
 def run_forever():
@@ -996,6 +999,12 @@ def run_forever():
             time.sleep(5)
         except Exception as e:
             logger.error(f"Telegram bot exception: {e}. Reconnecting in 10s...", exc_info=True)
+            try:
+                client = portfolio_manager.get_gspread_client()
+                sh = portfolio_manager.get_or_create_portfolio_sheet(client)
+                portfolio_manager.log_cloud_event(sh, "bot.py", f"Bot restart event: {e}")
+            except Exception:
+                pass
             time.sleep(10)
 
 if __name__ == "__main__":
