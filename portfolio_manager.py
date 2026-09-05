@@ -163,6 +163,7 @@ def get_schedules_worksheet(sh: gspread.Spreadsheet) -> gspread.Worksheet:
         headers = ["Date", "Time", "Mode", "Status", "Last Run", "Notes"]
         ws.append_row(headers)
         ws.append_row(["DAILY", "08:00", "PREVIEW", "ACTIVE", "", "Morning Pre-Market Scan"])
+        ws.append_row(["DAILY", "09:00", "SENTIMENT", "PAUSED", "", "Nifty 50 Market Sentiment Briefing"])
         ws.append_row(["DAILY", "15:25", "EXECUTE", "ACTIVE", "", "Daily Market Close Scan"])
         ws.append_row(["TODAY", "18:00", "EXECUTE", "PAUSED", "", "Sample Custom One-Time Scan"])
     return ws
