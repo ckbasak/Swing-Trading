@@ -416,7 +416,7 @@ if account is not None and holdings is not None:
                - **Mode**: 
                  - `EXECUTE`: Automated breakout scan with Dhan order placement.
                  - `PREVIEW`: Paper/preview breakout scan only without real orders.
-                 - `SENTIMENT` or `NEWS`: Gemini AI market & stock sentiment briefing.
+                 - `SENTIMENT` or `NEWS`: Market sentiment & macro guardrails briefing.
                - **Status**: `PENDING` (ready to run once), `ACTIVE` (for daily recurrence), or `PAUSED`.
                - **Notes**: For `SENTIMENT` mode, enter a stock ticker (e.g. `RELIANCE`, `TCS`), `Nifty 50` for benchmark, or leave blank to scan all open portfolio holdings!
             4. At that exact minute, Render will trigger the scan/sentiment briefing, update status to `COMPLETED`, record `Last Run`, and send the report to Telegram!

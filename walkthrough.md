@@ -1,6 +1,6 @@
 # NSE Swing Trading & Portfolio Management System: Final Master Operations Manual & Technical Blueprint
 
-This blueprint is the exhaustive master reference manual for the automated NSE Swing Trading and Portfolio Management System. It contains the complete architectural layouts, database schemas, quantitative strategy rules, AI news sentiment guardrails, DhanHQ broker API configurations, memory management protocols, interactive Telegram menu systems, 3-year backtest scorecard, credentials catalog, and the Universal Master Prompt.
+This blueprint is the exhaustive master reference manual for the automated NSE Swing Trading and Portfolio Management System. It contains the complete architectural layouts, database schemas, quantitative strategy rules, market sentiment guardrails, DhanHQ broker API configurations, memory management protocols, interactive Telegram menu systems, 3-year backtest scorecard, credentials catalog, and the Universal Master Prompt.
 
 ---
 
@@ -39,20 +39,20 @@ graph TD
    * Evaluates exit conditions:
      * **Target Hit:** If `Live Price >= Target` (1:2 Risk-to-Reward Ratio), closes position, calculates realized profit/loss, updates cash balance, and logs `Closed trade @ Exit Price (Reason: Target Hit, PnL: ₹... / +...%)`.
      * **Stop Loss Hit:** If `Live Price <= Current SL`, closes position, calculates realized loss, updates cash balance, and logs `Closed trade @ Exit Price (Reason: Stop Loss Hit, PnL: ₹... / -...%)`.
-   * **AI News Sentiment Guardrail (Micro):** Queries Google News RSS for news headlines on the held stock and invokes **Gemini 3.6-flash**. If news sentiment is **NEGATIVE** (e.g., earnings miss, regulatory penalty), the trailing stop loss is immediately tightened to **today's Low** to protect capital against sudden market dumps.
+   * **Market Sentiment Guardrail (Micro):** Queries Google News RSS for news headlines on the held stock and invokes **Gemini 3.6-flash**. If news sentiment is **NEGATIVE** (e.g., earnings miss, regulatory penalty), the trailing stop loss is immediately tightened to **today's Low** to protect capital against sudden market dumps.
    * **Dynamic Trailing Stop (20 EMA):** If close price is favorable, calculates the 20-day Exponential Moving Average (20 EMA). If `20 EMA > Current SL`, updates `Current SL` in Google Sheets to `20 EMA` (Stop loss trails upward and never moves downward).
    * **Performance Tracking:** Dynamically solves for **Total Return (%)**, **CAGR (%)**, and **XIRR (%)** across active trading days.
 
 2. **`Scan Market Node` (Breakout Screener & Macro AI News Filter):**
    * Downloads the active Nifty 50 constituent list directly from NSE Archives.
    * Downloads 60 days of daily historical OHLCV data using session retry adapters.
-   * **AI News Sentiment Guardrail (Macro):** Queries news for `"Nifty 50 Index India"` and calls **Gemini 3.6-flash**. If macro sentiment is **NEGATIVE** (e.g., market-wide selloff, geopolitical panic), disables all new breakout entries for the day and logs a clear warning notice.
+   * **Market Sentiment Guardrail (Macro):** Queries news for `"Nifty 50 Index India"` and calls **Gemini 3.6-flash**. If macro sentiment is **NEGATIVE** (e.g., market-wide selloff, geopolitical panic), disables all new breakout entries for the day and logs a clear warning notice.
    * Identifies quantitative breakout candidates meeting all 3 criteria:
      1. **Price Breakout:** Today's Close > Today's 20 SMA AND Yesterday's Close <= Yesterday's 20 SMA.
      2. **Volume Confirmation (v2):** Today's Volume > 2.5 * 20-day Volume SMA (> 250% breakout threshold to cut noisy signals).
      3. **RSI Filter:** Today's 14-period RSI (Wilder's smoothed) is between 50 and 70 (inclusive).
    * Calculates 14-period Wilder ATR and initial Stop Loss at **2× ATR(14) below entry** (no fixed clamp).
-   * For qualifying breakout candidates, verifies individual stock news sentiment; discards candidates with **NEGATIVE** sentiment.
+   * For qualifying breakout candidates, verifies individual stock market sentiment; discards candidates with **NEGATIVE** sentiment.
 
 3. **`Calculate Sizing Node` (Risk Management & Exposure Guardrails):**
    * Enforces strict **1.5% Risk-per-Trade sizing (v2)**:
@@ -136,15 +136,15 @@ The database is hosted on Google Sheets under the spreadsheet name **`NSE_Swing_
 
 ## 🎛️ 4. Telegram Bot Commands & Interactive Menu System
 
-The Telegram Bot for System #2 (Strategy v2) features an interactive touch menu, exact IST timestamps, full company names, official sector tags, real-time news sentiment cards, and a native command menu bar:
+The Telegram Bot for System #2 (Strategy v2) features an interactive touch menu, exact IST timestamps, full company names, official sector tags, real-time market sentiment cards, and a native command menu bar:
 
 ### Native Menu Bar (`[/]` Popup):
 * `🎛️ /menu` — Displays the interactive touch button hub.
 * `🔍 /scan` — Runs an on-demand Strategy v2 breakout scan in **Preview Mode** (does NOT auto-execute orders into Google Sheets).
   * **During Market Hours (9:15 AM – 3:30 PM IST):** Provides `[🚀 Confirm & Execute Market Entry]` and `[❌ Discard]`.
   * **After-Market Hours / Weekends:** Provides `[🌙 Confirm & Execute AMO Entry]` and `[❌ Discard]`.
-* `📰 /news` — Generates in-depth **AI News Sentiment Reports** powered by **Gemini 3.6-flash**:
-  * `/news`: Automatically analyzes news sentiment for all active open Strategy #2 holdings (or Nifty 50 benchmark if no open holdings).
+* `🌐 /news` — Generates in-depth **Market Sentiment Reports** powered by **Gemini 3.6-flash**:
+  * `/news`: Automatically analyzes market sentiment for all active open Strategy #2 holdings (or Nifty 50 benchmark if no open holdings).
   * `/news <TICKER>`: Generates stock-specific sentiment for any NSE stock (e.g. `/news RELIANCE`, `/news TATAMOTORS`, `/news Nifty 50`).
 * `📈 /positions` — Displays Strategy #2 open holdings with real-time tick quotes, Company Names, Sector, SL (2×ATR), Target (1:2), and Unrealized PnL.
 * `🤝 /history` — Displays all closed trades with Company Names, Sector, Entry, Exit, Realized PnL (₹), and **`PnL %`**.
@@ -161,7 +161,7 @@ The Telegram Bot for System #2 (Strategy v2) features an interactive touch menu,
 ### Interactive Button Hub:
 ```text
 ┌───────────────────────────────┬───────────────────────────────┐
-│     🔍 Run Market Scan        │     📰 AI News Sentiment      │
+│     🔍 Run Market Scan        │     🌐 Market Sentiment       │
 ├───────────────────────────────┼───────────────────────────────┤
 │     📈 Open Positions         │     🏦 Portfolio Summary      │
 ├───────────────────────────────┼───────────────────────────────┤
@@ -231,7 +231,7 @@ Build a complete, production-grade NSE Swing Trading & Portfolio Manager in Pyth
 - Exit Conditions:
   - Target: Entry Price + 2 * (Entry Price - Initial SL) [1:2 Risk-to-Reward Ratio].
   - Trailing Stop: 20 EMA. Move Stop Loss up to 20 EMA if 20 EMA > current SL. Exit trade if live price <= Current SL (stop only moves up, never down).
-  - AI News Sentiment: If micro news is NEGATIVE, tighten SL to today's low.
+  - Market Sentiment: If micro news is NEGATIVE, tighten SL to today's low.
 
 3. GOOGLE SHEETS SCHEMAS:
 Create 'NSE_Swing_Trading_Portfolio' with tabs:

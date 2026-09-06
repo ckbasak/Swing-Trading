@@ -4,10 +4,10 @@
 [![Render](https://img.shields.io/badge/Render-Live_Web_App-46E3B7?style=for-the-badge&logo=render&logoColor=white)](https://ai-swing-trade-2.onrender.com)
 [![Telegram Bot](https://img.shields.io/badge/Telegram_Bot-@ai__swing__trade__2__bot-26A5E4?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/ai_swing_trade_2_bot)
 [![Google Sheets](https://img.shields.io/badge/Google_Sheets-Database-34A853?style=for-the-badge&logo=googlesheets&logoColor=white)](https://docs.google.com/)
-[![Gemini AI](https://img.shields.io/badge/Gemini_3.6--flash-News_Sentiment-8E75B2?style=for-the-badge&logo=google&logoColor=white)](https://ai.google.dev/)
+[![Gemini AI](https://img.shields.io/badge/Gemini_3.6--flash-Market_Sentiment-8E75B2?style=for-the-badge&logo=google&logoColor=white)](https://ai.google.dev/)
 [![LangGraph](https://img.shields.io/badge/LangGraph-Stateful_Workflows-FF4B4B?style=for-the-badge)](https://langchain-ai.github.io/langgraph/)
 
-An institutional-grade, multi-agent quantitative swing trading and portfolio management system optimized for the **NSE Nifty 50** universe. Features volatility-adaptive stop sizing (2× ATR), sector concentration caps, LangGraph stateful orchestration, Google Sheets cloud database, Streamlit dashboard, and interactive Telegram bot with Gemini 3.6-flash sentiment analysis.
+An institutional-grade, multi-agent quantitative swing trading and portfolio management system optimized for the **NSE Nifty 50** universe. Features volatility-adaptive stop sizing (2× ATR), sector concentration caps, LangGraph stateful orchestration, Google Sheets cloud database, Streamlit dashboard, and interactive Telegram bot with Gemini 3.6-flash market sentiment analysis.
 
 ---
 
@@ -62,7 +62,7 @@ graph TD
 | **Trailing Stop** | 20 EMA (tightening to day low on negative news) | Protects accumulated open gains; moves strictly upward |
 | **Daily Buy Limit** | Max 3 buys/day, prioritized by volume strength | Protects against market-wide drawdown clustering |
 | **Capital Allocation** | 90% Max Exposure (10% cash buffer) | Preserves liquidity buffer |
-| **AI News Engine** | Google News RSS + **Gemini 3.6-flash** | Macro regime filter + micro stock catalyst assessment |
+| **Market Sentiment Engine** | Google News RSS + **Gemini 3.6-flash** | Macro regime filter + micro stock catalyst assessment |
 | **Database** | Google Sheets (NSE_Swing_Trading_Portfolio_2) | Completely isolated Holdings, Account, TelegramChats |
 
 ---
@@ -72,10 +72,10 @@ graph TD
 | Command | Action / Description |
 | :--- | :--- |
 | **/start** | Registers chat ID with Google Sheets and displays the interactive touch menu. |
-| **/menu** | Displays the main button menu ([🔍 Run Market Scan], [📰 AI News Sentiment], [📈 Open Positions], [🏦 Portfolio Summary], [📅 Scan Schedules], [🤝 Trade History]). |
+| **/menu** | Displays the main button menu ([🔍 Run Market Scan], [🌐 Market Sentiment], [📈 Open Positions], [🏦 Portfolio Summary], [📅 Scan Schedules], [🤝 Trade History]). |
 | **/scan** | **Preview Mode:** Scans Strategy v2 candidates without altering Google Sheets.<br>• *Market Hours (9:15 AM – 3:30 PM IST):* [🚀 Confirm & Execute Market Entry]<br>• *After Hours / Weekends:* [🌙 Confirm & Execute AMO Entry] |
-| **/news** | **Global & Indian Market Analysis & Guardrails:** Comprehensive dual-scope macro analysis with color-coded guardrail actions (`🟢 ALLOW`, `🟡 SELECTIVE`, `🔴 HALT`) for breakout entries and holding stock defense. |
-| **/news <TICKER>** | In-depth news sentiment for any specific stock (e.g. `/news RELIANCE`, `/news TATAMOTORS`, `/news Nifty 50`). |
+| **/news** | **Market Sentiment & Macro Guardrails:** Comprehensive dual-scope global & Indian macro analysis with color-coded guardrail actions (`🟢 ALLOW`, `🟡 SELECTIVE`, `🔴 HALT`) for breakout entries and holding stock defense. |
+| **/news <TICKER>** | In-depth market & stock sentiment for any specific stock (e.g. `/news RELIANCE`, `/news TATAMOTORS`, `/news Nifty 50`). |
 | **/positions** | Displays live holdings, Sector, LTP, PnL (₹ & %), trailing SL (2×ATR), and target. |
 | **/summary** | Account breakdown: Portfolio Value, Cash, 1.5% Risk per trade, and Open PnL. |
 | **/schedules** | Lists all pending and active Google Sheets scan schedules with exact IST times and live DUE status. |
@@ -92,7 +92,7 @@ Configure any custom or recurring scan directly in Google Sheets (**`NSE_Swing_T
 | :--- | :--- | :--- |
 | **Date** | `DAILY`, `WEEKDAYS`, `TODAY`, `YYYY-MM-DD` | Recurrence rule or specific execution date. |
 | **Time** | Target IST time (e.g. `09:00`, `15:25`, `18:30`) | Exact time in 24-hour Indian Standard Time. |
-| **Mode** | `EXECUTE`, `PREVIEW`, `SENTIMENT` / `NEWS` | • `EXECUTE`: Automated breakout entry with Dhan broker order.<br>• `PREVIEW`: Paper/preview breakout scan only.<br>• `SENTIMENT`: Gemini 3.6-flash AI market & stock sentiment briefing. |
+| **Mode** | `EXECUTE`, `PREVIEW`, `SENTIMENT` / `NEWS` | • `EXECUTE`: Automated breakout entry with Dhan broker order.<br>• `PREVIEW`: Paper/preview breakout scan only.<br>• `SENTIMENT`: Market sentiment & macro guardrail briefing. |
 | **Status** | `ACTIVE`, `PENDING`, `PAUSED` | `ACTIVE` for daily recurring, `PENDING` for one-off runs. Transitions to `COMPLETED` when done. |
 | **Notes** | Stock Ticker, `Nifty 50`, or leave blank | In `SENTIMENT` mode: enter a ticker (e.g. `RELIANCE`, `TCS`), `Nifty 50` for benchmark, or leave blank to scan open holdings! |
 

@@ -21,7 +21,7 @@ Build a complete, production-grade NSE Swing Trading & Portfolio Manager in Pyth
 - Exit Conditions:
   - Target: Entry Price + 2 * (Entry Price - Initial SL) [1:2 Risk-to-Reward Ratio].
   - Trailing Stop: 20 EMA. Move Stop Loss up to 20 EMA if 20 EMA > current SL. Exit trade if live price <= Current SL (stop only moves up, never down).
-  - AI News Sentiment: If micro news is NEGATIVE, tighten SL to today's low.
+  - Market Sentiment: If micro news is NEGATIVE, tighten SL to today's low.
 
 3. GOOGLE SHEETS SCHEMAS:
 Create 'NSE_Swing_Trading_Portfolio' with tabs:
