@@ -13,6 +13,8 @@ import time
 from datetime import datetime
 import pandas as pd
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.request import HTTPXRequest
+from telegram.error import TimedOut, NetworkError, Conflict
 from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
@@ -174,10 +176,18 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 def main():
     if not TOKEN:
-        print("TELEGRAM_BOT_TOKEN not configured. Bot will run in background engine mode.")
+        print("TELEGRAM_BOT_TOKEN not configured in .env. Bot will run in standalone engine mode.")
         return
         
-    app = ApplicationBuilder().token(TOKEN).build()
+    # HTTPXRequest with generous 30s timeouts to prevent transient network dropouts
+    request = HTTPXRequest(
+        connect_timeout=30.0,
+        read_timeout=30.0,
+        write_timeout=30.0,
+        pool_timeout=30.0
+    )
+    
+    app = ApplicationBuilder().token(TOKEN).request(request).build()
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CommandHandler("help", start_command))
     app.add_handler(CommandHandler("scan", scan_command))
@@ -187,12 +197,21 @@ def main():
     app.add_handler(CommandHandler("summary", summary_command))
     app.add_handler(CallbackQueryHandler(button_handler))
     
-    print("AI-Swing-Trade-3 Telegram Bot starting polling...")
-    try:
-        app.run_polling(drop_pending_updates=True)
-    except Exception as e:
-        err_str = str(e)
-        if "Conflict" in err_str or "terminated by other getUpdates" in err_str:
+    print("AI-Swing-Trade-3 Telegram Bot starting polling (timeout=20s, pool=30s)...")
+    app.run_polling(drop_pending_updates=True, poll_interval=2.0, timeout=20)
+
+def run_forever():
+    while True:
+        try:
+            main()
+            time.sleep(5)
+        except TimedOut:
+            print("⏱️ [Notice] Telegram connection timed out. Reconnecting automatically in 5s...")
+            time.sleep(5)
+        except NetworkError as e:
+            print(f"🌐 [Notice] Network glitch: {e}. Reconnecting in 5s...")
+            time.sleep(5)
+        except Conflict:
             print("\n" + "="*75)
             print("⚠️  TELEGRAM BOT TOKEN CONFLICT DETECTED")
             print("="*75)
@@ -206,10 +225,18 @@ def main():
             print("3. Copy the HTTP API token provided by BotFather.")
             print("4. Paste it into: c:\\Users\\ckbas\\Documents\\antigravity\\AI-Swing-Trade-3\\.env")
             print("   TELEGRAM_BOT_TOKEN=<your_new_token_here>")
-            print("5. Re-run run_bot.bat!")
             print("="*75 + "\n")
-        else:
-            print(f"Bot polling error: {e}")
+            time.sleep(15)
+        except Exception as e:
+            err_str = str(e)
+            if "Conflict" in err_str or "terminated by other getUpdates" in err_str:
+                time.sleep(15)
+            elif "Timed out" in err_str or "timeout" in err_str.lower():
+                print("⏱️ [Notice] Polling timeout. Reconnecting in 5s...")
+                time.sleep(5)
+            else:
+                print(f"⚠️ [Error] {e}. Reconnecting in 10s...")
+                time.sleep(10)
 
 if __name__ == "__main__":
-    main()
+    run_forever()
