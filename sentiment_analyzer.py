@@ -423,7 +423,7 @@ ACTION_SUMMARY: [1 sentence summarizing guardrail rules for breakout entries and
 
 def get_detailed_news_sentiment(query: str, ticker: str = "") -> Dict[str, Any]:
     """
-    Performs an in-depth AI news sentiment evaluation for an individual equity.
+    Performs an in-depth market and stock sentiment evaluation for an individual equity.
     Returns structured dictionary with verdict, confidence, summary, drivers, outlook, articles.
     """
     articles = fetch_news_articles(query, limit=5)
@@ -556,7 +556,7 @@ def format_detailed_sentiment_report(data: Dict[str, Any]) -> str:
     sym_str = f" (`{ticker.replace('.NS', '')}`)" if ticker else ""
 
     lines = []
-    lines.append("📰 **AI News Sentiment Analysis**")
+    lines.append("🌐 **Market & Stock Sentiment Analysis**")
     lines.append(f"🏢 **{query}**{sym_str}")
     lines.append("")
     lines.append(f"⚖️ **AI Verdict:** {verdict_badge}")

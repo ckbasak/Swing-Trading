@@ -1,6 +1,6 @@
 # NSE Swing Trading & Portfolio Management System: Final Master Operations Manual & Technical Blueprint
 
-This blueprint is the exhaustive master reference manual for the automated NSE Swing Trading and Portfolio Management System. It contains the complete architectural layouts, database schemas, quantitative strategy rules, AI news sentiment guardrails, DhanHQ broker API configurations, memory management protocols, interactive Telegram menu systems, 3-year backtest scorecard, credentials catalog, and the Universal Master Prompt.
+This blueprint is the exhaustive master reference manual for the automated NSE Swing Trading and Portfolio Management System. It contains the complete architectural layouts, database schemas, quantitative strategy rules, market sentiment guardrails, DhanHQ broker API configurations, memory management protocols, interactive Telegram menu systems, 3-year backtest scorecard, credentials catalog, and the Universal Master Prompt.
 
 ---
 
@@ -40,7 +40,7 @@ graph TD
      * **Target Hit:** If `Live Price >= Target` (1:2 Risk-to-Reward Ratio), closes position, calculates realized profit/loss, updates cash balance, and logs `Closed trade @ Exit Price (Reason: Target Hit, PnL: ₹... / +...%)`.
      * **Stop Loss Hit:** If `Live Price <= Current SL`, closes position, calculates realized loss, updates cash balance, and logs `Closed trade @ Exit Price (Reason: Stop Loss Hit, PnL: ₹... / -...%)`.
    * **Macro Sentiment & Holding Defense Guardrail:** Evaluates comprehensive Global cues (US Wall Street, Fed rate outlook, crude oil, DXY) and Indian domestic cues (Nifty 50, Bank Nifty, FII/DII institutional flows, RBI) with color-coded guardrails (`🟢 GREEN`, `🟡 YELLOW`, `🔴 RED`). If market regime is **`🔴 RED / RISK-OFF`** (`TIGHTEN_SL_DAY_LOW`), automatically tightens trailing stop-loss for all open holdings to **today's Low** to protect accumulated capital against broad market selling.
-   * **AI News Sentiment Guardrail (Micro):** Queries Google News RSS for news headlines on each individual held stock and invokes AI sentiment. If stock sentiment is **NEGATIVE** (e.g., earnings miss, regulatory penalty), the trailing stop loss is immediately tightened to **today's Low**.
+   * **Market Sentiment Guardrail (Micro):** Queries Google News RSS for news headlines on each individual held stock and invokes market sentiment. If stock sentiment is **NEGATIVE** (e.g., earnings miss, regulatory penalty), the trailing stop loss is immediately tightened to **today's Low**.
    * **Dynamic Trailing Stop (20 EMA):** If close price is favorable, calculates the 20-day Exponential Moving Average (20 EMA). If `20 EMA > Current SL`, updates `Current SL` in Google Sheets to `20 EMA` (Stop loss trails upward and never moves downward).
    * **Performance Tracking:** Dynamically solves for **Total Return (%)**, **CAGR (%)**, and **XIRR (%)** across active trading days.
 
@@ -52,7 +52,7 @@ graph TD
      1. **Price Breakout:** Today's Close > Today's 20 SMA AND Yesterday's Close <= Yesterday's 20 SMA.
      2. **Volume Confirmation:** Today's Volume > 2.0 * 20-day Volume SMA.
      3. **RSI Filter:** Today's 14-period RSI (Wilder's smoothed) is between 50 and 70 (inclusive).
-   * For qualifying breakout candidates, verifies individual stock news sentiment; discards candidates with **NEGATIVE** sentiment.
+   * For qualifying breakout candidates, verifies individual stock market sentiment; discards candidates with **NEGATIVE** sentiment.
 
 3. **`Calculate Sizing Node` (Risk Management & Exposure Guardrails):**
    * Enforces strict **1% Risk-per-Trade sizing**:
@@ -135,16 +135,16 @@ The database is hosted on Google Sheets under the spreadsheet name **`NSE_Swing_
 
 ## 🎛️ 4. Telegram Bot Commands & Interactive Menu System
 
-The Telegram Bot (`@ai_swing_trade_1_bot`) features an interactive touch menu, exact IST timestamps, full company names, real-time news sentiment cards, and a native command menu bar:
+The Telegram Bot (`@ai_swing_trade_1_bot`) features an interactive touch menu, exact IST timestamps, full company names, real-time market sentiment cards, and a native command menu bar:
 
 ### Native Menu Bar (`[/]` Popup):
 * `🎛️ /menu` — Displays the interactive touch button hub.
 * `🔍 /scan` — Runs an on-demand breakout scan in **Preview Mode** (does NOT auto-execute orders into Google Sheets).
   * **During Market Hours (9:15 AM – 3:30 PM IST):** Provides `[🚀 Confirm & Execute Market Entry]` and `[❌ Discard]`.
   * **After-Market Hours / Weekends:** Provides `[🌙 Confirm & Execute AMO Entry]` and `[❌ Discard]`.
-* `📰 /news` — Generates in-depth **AI News Sentiment Reports** powered by **Gemini 3.6-flash**:
-  * `/news`: Automatically analyzes news sentiment for all active open holdings (or Nifty 50 benchmark if no open holdings).
-  * `/news <TICKER>`: Generates stock-specific sentiment for any NSE stock (e.g. `/news RELIANCE`, `/news TATAMOTORS`, `/news Nifty 50`).
+* `🌐 /news` — Generates in-depth **Market Sentiment & Macro Guardrails Reports** powered by **Gemini 3.6-flash**:
+  * `/news`: Comprehensive dual-scope global & Indian macro analysis with color-coded guardrails (`🟢 ALLOW`, `🟡 SELECTIVE`, `🔴 HALT`), plus individual assessments for active holdings.
+  * `/news <TICKER>`: Generates stock-specific market sentiment for any NSE stock (e.g. `/news RELIANCE`, `/news TATAMOTORS`, `/news Nifty 50`).
 * `📈 /positions` — Displays open positions with real-time tick quotes, Company Names, SL, Target, and Unrealized PnL.
 * `🤝 /history` — Displays all closed trades with Company Names, Entry, Exit, Realized PnL (₹), and **`PnL %`**.
 * `🏦 /summary` — Summarizes Portfolio Value, Cash, Realized PnL, Win Rate %, Total Return %, CAGR %, and XIRR %.
@@ -160,7 +160,7 @@ The Telegram Bot (`@ai_swing_trade_1_bot`) features an interactive touch menu, e
 ### Interactive Button Hub:
 ```text
 ┌───────────────────────────────┬───────────────────────────────┐
-│     🔍 Run Market Scan        │     📰 AI News Sentiment      │
+│     🔍 Run Market Scan        │     🌐 Market Sentiment       │
 ├───────────────────────────────┼───────────────────────────────┤
 │     📈 Open Positions         │     🏦 Portfolio Summary      │
 ├───────────────────────────────┼───────────────────────────────┤
@@ -212,7 +212,7 @@ Build a complete, production-grade NSE Swing Trading & Portfolio Manager in Pyth
 1. FILE STRUCTURE & RESPONSIBILITIES:
 - `dhan_client.py`: Integrates DhanHQ API ('dhanhq'). Downloads and caches the Dhan NSE Scrip Master CSV ('https://images.dhan.co/api-data/api-scrip-master.csv') in memory to map symbols (e.g. 'RELIANCE' -> 2885). Provides get_dhan_ltp(tickers) for zero-latency live quotes with graceful fallback to yfinance if unconfigured.
 - `sentiment_analyzer.py`: Connects to Google News RSS search feed for a ticker or macro index, parses XML for the top 5 recent headlines, and calls Gemini model "gemini-3.6-flash" to return 'POSITIVE', 'NEUTRAL', or 'NEGATIVE' sentiment.
-- `screener.py`: Fetches Nifty 50 symbols from NSE, downloads 60d daily historical data in parallel via yfinance, and filters for breakouts. Includes official Company Name mappings (e.g. 'HCL Technologies Ltd.' for 'HCLTECH.NS'). Checks macro and stock-specific news sentiment before qualifying candidates. Filters out penny stocks (Price < 20) and low-volume stocks (Vol SMA 20 < 50,000).
+- `screener.py`: Fetches Nifty 50 symbols from NSE, downloads 60d daily historical data in parallel via yfinance, and filters for breakouts. Includes official Company Name mappings (e.g. 'HCL Technologies Ltd.' for 'HCLTECH.NS'). Checks macro and stock-specific market sentiment before qualifying candidates. Filters out penny stocks (Price < 20) and low-volume stocks (Vol SMA 20 < 50,000).
 - `portfolio_manager.py`: Google Sheets database operations. Handles sheets initialization, fetching open/closed positions, registering chat IDs, adding positions, closing positions, calculating performance metrics (Total Return, CAGR, XIRR, PnL %), and syncing live quotes from DhanHQ (with yfinance fallback). Implements retry_gspread for 429 rate limit backoff. In add_position, blocks duplicates and checks Stop Loss percentage (3% - 15%).
 - `trading_graph.py`: Builds a stateful LangGraph workflow representing the trading cycle (Sync Portfolio -> Scan Market -> Position Sizer -> Execute Trades) and formats a text-based scan report with IST timestamps and Company Names. Sizer enforces max 90% portfolio exposure (10% cash buffer), max 3 daily purchases, and minimum 3% SL buffer.
 - `bot.py`: Telegram Bot handler and cron scheduler. Implements interactive InlineKeyboardMarkup button menus, native BotCommand menu registration, IST Date/Time timestamps, Company Names, and commands (/menu, /scan, /positions, /history, /summary, /start).

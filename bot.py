@@ -102,7 +102,7 @@ def get_main_menu_keyboard():
     keyboard = [
         [
             InlineKeyboardButton("🔍 Run Market Scan", callback_data="cmd_scan"),
-            InlineKeyboardButton("📰 AI News Sentiment", callback_data="cmd_news")
+            InlineKeyboardButton("🌐 Market Sentiment", callback_data="cmd_news")
         ],
         [
             InlineKeyboardButton("📈 Open Positions", callback_data="cmd_positions"),
@@ -126,8 +126,8 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "You are registered for automated daily market breakout scans (**3:25 PM IST**) and intraday exit alerts.\n\n"
         "**Available Commands:**\n"
         "• `/scan` - Run breakout scan in preview mode\n"
-        "• `/news` - Detailed AI News Sentiment for holdings / market\n"
-        "• `/news <TICKER>` - Detailed AI News Sentiment for any stock (e.g. `/news RELIANCE`)\n"
+        "• `/news` - Comprehensive Market Sentiment & Macro Guardrails\n"
+        "• `/news <TICKER>` - Market & Stock Sentiment for any stock (e.g. `/news RELIANCE`)\n"
         "• `/positions` - View active holdings & PnL\n"
         "• `/summary` - View account balance & risk allocation\n"
         "• `/history` - View closed trades history\n"
@@ -522,12 +522,12 @@ async def schedules_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def news_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE, query_arg: str = None):
     """
-    Executes Comprehensive Global & Indian Market News Analysis & Guardrails:
+    Executes Comprehensive Global & Indian Market Sentiment Analysis & Guardrails:
     - If query_arg is None or 'MARKET' / 'GLOBAL':
       - Fetches and displays comprehensive Global + Indian Market News Analysis with color-coded guardrails.
       - If active open holdings exist, also evaluates holding stocks.
     - If query_arg is a specific stock ticker:
-      - Analyzes stock-specific news sentiment and includes prevailing macro guardrail status.
+      - Analyzes stock-specific market sentiment and includes prevailing macro guardrail status.
     """
     loop = asyncio.get_event_loop()
     
@@ -550,7 +550,7 @@ async def news_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE, query_ar
         
         await context.bot.send_message(
             chat_id=chat_id,
-            text=f"⏳ *Analyzing live news & sentiment for {query_text}...*",
+            text=f"⏳ *Analyzing live market sentiment for {query_text}...*",
             parse_mode="Markdown"
         )
         
@@ -567,10 +567,10 @@ async def news_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE, query_ar
                 parse_mode="Markdown"
             )
         except Exception as e:
-            logger.error(f"Error analyzing news for {query_arg}: {e}")
+            logger.error(f"Error analyzing market sentiment for {query_arg}: {e}")
             await context.bot.send_message(
                 chat_id=chat_id,
-                text=f"❌ Error analyzing news sentiment: {e}",
+                text=f"❌ Error analyzing market sentiment: {e}",
                 reply_markup=get_main_menu_keyboard()
             )
         return
@@ -635,7 +635,7 @@ async def news_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE, query_ar
                 parse_mode="Markdown"
             )
         else:
-            tip = "\n\n💡 *Tip: You can analyze news sentiment for any specific stock anytime by typing:* `/news <TICKER>` *(e.g. /news RELIANCE, /news TATAMOTORS, /news HDFCBANK).*"
+            tip = "\n\n💡 *Tip: You can analyze market sentiment for any specific stock anytime by typing:* `/news <TICKER>` *(e.g. /news RELIANCE, /news TATAMOTORS, /news HDFCBANK).*"
             await context.bot.send_message(
                 chat_id=chat_id,
                 text="ℹ️ *No active open holdings in portfolio.*" + tip,
@@ -749,7 +749,7 @@ async def post_init_setup(application: Application):
     commands = [
         BotCommand("menu", "🎛️ Show Interactive Button Menu"),
         BotCommand("scan", "🔍 Run Breakout Scan (Preview)"),
-        BotCommand("news", "📰 AI News Sentiment (Holdings / Market)"),
+        BotCommand("news", "🌐 Market Sentiment & Macro Guardrails"),
         BotCommand("positions", "📈 View Open Holdings & PnL"),
         BotCommand("history", "🤝 View Closed Trades & PnL %"),
         BotCommand("schedules", "📅 View Scan Schedules"),
@@ -766,7 +766,7 @@ async def post_init_setup(application: Application):
 def resolve_sentiment_target(notes: str):
     """
     Parses the Notes column from Schedules to determine if a specific ticker
-    or market index is targeted for news sentiment analysis.
+    or market index is targeted for market sentiment analysis.
     Returns ticker/query string, or None to fall back to portfolio holdings / market.
     """
     clean = notes.strip() if notes else ""
@@ -827,7 +827,7 @@ async def check_google_sheets_schedules_job(context: ContextTypes.DEFAULT_TYPE):
                     if mode in ("SENTIMENT", "NEWS"):
                         target_query = resolve_sentiment_target(notes)
                         header = (
-                            f"📰 *Dynamic Scheduled AI News Sentiment Briefing (Google Sheets Trigger)*\n"
+                            f"🌐 *Dynamic Scheduled Market Sentiment Briefing (Google Sheets Trigger)*\n"
                             f"📅 Schedule: `{date_val}` at `{time_val} IST` | Mode: `{mode}`\n\n"
                         )
                         reports_to_send = []
