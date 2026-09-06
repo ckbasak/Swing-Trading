@@ -106,4 +106,4 @@ with tab4:
     """)
     chart_path = os.path.join(PROJECT_ROOT, "three_strategy_comparison.png")
     if os.path.exists(chart_path):
-        st.image(chart_path, caption="Comparative Performance of Strategy 1, 2, and 3 across Curated Pools", use_column_width=True)
+        st.image(chart_path, caption="Comparative Performance of Strategy 1, 2, and 3 across Curated Pools", use_container_width=True)
