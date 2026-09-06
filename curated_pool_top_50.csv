@@ -1,0 +1,51 @@
+Rank,ticker,source_index,sector,trades,wins,losses,win_rate,total_pnl,profit_factor,avg_pnl_pct
+1,GLAXO.NS,NIFTY LargeMidcap 250,Healthcare,2,2,0,100.0,36517.8,99.0,17.56
+2,UNIONBANK.NS,NIFTY Next 50,Financial Services,4,4,0,100.0,28207.0,99.0,6.0
+3,FEDERALBNK.NS,NIFTY Bank,Financial Services,3,3,0,100.0,27546.06,99.0,7.38
+4,PNB.NS,NIFTY Next 50,Financial Services,3,3,0,100.0,25728.77,99.0,6.0
+5,ADANIENSOL.NS,NIFTY Next 50,Power,3,3,0,100.0,22488.43,99.0,8.19
+6,CGPOWER.NS,NIFTY Next 50,Capital Goods,2,2,0,100.0,22357.12,99.0,7.58
+7,TRENT.NS,NIFTY LargeMidcap 250,Consumer Services,1,1,0,100.0,20364.9,99.0,15.96
+8,ENDURANCE.NS,NIFTY LargeMidcap 250,Automobile and Auto Components,1,1,0,100.0,19275.04,99.0,15.75
+9,BLS.NS,NIFTY Smallcap 250,Consumer Services,3,3,0,100.0,19055.44,99.0,4.08
+10,CUB.NS,NIFTY Smallcap 250,Financial Services,2,2,0,100.0,18948.44,99.0,6.0
+11,PGEL.NS,NIFTY Smallcap 250,Consumer Durables,2,2,0,100.0,18252.28,99.0,6.0
+12,TMPV.NS,NIFTY LargeMidcap 250,Automobile and Auto Components,1,1,0,100.0,16773.84,99.0,12.07
+13,NATCOPHARM.NS,NIFTY Smallcap 250,Healthcare,3,2,1,66.7,15752.94,8.29,3.54
+14,GALLANTT.NS,NIFTY Smallcap 250,Capital Goods,2,2,0,100.0,14827.21,99.0,6.0
+15,FIRSTCRY.NS,NIFTY Smallcap 250,Consumer Services,2,2,0,100.0,14580.01,99.0,6.0
+16,JWL.NS,NIFTY Smallcap 250,Capital Goods,4,2,2,50.0,13132.41,4.68,2.21
+17,ATUL.NS,NIFTY Smallcap 250,Chemicals,1,1,0,100.0,13071.3,99.0,6.0
+18,TMCV.NS,NIFTY Next 50,Capital Goods,1,1,0,100.0,12981.2,99.0,7.6
+19,TEGA.NS,NIFTY Smallcap 250,Capital Goods,1,1,0,100.0,12821.16,99.0,6.0
+20,USHAMART.NS,NIFTY Smallcap 250,Capital Goods,2,2,0,100.0,12813.69,99.0,6.0
+21,SAGILITY.NS,NIFTY Smallcap 250,Information Technology,1,1,0,100.0,12613.76,99.0,6.0
+22,JSWCEMENT.NS,NIFTY Smallcap 250,Construction Materials,1,1,0,100.0,12533.8,99.0,6.0
+23,PVRINOX.NS,NIFTY Smallcap 250,Media Entertainment & Publication,1,1,0,100.0,12451.46,99.0,6.0
+24,ABLBL.NS,NIFTY Smallcap 250,Consumer Services,1,1,0,100.0,11895.47,99.0,6.0
+25,BANKBARODA.NS,NIFTY Next 50,Financial Services,2,2,0,100.0,11808.88,99.0,6.0
+26,SONACOMS.NS,NIFTY Smallcap 250,Automobile and Auto Components,3,1,2,33.3,11670.72,3.13,2.68
+27,DMART.NS,NIFTY Next 50,Consumer Services,6,4,2,66.7,11495.72,2.48,3.16
+28,HINDUNILVR.NS,NIFTY LargeMidcap 250,Fast Moving Consumer Goods,1,1,0,100.0,11285.85,99.0,7.01
+29,CANBK.NS,NIFTY Next 50,Financial Services,3,2,1,66.7,10585.24,5.14,3.17
+30,JAINREC.NS,NIFTY Smallcap 250,Metals & Mining,1,1,0,100.0,10578.9,99.0,6.0
+31,PIRAMALFIN.NS,NIFTY Smallcap 250,Financial Services,1,1,0,100.0,9981.59,99.0,6.0
+32,MAZDOCK.NS,NIFTY Next 50,Capital Goods,2,2,0,100.0,9914.45,99.0,3.3
+33,COFORGE.NS,NIFTY LargeMidcap 250,Information Technology,2,1,1,50.0,9864.48,5.14,5.8
+34,ZYDUSWELL.NS,NIFTY Smallcap 250,Fast Moving Consumer Goods,1,1,0,100.0,9537.42,99.0,6.0
+35,CHOLAFIN.NS,NIFTY Next 50,Financial Services,1,1,0,100.0,9310.86,99.0,6.0
+36,OFSS.NS,NIFTY LargeMidcap 250,Information Technology,2,1,1,50.0,9242.9,2.34,3.36
+37,EIHOTEL.NS,NIFTY Smallcap 250,Consumer Services,1,1,0,100.0,9191.16,99.0,6.0
+38,MINDACORP.NS,NIFTY Smallcap 250,Automobile and Auto Components,1,1,0,100.0,9154.94,99.0,6.0
+39,ENRIN.NS,NIFTY Next 50,Capital Goods,1,1,0,100.0,9133.34,99.0,6.0
+40,SBFC.NS,NIFTY Smallcap 250,Financial Services,1,1,0,100.0,9125.69,99.0,6.0
+41,KPIL.NS,NIFTY Smallcap 250,Construction,1,1,0,100.0,8886.01,99.0,7.72
+42,LTFOODS.NS,NIFTY Smallcap 250,Fast Moving Consumer Goods,1,1,0,100.0,8676.78,99.0,6.0
+43,ARE&M.NS,NIFTY Smallcap 250,Automobile and Auto Components,3,1,2,33.3,8549.97,3.46,0.0
+44,AXISBANK.NS,NIFTY Bank,Financial Services,1,1,0,100.0,8364.74,99.0,6.63
+45,ANANTRAJ.NS,NIFTY Smallcap 250,Realty,1,1,0,100.0,8226.99,99.0,6.0
+46,MUTHOOTFIN.NS,NIFTY Next 50,Financial Services,6,3,3,50.0,8121.54,2.37,1.25
+47,BELRISE.NS,NIFTY Smallcap 250,Automobile and Auto Components,2,2,0,100.0,8118.5,99.0,6.0
+48,DIVISLAB.NS,NIFTY Next 50,Healthcare,3,2,1,66.7,7683.01,7.67,1.65
+49,CREDITACC.NS,NIFTY Smallcap 250,Financial Services,1,1,0,100.0,7643.33,99.0,6.0
+50,SAMMAANCAP.NS,NIFTY Smallcap 250,Financial Services,1,1,0,100.0,7363.22,99.0,6.0
