@@ -7,6 +7,7 @@ from langgraph.graph import StateGraph, END
 import screener
 import portfolio_manager
 import dhan_client
+import sentiment_analyzer
 
 class TradingState(TypedDict, total=False):
     candidates: List[Dict[str, Any]]
@@ -16,21 +17,25 @@ class TradingState(TypedDict, total=False):
     risk_per_trade: float
     trades_to_execute: List[Dict[str, Any]]
     execute_trades: bool
+    macro_sentiment: Dict[str, Any]
     logs: List[str]
 
 def sync_portfolio_node(state: TradingState) -> Dict[str, Any]:
     """
-    Node 1: Syncs current portfolio, processes exits, and retrieves latest account details.
+    Node 1: Syncs current portfolio, processes exits, evaluates macro guardrails, and retrieves latest account details.
     """
     logs = state.get("logs", [])
-    logs.append("--- Node: Syncing Portfolio ---")
+    logs.append("--- Node: Syncing Portfolio & Macro Guardrails ---")
     
     try:
         client = portfolio_manager.get_gspread_client()
         sh = portfolio_manager.get_or_create_portfolio_sheet(client)
         
-        # Sync open positions
-        sync_logs = portfolio_manager.sync_portfolio(sh)
+        # Analyze comprehensive Global & Indian market macro sentiment
+        macro_data = sentiment_analyzer.get_comprehensive_market_macro_sentiment()
+        
+        # Sync open positions with macro guardrail directives
+        sync_logs = portfolio_manager.sync_portfolio(sh, macro_data=macro_data)
         logs.extend(sync_logs)
         
         # Get updated account details
@@ -54,6 +59,7 @@ def sync_portfolio_node(state: TradingState) -> Dict[str, Any]:
             "portfolio_value": portfolio_value,
             "cash_balance": cash_balance,
             "risk_per_trade": portfolio_value * risk_pct,
+            "macro_sentiment": macro_data,
             "logs": logs
         }
     except Exception as e:
@@ -70,7 +76,8 @@ def scan_market_node(state: TradingState) -> Dict[str, Any]:
     try:
         tickers = screener.get_nifty_250_tickers()
         logs.append(f"Scanning Nifty {len(tickers)} universe for breakouts...")
-        candidates = screener.screen_stocks(tickers, logs=logs)
+        macro_data = state.get("macro_sentiment")
+        candidates = screener.screen_stocks(tickers, logs=logs, macro_data=macro_data)
         
         logs.append(f"Found {len(candidates)} breakout candidates.")
         for idx, c in enumerate(candidates):
@@ -356,8 +363,14 @@ def format_scan_report(state: Dict[str, Any], is_scheduled: bool = False, is_amo
     report.append(f"• Cash Balance: ₹{state.get('cash_balance', 0.0):,.2f}")
     report.append("")
     
-    if sentiment_logs:
-        report.append(f"🧠 **AI News Sentiment Overlay (Gemini):**")
+    macro_data = state.get("macro_sentiment")
+    if macro_data:
+        snippet_lines = sentiment_analyzer.format_macro_sentiment_snippet(macro_data)
+        for line in snippet_lines:
+            report.append(line)
+        report.append("")
+    elif sentiment_logs:
+        report.append(f"🌐 **Global & Indian Market Sentiment & Macro Guardrails:**")
         for sent_log in sentiment_logs:
             report.append(f"• {sent_log}")
         report.append("")

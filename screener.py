@@ -231,7 +231,7 @@ def calculate_atr(df: pd.DataFrame, period: int = 14) -> pd.Series:
     atr = tr.ewm(alpha=1/period, adjust=False).mean()
     return atr
 
-def screen_stocks(tickers: List[str], logs: List[str] = None) -> List[Dict[str, Any]]:
+def screen_stocks(tickers: List[str], logs: List[str] = None, macro_data: Dict[str, Any] = None) -> List[Dict[str, Any]]:
     """
     Screens the list of tickers for Strategy v2:
     1. Today's close > Today's 20 DMA
@@ -244,15 +244,28 @@ def screen_stocks(tickers: List[str], logs: List[str] = None) -> List[Dict[str, 
     if logs is None:
         logs = []
         
-    # 1. Macro Sentiment Check: Skip entries if Nifty index news is negative
-    nifty_sentiment = sentiment_analyzer.get_news_sentiment("Nifty 50 Index India")
-    if nifty_sentiment == "NEGATIVE":
-        msg = "[!] Macro Risk Alert: Nifty 50 News Sentiment is NEGATIVE. New breakout entries are paused to protect capital against broad market selling."
+    # 1. Comprehensive Global & Indian Macro Guardrail Check
+    if macro_data is None:
+        macro_data = sentiment_analyzer.get_comprehensive_market_macro_sentiment()
+        
+    breakout_guard = macro_data.get("guardrail_breakouts", "ALLOW")
+    regime = macro_data.get("market_regime", "RISK-ON")
+    badge = macro_data.get("color_badge", "🟢")
+    color = macro_data.get("color", "GREEN")
+    
+    if breakout_guard == "HALT" or color == "RED":
+        msg = f"[!] {badge} Macro Guardrail Alert: Market regime is {regime} (Breakouts: HALT). All new breakout entries are paused to protect capital."
         print(msg)
         logs.append(msg)
         return []
+    elif breakout_guard == "SELECTIVE" or color == "YELLOW":
+        msg = f"[i] {badge} Macro Guardrail Caution: Market regime is {regime} (Breakouts: SELECTIVE). Prioritizing high-conviction volume breakouts only."
+        print(msg)
+        logs.append(msg)
     else:
-        logs.append(f"[i] Macro Market Sentiment: {nifty_sentiment} (Trading active).")
+        msg = f"[i] {badge} Macro Market Sentiment: {regime} (Breakout entries: ALLOW). Normal trading active."
+        print(msg)
+        logs.append(msg)
 
     breakout_candidates = []
     

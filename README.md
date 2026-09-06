@@ -74,7 +74,7 @@ graph TD
 | **/start** | Registers chat ID with Google Sheets and displays the interactive touch menu. |
 | **/menu** | Displays the main button menu ([🔍 Run Market Scan], [📰 AI News Sentiment], [📈 Open Positions], [🏦 Portfolio Summary], [📅 Scan Schedules], [🤝 Trade History]). |
 | **/scan** | **Preview Mode:** Scans Strategy v2 candidates without altering Google Sheets.<br>• *Market Hours (9:15 AM – 3:30 PM IST):* [🚀 Confirm & Execute Market Entry]<br>• *After Hours / Weekends:* [🌙 Confirm & Execute AMO Entry] |
-| **/news** | **AI News Sentiment:** Analyzes news sentiment across active open holdings in Strategy #2 portfolio (or Nifty 50 benchmark if no open positions). |
+| **/news** | **Global & Indian Market Analysis & Guardrails:** Comprehensive dual-scope macro analysis with color-coded guardrail actions (`🟢 ALLOW`, `🟡 SELECTIVE`, `🔴 HALT`) for breakout entries and holding stock defense. |
 | **/news <TICKER>** | In-depth news sentiment for any specific stock (e.g. `/news RELIANCE`, `/news TATAMOTORS`, `/news Nifty 50`). |
 | **/positions** | Displays live holdings, Sector, LTP, PnL (₹ & %), trailing SL (2×ATR), and target. |
 | **/summary** | Account breakdown: Portfolio Value, Cash, 1.5% Risk per trade, and Open PnL. |

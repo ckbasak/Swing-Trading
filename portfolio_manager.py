@@ -519,9 +519,10 @@ def calculate_performance_metrics(sh: gspread.Spreadsheet) -> Dict[str, Any]:
         "Days Elapsed": days_elapsed
     }
 
-def sync_portfolio(sh: gspread.Spreadsheet) -> List[str]:
+def sync_portfolio(sh: gspread.Spreadsheet, macro_data: Dict[str, Any] = None) -> List[str]:
     """
     Syncs live prices for open positions, checks exit conditions, and updates trailing stops.
+    Enforces Macro Guardrails (e.g. TIGHTEN_SL_DAY_LOW) and micro-level stock news sentiment.
     """
     holdings = get_all_holdings(sh)
     open_positions = []
@@ -586,7 +587,15 @@ def sync_portfolio(sh: gspread.Spreadsheet) -> List[str]:
             # Prioritize Dhan live tick price if available; fallback to close_today
             live_price = dhan_ltps.get(ticker, close_today)
             
-            # Check news sentiment for active position
+            # Check Macro Guardrail for Holdings (e.g. Risk-Off / TIGHTEN_SL_DAY_LOW)
+            if macro_data and (macro_data.get("guardrail_holdings") == "TIGHTEN_SL_DAY_LOW" or macro_data.get("color") == "RED"):
+                new_sl = max(current_sl, low_today)
+                if new_sl > current_sl:
+                    retry_gspread(ws.update_cell, row_idx, 7, str(round(new_sl, 2)))
+                    logs.append(f"🛡️ 🔴 MACRO GUARDRAIL TRIGGERED for {ticker}: Market Risk-Off. Tightened SL to today's low: ₹{new_sl:.2f}")
+                    current_sl = new_sl
+
+            # Check micro-level news sentiment for active position
             clean_sym = ticker.replace(".NS", "")
             stock_sentiment = sentiment_analyzer.get_news_sentiment(f"{clean_sym} stock news NSE")
             
@@ -594,7 +603,7 @@ def sync_portfolio(sh: gspread.Spreadsheet) -> List[str]:
                 new_sl = max(current_sl, low_today)
                 if new_sl > current_sl:
                     retry_gspread(ws.update_cell, row_idx, 7, str(round(new_sl, 2)))
-                    logs.append(f"⚠️ NEGATIVE NEWS detected for {ticker}. Tightened Trailing Stop to today's low: {new_sl:.2f}")
+                    logs.append(f"⚠️ NEGATIVE NEWS detected for {ticker}. Tightened Trailing Stop to today's low: ₹{new_sl:.2f}")
                     current_sl = new_sl
             
             # Check Exit Conditions against live_price
