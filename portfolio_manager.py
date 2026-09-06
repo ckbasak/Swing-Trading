@@ -595,81 +595,120 @@ def sync_portfolio(sh: gspread.Spreadsheet, macro_data: Dict[str, Any] = None) -
     gc.collect()
     return logs
 
-def calculate_performance_metrics(sh: gspread.Spreadsheet) -> Dict[str, float]:
+def calculate_xirr(cash_flows: List[Tuple[datetime, float]], guess: float = 0.1) -> float:
     """
-    Calculates advanced performance metrics: CAGR and XIRR.
+    Calculates exact annualized XIRR using the Newton-Raphson method.
+    """
+    if not cash_flows or len(cash_flows) < 2:
+        return 0.0
+        
+    t0 = cash_flows[0][0]
+    total_days = max((t - t0).days for t, _ in cash_flows)
+    if total_days <= 0:
+        return 0.0
+        
+    def xnpv(rate):
+        return sum(cf / ((1.0 + rate) ** ((t - t0).days / 365.25)) for t, cf in cash_flows)
+        
+    def xnpv_prime(rate):
+        return sum(-((t - t0).days / 365.25) * cf / ((1.0 + rate) ** (((t - t0).days / 365.25) + 1.0)) for t, cf in cash_flows)
+        
+    rate = guess
+    for _ in range(100):
+        val = xnpv(rate)
+        val_prime = xnpv_prime(rate)
+        if abs(val_prime) < 1e-7:
+            return 0.0
+        new_rate = rate - (val / val_prime)
+        if abs(new_rate - rate) < 1e-6:
+            res = round(new_rate * 100.0, 2)
+            if math.isnan(res) or math.isinf(res):
+                return 0.0
+            return res
+        rate = new_rate
+        if rate <= -1.0:
+            rate = -0.999
+    return 0.0
+
+def calculate_performance_metrics(sh: gspread.Spreadsheet) -> Dict[str, Any]:
+    """
+    Calculates Total Return (%), CAGR (%), XIRR (%), and Days Elapsed.
+    Harmonized with robust handling of empty and early-stage portfolios.
     """
     account = get_account_details(sh)
-    initial_cap = account.get("Initial Capital", 1000000.0)
-    current_val = account.get("Total Portfolio Value", initial_cap)
-    
-    # Get all closed and open trades to establish start date
     holdings = get_all_holdings(sh)
-    if not holdings:
-        return {"Total Return (%)": 0.0, "CAGR (%)": 0.0, "XIRR (%)": 0.0, "Days Elapsed": 0}
+    
+    initial_capital = float(account.get("Initial Capital", 100000.0))
+    current_portfolio_value = float(account.get("Total Portfolio Value", initial_capital))
+    
+    if initial_capital <= 0:
+        initial_capital = 100000.0
         
-    dates = []
-    for h in holdings:
-        dt_str = h.get("Entry Date")
-        if dt_str:
-            try:
-                dates.append(datetime.strptime(str(dt_str).strip(), "%Y-%m-%d"))
-            except ValueError:
-                pass
-                
-    if not dates:
-        return {"Total Return (%)": 0.0, "CAGR (%)": 0.0, "XIRR (%)": 0.0, "Days Elapsed": 0}
+    total_return_pct = ((current_portfolio_value - initial_capital) / initial_capital) * 100.0
+    
+    all_dates = []
+    if holdings:
+        for h in holdings:
+            dt_str = h.get("Entry Date")
+            if dt_str:
+                try:
+                    all_dates.append(datetime.strptime(str(dt_str).strip(), "%Y-%m-%d"))
+                except (ValueError, TypeError):
+                    pass
+                    
+    # If no trades have ever been opened, portfolio is pristine (0 days active, 0.0% metrics)
+    if not all_dates:
+        return {
+            "Total Return (%)": round(total_return_pct, 2),
+            "CAGR (%)": 0.0,
+            "XIRR (%)": 0.0,
+            "Days Elapsed": 0
+        }
         
-    start_date = min(dates)
+    start_date = min(all_dates)
     today = datetime.now()
     days_elapsed = (today - start_date).days
     
-    total_return = ((current_val - initial_cap) / initial_cap) * 100.0
-    
     if days_elapsed <= 0:
-        cagr = 0.0
-    elif days_elapsed < 365:
-        cagr = total_return
-    else:
-        cagr = (((current_val / initial_cap) ** (365.0 / days_elapsed)) - 1) * 100.0
+        return {
+            "Total Return (%)": round(total_return_pct, 2),
+            "CAGR (%)": 0.0,
+            "XIRR (%)": 0.0,
+            "Days Elapsed": 0
+        }
         
-    # Calculate simple XIRR
-    cashflows = [
-        (start_date, -initial_cap),
-        (today, current_val)
+    # CAGR calculation:
+    # For holding periods < 365 days, annualizing causes extreme compounding distortion.
+    # Show simple total return if < 365 days, or annualize when >= 365 days.
+    if days_elapsed < 365:
+        cagr = total_return_pct
+    else:
+        years = days_elapsed / 365.25
+        try:
+            cagr = (((current_portfolio_value / initial_capital) ** (1.0 / years)) - 1.0) * 100.0
+        except Exception:
+            cagr = total_return_pct
+            
+    cash_flows = [
+        (start_date, -initial_capital),
+        (today, current_portfolio_value)
     ]
     
-    xirr_val = 0.0
-    if len(cashflows) >= 2:
-        t0 = cashflows[0][0]
-        def npv(r):
-            return sum(cf / ((1 + r) ** ((d - t0).days / 365.0)) for d, cf in cashflows)
+    # For short horizon (< 30 days), annualized XIRR produces distorted percentages.
+    if days_elapsed < 30:
+        xirr = total_return_pct
+    else:
+        try:
+            xirr = calculate_xirr(cash_flows)
+            if math.isnan(xirr) or math.isinf(xirr):
+                xirr = cagr
+        except Exception:
+            xirr = cagr
             
-        def npv_derivative(r):
-            return sum(-((d - t0).days / 365.0) * cf * ((1 + r) ** (-((d - t0).days / 365.0) - 1)) for d, cf in cashflows)
-            
-        r = 0.1
-        for _ in range(100):
-            try:
-                val = npv(r)
-                deriv = npv_derivative(r)
-                if deriv == 0:
-                    break
-                new_r = r - val / deriv
-                if abs(new_r - r) < 1e-6:
-                    xirr_val = new_r * 100.0
-                    break
-                r = new_r
-            except Exception:
-                break
-                
-    if math.isnan(xirr_val) or math.isinf(xirr_val):
-        xirr_val = cagr
-        
     return {
-        "Total Return (%)": round(total_return, 2),
+        "Total Return (%)": round(total_return_pct, 2),
         "CAGR (%)": round(cagr, 2),
-        "XIRR (%)": round(xirr_val, 2),
+        "XIRR (%)": round(xirr, 2),
         "Days Elapsed": days_elapsed
     }
 
