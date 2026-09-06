@@ -72,7 +72,7 @@ graph TD
 
 ## 🗄️ 2. Google Sheets Database Schema
 
-The database is hosted on Google Sheets under the spreadsheet name **`NSE_Swing_Trading_Portfolio`**.
+The database is hosted on Google Sheets under the spreadsheet name **`NSE_Swing_Trading_Portfolio_2`**.
 
 ### Worksheet 1: `"Holdings"` (14 Relational Columns)
 | Col Index | Header Name | Data Type | Description |
