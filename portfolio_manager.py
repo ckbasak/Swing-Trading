@@ -64,7 +64,7 @@ def _load_local_db() -> Dict[str, Any]:
             "total_return_pct": 0.0,
             "cagr_pct": 0.0,
             "xirr_pct": 0.0,
-            "days_active": 0,
+            "days_active": 1,
             "risk_pct": 6.0,
             "active_pool": "Top 50 Champions"
         },
@@ -85,9 +85,29 @@ def _save_local_db(data: Dict[str, Any]):
 def get_or_open_portfolio_sheet(client: gspread.Client) -> Optional[gspread.Spreadsheet]:
     target_name = os.environ.get("SPREADSHEET_NAME", DEFAULT_SPREADSHEET_NAME)
     try:
-        return client.open(target_name)
+        sh = client.open(target_name)
     except Exception:
-        return None
+        try:
+            sh = client.open("NSE_Swing_Trading_Portfolio_3")
+        except Exception:
+            return None
+            
+    # Verify and ensure worksheets
+    expected = {
+        "Holdings": ["Ticker", "Company", "Sector", "Quantity", "Entry Price", "Entry Value", "Initial SL", "Current SL", "Target 1", "Target 2", "Partial Booked", "Entry Date", "Current Price", "Current Value", "Unrealized PnL", "Unrealized PnL %"],
+        "ClosedTrades": ["Ticker", "Company", "Sector", "Quantity", "Entry Price", "Entry Value", "Exit Price", "Exit Value", "Realized PnL", "Realized PnL %", "Holding Days", "Entry Date", "Exit Date", "Exit Reason"],
+        "Account": ["Initial Capital", "Current Cash", "Portfolio Value", "Realized PnL", "Total Return %", "CAGR %", "XIRR %", "Days Active", "Risk Percent", "Active Pool"],
+        "TelegramChats": ["Chat ID", "First Name", "Username", "Added At"]
+    }
+    for title, headers in expected.items():
+        try:
+            sh.worksheet(title)
+        except gspread.WorksheetNotFound:
+            ws = sh.add_worksheet(title=title, rows=100, cols=len(headers) + 2)
+            ws.append_row(headers)
+            if title == "Account":
+                ws.append_row([INITIAL_CAPITAL, INITIAL_CAPITAL, INITIAL_CAPITAL, 0.0, "0.0%", "0.0%", "0.0%", 1, "6.0%", "Top 50 Champions"])
+    return sh
 
 def calculate_xirr(cash_flows: List[Tuple[datetime, float]], guess: float = 0.1) -> float:
     if not cash_flows or len(cash_flows) < 2:
@@ -125,7 +145,7 @@ def get_account_summary() -> Dict[str, Any]:
             try:
                 ws = sh.worksheet("Account")
                 vals = ws.row_values(2)
-                if vals:
+                if vals and len(vals) >= 7:
                     return {
                         "initial_capital": float(vals[0]),
                         "cash": float(vals[1]),
@@ -134,12 +154,12 @@ def get_account_summary() -> Dict[str, Any]:
                         "total_return_pct": float(str(vals[4]).replace("%", "")),
                         "cagr_pct": float(str(vals[5]).replace("%", "")),
                         "xirr_pct": float(str(vals[6]).replace("%", "")),
-                        "days_active": int(vals[7]) if len(vals) > 7 else 0,
+                        "days_active": int(vals[7]) if len(vals) > 7 else 1,
                         "risk_pct": float(str(vals[8]).replace("%", "")) if len(vals) > 8 else 6.0,
                         "active_pool": str(vals[9]) if len(vals) > 9 else "Top 50 Champions"
                     }
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"Notice reading Google Sheets Account: {e}")
     db = _load_local_db()
     return db.get("account", {})
 
@@ -168,6 +188,72 @@ def get_closed_trades() -> List[Dict[str, Any]]:
                 pass
     db = _load_local_db()
     return db.get("closed_trades", [])
+
+def sync_portfolio_to_google_sheets() -> bool:
+    """
+    Explicitly pushes the complete portfolio state (Account, Holdings, ClosedTrades)
+    to Google Sheets.
+    """
+    client = get_gspread_client()
+    if not client:
+        return False
+    sh = get_or_open_portfolio_sheet(client)
+    if not sh:
+        return False
+    try:
+        acc = get_account_summary()
+        holdings = get_holdings()
+        closed = get_closed_trades()
+        
+        # 1. Update Account worksheet
+        a_ws = sh.worksheet("Account")
+        a_ws.clear()
+        a_ws.append_row([
+            "Initial Capital", "Current Cash", "Portfolio Value", "Realized PnL",
+            "Total Return %", "CAGR %", "XIRR %", "Days Active", "Risk Percent", "Active Pool"
+        ])
+        a_ws.append_row([
+            acc.get("initial_capital", INITIAL_CAPITAL),
+            acc.get("cash", INITIAL_CAPITAL),
+            acc.get("portfolio_value", INITIAL_CAPITAL),
+            acc.get("realized_pnl", 0.0),
+            f"{acc.get('total_return_pct', 0.0):+.2f}%",
+            f"{acc.get('cagr_pct', 0.0):+.2f}%",
+            f"{acc.get('xirr_pct', 0.0):+.2f}%",
+            acc.get("days_active", 1),
+            f"{acc.get('risk_pct', 6.0)}%",
+            acc.get("active_pool", "Top 50 Champions")
+        ])
+        
+        # 2. Update Holdings worksheet
+        h_ws = sh.worksheet("Holdings")
+        h_ws.clear()
+        h_headers = [
+            "Ticker", "Company", "Sector", "Quantity", "Entry Price", "Entry Value",
+            "Initial SL", "Current SL", "Target 1", "Target 2", "Partial Booked",
+            "Entry Date", "Current Price", "Current Value", "Unrealized PnL", "Unrealized PnL %"
+        ]
+        h_ws.append_row(h_headers)
+        for h in holdings:
+            h_ws.append_row(list(h.values()))
+            
+        # 3. Update ClosedTrades worksheet
+        c_ws = sh.worksheet("ClosedTrades")
+        c_ws.clear()
+        c_headers = [
+            "Ticker", "Company", "Sector", "Quantity", "Entry Price", "Entry Value",
+            "Exit Price", "Exit Value", "Realized PnL", "Realized PnL %", "Holding Days",
+            "Entry Date", "Exit Date", "Exit Reason"
+        ]
+        c_ws.append_row(c_headers)
+        for c in closed:
+            c_ws.append_row(list(c.values()))
+            
+        print("Successfully synchronized all sheets to Google Sheets!")
+        return True
+    except Exception as e:
+        print(f"Error in sync_portfolio_to_google_sheets: {e}")
+        return False
 
 def calculate_position_size(entry_price: float, atr: float, portfolio_value: float, available_cash: float) -> int:
     risk_pct = float(os.environ.get("RISK_PERCENT", "6.0")) / 100.0
@@ -226,25 +312,21 @@ def add_position(ticker: str, company: str, sector: str, entry_price: float, atr
     db["account"]["cash"] = round(cash - entry_val, 2)
     _save_local_db(db)
     
-    # Try Google Sheets
-    client = get_gspread_client()
-    if client:
-        sh = get_or_open_portfolio_sheet(client)
-        if sh:
-            try:
-                h_ws = sh.worksheet("Holdings")
-                h_ws.append_row(list(new_pos.values()))
-                a_ws = sh.worksheet("Account")
-                a_ws.update_cell(2, 2, round(cash - entry_val, 2))
-            except Exception as e:
-                print(f"Google sheet update error: {e}")
-                
+    # Sync Google Sheets
+    sync_portfolio_to_google_sheets()
     print(f"[Strategy 3] Added {ticker} x {qty} @ Rs {entry_price}. T1: Rs {target_1}, T2: Rs {target_2}, SL: Rs {initial_sl}")
     return new_pos
 
 def update_portfolio_and_exits(current_quotes: Optional[Dict[str, Dict[str, float]]] = None) -> Dict[str, Any]:
     holdings = get_holdings()
+    db = _load_local_db()
+    cash = db["account"]["cash"]
+    realized_pnl = db["account"]["realized_pnl"]
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    
+    # If no holdings, sync account anyway and return
     if not holdings:
+        sync_portfolio_to_google_sheets()
         return {"exited": [], "partial_exited": []}
         
     tickers = [h["Ticker"] for h in holdings]
@@ -266,15 +348,10 @@ def update_portfolio_and_exits(current_quotes: Optional[Dict[str, Dict[str, floa
         except Exception as e:
             print(f"Error fetching exit quotes: {e}")
             
-    db = _load_local_db()
-    cash = db["account"]["cash"]
-    realized_pnl = db["account"]["realized_pnl"]
-    
     rows_to_keep = []
     exited_trades = []
     partial_exited = []
     total_open_val = 0.0
-    today_str = datetime.now().strftime("%Y-%m-%d")
     
     for h in holdings:
         t = h["Ticker"]
@@ -390,33 +467,12 @@ def update_portfolio_and_exits(current_quotes: Optional[Dict[str, Dict[str, floa
     db["account"]["total_return_pct"] = ret_pct
     _save_local_db(db)
     
-    # Try updating Google Sheets if accessible
-    client = get_gspread_client()
-    if client:
-        sh = get_or_open_portfolio_sheet(client)
-        if sh:
-            try:
-                h_ws = sh.worksheet("Holdings")
-                h_ws.clear()
-                headers = [
-                    "Ticker", "Company", "Sector", "Quantity", "Entry Price", "Entry Value",
-                    "Initial SL", "Current SL", "Target 1", "Target 2", "Partial Booked",
-                    "Entry Date", "Current Price", "Current Value", "Unrealized PnL", "Unrealized PnL %"
-                ]
-                h_ws.append_row(headers)
-                for r in rows_to_keep:
-                    h_ws.append_row(list(r.values()))
-                a_ws = sh.worksheet("Account")
-                a_ws.update_cell(2, 2, round(cash, 2))
-                a_ws.update_cell(2, 3, new_portfolio_val)
-                a_ws.update_cell(2, 4, round(realized_pnl, 2))
-                a_ws.update_cell(2, 5, f"{ret_pct:+.2f}%")
-            except Exception as e:
-                print(f"Google Sheet sync notice: {e}")
-                
+    # Sync Google Sheets
+    sync_portfolio_to_google_sheets()
     return {"exited": exited_trades, "partial_exited": partial_exited}
 
 if __name__ == "__main__":
+    sync_portfolio_to_google_sheets()
     acc = get_account_summary()
     print("Strategy 3 Portfolio Manager Active.")
     print(f"Account: Portfolio Value=Rs {acc['portfolio_value']:.2f}, Cash=Rs {acc['cash']:.2f}, Risk={acc.get('risk_pct', 6.0)}%")

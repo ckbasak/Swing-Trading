@@ -48,6 +48,14 @@ if st.sidebar.button("🔍 Run Scan on Curated Pool", use_container_width=True):
         st_res = trading_graph.run_trading_system(execute_trades=False, pool_type=pool_type)
         st.session_state["last_scan"] = st_res
 
+if st.sidebar.button("🔄 Sync with Google Sheet", use_container_width=True):
+    with st.spinner("Syncing to Google Sheets..."):
+        ok = portfolio_manager.sync_portfolio_to_google_sheets()
+        if ok:
+            st.sidebar.success("✅ Google Sheet updated!")
+        else:
+            st.sidebar.error("Failed to sync Google Sheet.")
+
 # Main Page Header
 st.title("🏆 Strategy 3: Hybrid Optimal Swing Trading System")
 st.markdown("*Autonomous quantitative swing execution combining ATR noise immunity, dual-tranche profit locking, zero-risk runners, and curated stock universes.*")
