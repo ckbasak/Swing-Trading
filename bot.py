@@ -522,15 +522,20 @@ async def schedules_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def news_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE, query_arg: str = None):
     """
-    Executes AI News Sentiment Analysis in full detail:
-    - If query_arg is provided, analyzes that specific stock or query (e.g. RELIANCE, TATAMOTORS, NIFTY).
-    - If query_arg is None:
-      - Analyzes all active open holdings from Google Sheets.
-      - If no open holdings exist, analyzes Nifty 50 benchmark market sentiment.
+    Executes Comprehensive Global & Indian Market News Analysis & Guardrails:
+    - If query_arg is None or 'MARKET' / 'GLOBAL':
+      - Fetches and displays comprehensive Global + Indian Market News Analysis with color-coded guardrails.
+      - If active open holdings exist, also evaluates holding stocks.
+    - If query_arg is a specific stock ticker:
+      - Analyzes stock-specific news sentiment and includes prevailing macro guardrail status.
     """
     loop = asyncio.get_event_loop()
     
-    if query_arg:
+    is_macro_query = query_arg and query_arg.strip().upper() in [
+        "MARKET", "GLOBAL", "MACRO", "NIFTY", "NIFTY 50", "NIFTY50", "^NSEI"
+    ]
+    
+    if query_arg and not is_macro_query:
         target_raw = query_arg.strip()
         target_upper = target_raw.upper()
         
@@ -545,7 +550,7 @@ async def news_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE, query_ar
         
         await context.bot.send_message(
             chat_id=chat_id,
-            text=f"⏳ *Analyzing live news & running Gemini AI sentiment for {query_text}...*",
+            text=f"⏳ *Analyzing live news & sentiment for {query_text}...*",
             parse_mode="Markdown"
         )
         
@@ -570,14 +575,27 @@ async def news_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE, query_ar
             )
         return
 
-    # No argument passed: check open holdings in Google Sheets
+    # Comprehensive Global & Indian Market Macro News Analysis & Guardrails
     await context.bot.send_message(
         chat_id=chat_id,
-        text="⏳ *Scanning active portfolio holdings & live market news for AI Sentiment...*",
+        text="⏳ *Conducting comprehensive Global & Indian market news analysis & calculating guardrails...*",
         parse_mode="Markdown"
     )
     
     try:
+        macro_data = await loop.run_in_executor(
+            None,
+            sentiment_analyzer.get_comprehensive_market_macro_sentiment
+        )
+        macro_report = sentiment_analyzer.format_macro_sentiment_report(macro_data)
+        
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=macro_report,
+            parse_mode="Markdown"
+        )
+        
+        # Check active holdings to provide holding stock guardrails review
         client = await loop.run_in_executor(None, portfolio_manager.get_gspread_client)
         sh = await loop.run_in_executor(None, portfolio_manager.get_or_create_portfolio_sheet, client)
         open_pos = await loop.run_in_executor(None, portfolio_manager.get_open_positions, sh)
@@ -607,7 +625,7 @@ async def news_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE, query_ar
                 for rem_t in tickers[3:]:
                     sym = rem_t.replace(".NS", "")
                     extra_buttons.append([InlineKeyboardButton(f"📊 Analyze {sym}", callback_data=f"news_ticker_{rem_t}")])
-            extra_buttons.append([InlineKeyboardButton("🌐 Analyze Nifty 50 Benchmark", callback_data="news_market")])
+            extra_buttons.append([InlineKeyboardButton("🌐 Re-run Macro Analysis", callback_data="news_market")])
             extra_buttons.append([InlineKeyboardButton("🎛️ Main Menu", callback_data="cmd_menu")])
             
             await context.bot.send_message(
@@ -617,25 +635,18 @@ async def news_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE, query_ar
                 parse_mode="Markdown"
             )
         else:
-            # No open positions: analyze Nifty 50 benchmark
-            detailed = await loop.run_in_executor(
-                None,
-                lambda: sentiment_analyzer.get_detailed_news_sentiment("Nifty 50 Indian stock market", ticker="^NSEI")
-            )
-            report = sentiment_analyzer.format_detailed_sentiment_report(detailed)
-            intro = "ℹ️ *No active open holdings in portfolio. Displaying Benchmark Market Sentiment:*\n\n"
             tip = "\n\n💡 *Tip: You can analyze news sentiment for any specific stock anytime by typing:* `/news <TICKER>` *(e.g. /news RELIANCE, /news TATAMOTORS, /news HDFCBANK).*"
             await context.bot.send_message(
                 chat_id=chat_id,
-                text=intro + report + tip,
+                text="ℹ️ *No active open holdings in portfolio.*" + tip,
                 reply_markup=get_main_menu_keyboard(),
                 parse_mode="Markdown"
             )
     except Exception as e:
-        logger.error(f"Error fetching portfolio news sentiment: {e}")
+        logger.error(f"Error fetching comprehensive market sentiment: {e}")
         await context.bot.send_message(
             chat_id=chat_id,
-            text=f"❌ Error fetching news sentiment: {e}",
+            text=f"❌ Error fetching market sentiment & guardrails: {e}",
             reply_markup=get_main_menu_keyboard()
         )
 
@@ -837,6 +848,14 @@ async def check_google_sheets_schedules_job(context: ContextTypes.DEFAULT_TYPE):
                             rep = sentiment_analyzer.format_detailed_sentiment_report(detailed)
                             reports_to_send.append(header + rep)
                         else:
+                            # Send Comprehensive Global & Indian Market Sentiment & Macro Guardrails Report
+                            macro_data = await loop.run_in_executor(
+                                None,
+                                sentiment_analyzer.get_comprehensive_market_macro_sentiment
+                            )
+                            macro_rep = sentiment_analyzer.format_macro_sentiment_report(macro_data)
+                            reports_to_send.append(header + macro_rep)
+                            
                             open_pos = await loop.run_in_executor(None, portfolio_manager.get_open_positions, sh)
                             if open_pos:
                                 tickers = [p["Ticker"] for p in open_pos]
@@ -851,18 +870,9 @@ async def check_google_sheets_schedules_job(context: ContextTypes.DEFAULT_TYPE):
                                     )
                                     rep = sentiment_analyzer.format_detailed_sentiment_report(detailed)
                                     holding_header = (
-                                        f"{header if idx == 0 else ''}"
                                         f"💼 *Active Holding #{idx+1} of {len(tickers)}*\n"
                                     )
                                     reports_to_send.append(holding_header + rep)
-                            else:
-                                detailed = await loop.run_in_executor(
-                                    None,
-                                    lambda: sentiment_analyzer.get_detailed_news_sentiment("Nifty 50 Indian stock market", ticker="^NSEI")
-                                )
-                                rep = sentiment_analyzer.format_detailed_sentiment_report(detailed)
-                                intro = "ℹ️ *No active open holdings in portfolio. Displaying Benchmark Market Sentiment:*\n\n"
-                                reports_to_send.append(header + intro + rep)
                                 
                         chat_ids = await loop.run_in_executor(None, get_registered_chats)
                         for cid in chat_ids:

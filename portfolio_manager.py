@@ -421,12 +421,13 @@ def close_position(sh: gspread.Spreadsheet, row_idx: int, exit_price: float, rea
     pnl_sign = "+" if pnl >= 0 else ""
     return f"Closed trade for {ticker} @ {exit_price:.2f} (Reason: {reason}, PnL: ₹{pnl:,.2f} / {pnl_sign}{pnl_pct:.2f}%)"
 
-def sync_portfolio(sh: gspread.Spreadsheet) -> List[str]:
+def sync_portfolio(sh: gspread.Spreadsheet, macro_data: Dict[str, Any] = None) -> List[str]:
     """
     Syncs the active portfolio:
     1. Fetches latest prices and 20 EMA for open positions.
     2. Triggers exits if targets or trailing stops are hit.
     3. Updates trailing stop (20 EMA) in Google Sheets if current price is favorable.
+    4. Enforces Macro Guardrails (e.g. TIGHTEN_SL_DAY_LOW) and micro-level stock news sentiment.
     """
     open_positions = get_open_positions(sh)
     if not open_positions:
@@ -479,7 +480,16 @@ def sync_portfolio(sh: gspread.Spreadsheet) -> List[str]:
             # Prioritize Dhan live tick price if available; fallback to close_today
             live_price = dhan_ltps.get(ticker, close_today)
             
-            # Check news sentiment for active position
+            # Check Macro Guardrail for Holdings (e.g. Risk-Off / TIGHTEN_SL_DAY_LOW)
+            if macro_data and (macro_data.get("guardrail_holdings") == "TIGHTEN_SL_DAY_LOW" or macro_data.get("color") == "RED"):
+                new_sl = max(current_sl, low_today)
+                if new_sl > current_sl:
+                    ws = sh.worksheet("Holdings")
+                    retry_gspread(ws.update_cell, row_idx, 7, str(round(new_sl, 2)))
+                    logs.append(f"🛡️ 🔴 MACRO GUARDRAIL TRIGGERED for {ticker}: Market Risk-Off. Tightened SL to today's low: ₹{new_sl:.2f}")
+                    current_sl = new_sl
+
+            # Check micro-level news sentiment for active position
             clean_sym = ticker.replace(".NS", "")
             stock_sentiment = sentiment_analyzer.get_news_sentiment(f"{clean_sym} stock news NSE")
             
@@ -489,7 +499,7 @@ def sync_portfolio(sh: gspread.Spreadsheet) -> List[str]:
                 if new_sl > current_sl:
                     ws = sh.worksheet("Holdings")
                     retry_gspread(ws.update_cell, row_idx, 7, str(round(new_sl, 2)))
-                    logs.append(f"⚠️ NEGATIVE NEWS detected for {ticker}. Tightened Trailing Stop to today's low: {new_sl:.2f}")
+                    logs.append(f"⚠️ NEGATIVE NEWS detected for {ticker}. Tightened Trailing Stop to today's low: ₹{new_sl:.2f}")
                     current_sl = new_sl
             
             # Check Exit Conditions against live_price

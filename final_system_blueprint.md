@@ -39,14 +39,15 @@ graph TD
    * Evaluates exit conditions:
      * **Target Hit:** If `Live Price >= Target` (1:2 Risk-to-Reward Ratio), closes position, calculates realized profit/loss, updates cash balance, and logs `Closed trade @ Exit Price (Reason: Target Hit, PnL: ₹... / +...%)`.
      * **Stop Loss Hit:** If `Live Price <= Current SL`, closes position, calculates realized loss, updates cash balance, and logs `Closed trade @ Exit Price (Reason: Stop Loss Hit, PnL: ₹... / -...%)`.
-   * **AI News Sentiment Guardrail (Micro):** Queries Google News RSS for news headlines on the held stock and invokes **Gemini 3.6-flash**. If news sentiment is **NEGATIVE** (e.g., earnings miss, regulatory penalty), the trailing stop loss is immediately tightened to **today's Low** to protect capital against sudden market dumps.
+   * **Macro Sentiment & Holding Defense Guardrail:** Evaluates comprehensive Global cues (US Wall Street, Fed rate outlook, crude oil, DXY) and Indian domestic cues (Nifty 50, Bank Nifty, FII/DII institutional flows, RBI) with color-coded guardrails (`🟢 GREEN`, `🟡 YELLOW`, `🔴 RED`). If market regime is **`🔴 RED / RISK-OFF`** (`TIGHTEN_SL_DAY_LOW`), automatically tightens trailing stop-loss for all open holdings to **today's Low** to protect accumulated capital against broad market selling.
+   * **AI News Sentiment Guardrail (Micro):** Queries Google News RSS for news headlines on each individual held stock and invokes AI sentiment. If stock sentiment is **NEGATIVE** (e.g., earnings miss, regulatory penalty), the trailing stop loss is immediately tightened to **today's Low**.
    * **Dynamic Trailing Stop (20 EMA):** If close price is favorable, calculates the 20-day Exponential Moving Average (20 EMA). If `20 EMA > Current SL`, updates `Current SL` in Google Sheets to `20 EMA` (Stop loss trails upward and never moves downward).
    * **Performance Tracking:** Dynamically solves for **Total Return (%)**, **CAGR (%)**, and **XIRR (%)** across active trading days.
 
 2. **`Scan Market Node` (Breakout Screener & Macro AI News Filter):**
    * Downloads the active Nifty 50 constituent list directly from NSE Archives.
    * Downloads 60 days of daily historical OHLCV data using session retry adapters.
-   * **AI News Sentiment Guardrail (Macro):** Queries news for `"Nifty 50 Index India"` and calls **Gemini 3.6-flash**. If macro sentiment is **NEGATIVE** (e.g., market-wide selloff, geopolitical panic), disables all new breakout entries for the day and logs a clear warning notice.
+   * **Global & Indian Market Sentiment Guardrail (Macro):** Ingests dual news feeds across Global markets (Wall St, Fed, Crude, DXY) and Indian equities (Nifty 50, FII/DII flows). If macro guardrail is **`🔴 RED / HALT`** (Risk-Off), pauses all new breakout entries for the day and logs a clear capital preservation notice. If **`🟡 YELLOW / SELECTIVE`**, prioritizes top-conviction volume breakouts. If **`🟢 GREEN / ALLOW`**, permits normal full-capacity entries.
    * Identifies quantitative breakout candidates meeting all 3 criteria:
      1. **Price Breakout:** Today's Close > Today's 20 SMA AND Yesterday's Close <= Yesterday's 20 SMA.
      2. **Volume Confirmation:** Today's Volume > 2.0 * 20-day Volume SMA.
