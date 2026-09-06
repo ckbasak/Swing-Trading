@@ -19,7 +19,7 @@ This master comprehensive specification unifies all seven foundational project d
 
 ## 🏛️ 1. Comparative Dual-System Architecture Matrix
 
-The repository suite implements two distinct quantitative trading engines designed to operate in parallel on the National Stock Exchange of India (NSE), sharing core cloud infrastructure while executing distinct quantitative logic:
+The repository suite implements two distinct quantitative trading engines designed to operate in parallel on the National Stock Exchange of India (NSE), sharing core cloud infrastructure while executing distinctly optimized quantitative logic:
 
 | Parameter | System #1: Classic Breakout | System #2: Strategy v2 Optimized |
 | :--- | :--- | :--- |
@@ -34,9 +34,12 @@ The repository suite implements two distinct quantitative trading engines design
 | **Price Breakout Rule** | Close > 20 SMA & Yesterday Close <= 20 SMA | Close > 20 SMA & Yesterday Close <= 20 SMA |
 | **Volume Confirmation** | Volume > **2.0×** 20-day Volume SMA | Volume > **2.5×** 20-day Volume SMA (High Conviction) |
 | **Momentum Filter** | 14-period Wilder's RSI between 50 and 70 | 14-period Wilder's RSI between 50 and 70 |
-| **Capital Risk per Trade** | **1.0%** of Total Portfolio Value | **1.5%** of Total Portfolio Value |
+| **Active Total Portfolio Value** | **₹100,000.00** (Sheet-Driven) | **₹100,000.00** (Sheet-Driven) |
+| **Active Capital Risk per Trade**| **5.0%** (Configured in Account Sheet) | **7.5%** (Configured in Account Sheet) |
+| **Active Risk Amount per Trade** | **₹5,000.00** (₹100,000 × 0.05) | **₹7,500.00** (₹100,000 × 0.075) |
 | **Initial Stop Loss** | Breakout 20 SMA (Clamped 3% – 15%) | Volatility-Adaptive **2× ATR(14)** (Clamped to 20 SMA) |
-| **Position Sizing Formula**| `floor((Portfolio * 0.01) / (Entry - 20 SMA))` | `floor((Portfolio * 0.015) / (2 * ATR(14)))` |
+| **Risk Sizing Formulation** | `floor((Portfolio * Risk_Percent) / (Entry - Initial_SL))` | `floor((Portfolio * Risk_Percent) / (2 * ATR(14)))` |
+| **Active Sizing Formula** | `floor(5000 / (Entry - 20 SMA))` | `floor(7500 / (2 * ATR(14)))` |
 | **Sector Diversification** | Standard Portfolio Allocation | **Max 3 open positions per sector** |
 | **Profit Target** | Entry + 2 * (Entry - Initial SL) [1:2 R:R] | Entry + 2 * (Entry - Initial SL) [1:2 R:R] |
 | **Trailing Stop Loss** | Dynamic 20 EMA (Ratchets Up Only) | Dynamic 20 EMA (Ratchets Up Only) |
@@ -45,6 +48,10 @@ The repository suite implements two distinct quantitative trading engines design
 | **Maximum Drawdown** | **-7.38%** (Benchmark -15.77%) | **-8.12%** (Benchmark -15.77%) |
 | **Profit Factor** | **1.53** | **1.84** |
 | **Win-to-Loss Ratio** | **2.59x** (Avg Win ₹16,547 / Avg Loss ₹6,378) | **2.74x** (Avg Win ₹19,840 / Avg Loss ₹7,240) |
+
+> [!IMPORTANT]
+> **Dynamic Sheet-Driven Risk Architecture:**  
+> The system does **not** hardcode a static risk percentage. Both System 1 and System 2 query the `Account` worksheet in Google Drive on every scanning, sizing, and sync cycle. When the user updates `Risk Percent` (or `Risk Percentage`) or `Total Portfolio Value` in Google Sheets, the cloud trading engine immediately reads the new value and adjusts position sizes for all subsequent breakout trades without requiring a server reboot or code redeploy.
 
 ---
 
@@ -69,8 +76,8 @@ dhanhq
 ```
 
 ### Architectural Role of Core Dependencies:
-1. **`streamlit`**: Provides the web dashboard UI presenting KPI cards, real-time portfolio charts, open positions, and closed trade tables with win rate metrics.
-2. **`python-telegram-bot[all]`**: Powers the interactive Telegram bot daemon with polling, InlineKeyboardMarkup buttons, and native BotCommands.
+1. **`streamlit`**: Provides the web dashboard UI presenting KPI cards, dynamic Risk per Trade metrics, real-time portfolio charts, open positions, and closed trade tables with win rate metrics.
+2. **`python-telegram-bot[all]`**: Powers the interactive Telegram bot daemon with polling, InlineKeyboardMarkup buttons, native BotCommands, and dynamic `/summary` reporting.
 3. **`gspread` & `google-auth`**: Connects via OAuth service account credentials to Google Sheets, functioning as the persistent cloud database.
 4. **`dhanhq`**: Official Dhan broker SDK providing direct, zero-latency tick data (LTP) by downloading and caching the Dhan NSE Scrip Master CSV in memory.
 5. **`yfinance`**: Secondary historical market data provider and automatic fallback for live quotes if DhanHQ credentials expire.
@@ -97,6 +104,7 @@ Both project directories maintain strict autonomous execution policies:
 
 ### Operational Principles:
 - **Zero-Intervention Workflow**: All routine monitoring, dynamic scans, intraday quote synchronizations, and database updates execute unattended.
+- **Dynamic Google Drive Sync**: Account parameters changed in Google Sheets (`Total Portfolio Value`, `Cash Balance`, `Risk Percent` / `Risk Percentage`) are honored automatically in real time.
 - **Fail-Safe Self-Healing**: Background processes that terminate or hit transient cloud conflicts automatically restart via supervisor scripts.
 - **Strict Branch Isolation**: Changes to System 1 must strictly target branch `main`, while changes to System 2 must strictly target branch `strategy-2`.
 
@@ -133,13 +141,14 @@ graph TD
 ### Detailed Node Specifications:
 
 #### Node 1: `Sync Portfolio Node`
-1. **Live Quote Ingestion**: Ingests live prices for all `OPEN` positions using `dhan_client.py`. Maps stock symbols to security IDs using cached Scrip Master. If Dhan fails or times out, switches transparently to `yfinance`.
-2. **Target Evaluation**: Checks if `Live Price >= Target`. If satisfied, closes position with reason `Target Hit` (1:2 Risk-to-Reward achieved).
-3. **Stop Loss Evaluation**: Checks if `Live Price <= Current SL`. If hit, closes position with reason `Stop Loss Hit`.
-4. **Dynamic Trailing Stop (20 EMA)**: For active positions, calculates the 20-day Exponential Moving Average. If `20 EMA > Current SL`, updates `Current SL` in Google Sheets. Stop loss strictly ratchets upward and never decreases.
-5. **Macro Sentiment Holding Defense**: If the macro sentiment engine identifies a `🔴 HALT / RISK-OFF` environment, the trailing stop for all open holdings is tightened to **Today's Low** to protect capital against broad market drawdowns.
-6. **Micro Stock Sentiment Defense**: Checks company-specific news. If negative sentiment is detected (e.g. governance crisis, earnings disaster), the stop loss is tightened to **Today's Low**.
-7. **Performance Computation**: Solves for Total Return (%), CAGR (%), and XIRR (%) across actual trading sessions.
+1. **Dynamic Account Retrieval**: Reads the latest `Total Portfolio Value`, `Cash Balance`, and `Risk Percent` (supporting aliases `Risk Percentage`, `Risk %`, and decimal/percentage formats) from the Google Sheets `Account` worksheet.
+2. **Live Quote Ingestion**: Ingests live prices for all `OPEN` positions using `dhan_client.py`. Maps stock symbols to security IDs using cached Scrip Master. If Dhan fails or times out, switches transparently to `yfinance`.
+3. **Target Evaluation**: Checks if `Live Price >= Target`. If satisfied, closes position with reason `Target Hit` (1:2 Risk-to-Reward achieved).
+4. **Stop Loss Evaluation**: Checks if `Live Price <= Current SL`. If hit, closes position with reason `Stop Loss Hit`.
+5. **Dynamic Trailing Stop (20 EMA)**: For active positions, calculates the 20-day Exponential Moving Average. If `20 EMA > Current SL`, updates `Current SL` in Google Sheets. Stop loss strictly ratchets upward and never decreases.
+6. **Macro Sentiment Holding Defense**: If the macro sentiment engine identifies a `🔴 HALT / RISK-OFF` environment, the trailing stop for all open holdings is tightened to **Today's Low** to protect capital against broad market drawdowns.
+7. **Micro Stock Sentiment Defense**: Checks company-specific news. If negative sentiment is detected, the stop loss is tightened to **Today's Low**.
+8. **Performance Computation**: Solves for Total Return (%), CAGR (%), and XIRR (%) across actual trading sessions based on Initial Capital.
 
 #### Node 2: `Scan Market Node`
 1. **Universe Ingestion**: Downloads the current Nifty 50 constituent list from the official NSE Archives (`https://archives.nseindia.com/content/indices/ind_nifty50list.csv`).
@@ -158,21 +167,26 @@ graph TD
 6. **Micro Stock Sentiment**: For qualifying candidates, evaluates company news. Discards any candidate with negative news sentiment.
 
 #### Node 3: `Calculate Sizing Node`
-1. **Double Buy Prevention**: Discards candidates that already exist as `OPEN` positions in Google Sheets.
-2. **Sector Concentration Limit (System 2)**: Counts active holdings by sector. Rejects candidates in sectors that already have 3 open positions.
-3. **Stop Loss Determination**:
+1. **Dynamic Risk per Trade**:
+   $$	ext{Risk Per Trade (INR)} = 	ext{Total Portfolio Value} 	imes 	ext{Risk Percent}$$
+   - System 1 Active: ₹100,000 × 0.05 = **₹5,000.00**
+   - System 2 Active: ₹100,000 × 0.075 = **₹7,500.00**
+2. **Double Buy Prevention**: Discards candidates that already exist as `OPEN` positions in Google Sheets.
+3. **Sector Concentration Limit (System 2)**: Counts active holdings by sector. Rejects candidates in sectors that already have 3 open positions.
+4. **Stop Loss Determination**:
    - System 1: Initial SL = Breakout 20 SMA. Clamped between 3% (minimum) and 15% (maximum) of Entry Price.
    - System 2: Initial SL = Volatility-Adaptive 2× ATR(14) below Entry, clamped to 20 SMA floor: `max(20 SMA, Entry - 2*ATR)`.
-4. **Position Sizing Formula**:
-   - System 1: `Quantity = floor((Total Portfolio Value * 0.01) / (Entry Price - Initial SL))`
-   - System 2: `Quantity = floor((Total Portfolio Value * 0.015) / (2 * ATR(14)))`
-5. **Portfolio Allocation Ceiling**: Aggregate value of all open positions cannot exceed 90% of Total Portfolio Value (maintaining a minimum 10% liquid cash buffer).
-6. **Daily Purchase Limit**: Maximum 3 breakout buys per scanning cycle, prioritized by highest volume breakout ratio.
+5. **Position Sizing Formula**:
+   $$	ext{Quantity} = \left\lfloor rac{	ext{Risk Per Trade}}{	ext{Risk Per Share}} ightfloor$$
+   - System 1: $	ext{Quantity} = \left\lfloor rac{	ext{Total Portfolio Value} 	imes 	ext{Risk Percent}}{	ext{Entry Price} - 	ext{Initial SL}} ightfloor$
+   - System 2: $	ext{Quantity} = \left\lfloor rac{	ext{Total Portfolio Value} 	imes 	ext{Risk Percent}}{2 	imes 	ext{ATR}(14)} ightfloor$
+6. **Portfolio Allocation Ceiling**: Aggregate value of all open positions cannot exceed 90% of Total Portfolio Value (maintaining a minimum 10% liquid cash buffer).
+7. **Daily Purchase Limit**: Maximum 3 breakout buys per scanning cycle, prioritized by highest volume breakout ratio.
 
 #### Node 4: `Execute Trades Node`
 1. **Database Commit**: Writes executed trades into Google Sheets `Holdings` tab with exponential backoff on HTTP 429 rate limits.
-2. **Account Update**: Deducts total purchase cost from Cash Balance.
-3. **Multi-Channel Broadcast**: Sends real-time execution cards with full company names, sector classifications, and IST timestamps to all registered Telegram subscribers.
+2. **Account Update**: Deducts total purchase cost from Cash Balance while strictly preserving the configured `Risk Percent` / `Risk Percentage` value.
+3. **Multi-Channel Broadcast**: Sends real-time execution cards with full company names, sector classifications, active risk metrics, and IST timestamps to all registered Telegram subscribers.
 
 ---
 
@@ -200,13 +214,16 @@ The system utilizes Google Sheets as an accessible, zero-cost, cloud-hosted rela
 | **13** | `PnL` | Float | Realized profit/loss in INR (`Exit Value - Entry Value`) |
 | **14** | `Exit Reason` | String | `Target Hit`, `Stop Loss Hit`, or `Manual Exit` |
 
-### Worksheet 2: `"Account"` (2 Columns)
-| Parameter | Default Value | Description |
-| :--- | :--- | :--- |
-| `Total Portfolio Value` | ₹1,000,000.00 | Liquid Cash + Current Market Value of Open Holdings |
-| `Cash Balance` | ₹1,000,000.00 | Unallocated liquid cash available for new purchases |
-| `Risk Percent` | `0.01` (Sys 1) / `0.015` (Sys 2) | Capital risk allocation fraction per trade setup |
-| `Initial Capital` | ₹1,000,000.00 | Baseline reference capital for CAGR & XIRR calculations |
+### Worksheet 2: `"Account"` (2 Columns — Active Configuration)
+| Parameter | Current Value (Sheet) | System #1 Default | System #2 Default | Description & Behavior |
+| :--- | :---: | :---: | :---: | :--- |
+| **`Total Portfolio Value`** | **`100000`** (₹1.00 Lakh) | ₹1,000,000.00 | ₹1,000,000.00 | Real-time equity base for position sizing |
+| **`Cash Balance`** | **`100000`** (₹1.00 Lakh) | ₹1,000,000.00 | ₹1,000,000.00 | Liquid capital remaining for new purchases |
+| **`Risk Percent`** *(or `Risk Percentage`)* | **`0.05`** (Sys 1) / **`0.075`** (Sys 2) | `0.01` (1.0%) | `0.015` (1.5%) | **Active capital risk allocation fraction per trade** |
+| **`Initial Capital`** | **`100000`** (₹1.00 Lakh) | ₹1,000,000.00 | ₹1,000,000.00 | Performance baseline for CAGR & XIRR calculations |
+
+> [!NOTE]
+> The parameters `Risk Percent` and `Risk Percentage` are completely interchangeable aliases. The system supports decimals (e.g. `0.05`), whole percentages (e.g. `5` or `5%`), and preserves custom parameters without resetting them during trade execution updates.
 
 ### Worksheet 3: `"TelegramChats"` (1 Column)
 | Parameter | Description |
@@ -253,6 +270,7 @@ Twelve architectural guardrails protect capital, maintain container health, and 
 
 | Guardrail Name | System Scope | Operational Mechanism | Risk Mitigated |
 | :--- | :--- | :--- | :--- |
+| **Dynamic Account Sheet Sizing** | Sizer | Reads `Risk Percent` & `Total Portfolio Value` directly from Google Drive | Ensures instantaneous user control over risk per trade |
 | **DhanHQ Fallback Engine** | Data Feed | Automatic fallback to `yfinance` if credentials expire or network times out | Prevents bot crashes & downtime |
 | **Double Buy Blocker** | Portfolio | Checks database and rejects duplicate ticker purchases | Prevents single-stock overexposure |
 | **Sector Concentration Limit** | Portfolio (Sys 2) | Maximum **3 open positions per sector** | Caps correlated systemic risk when sector breakouts cluster |
@@ -293,7 +311,7 @@ Each system deploys an independent Telegram Bot daemon equipped with a touch-fri
   - `/news`: Analyzes open portfolio holdings or Nifty 50 benchmark.
   - `/news <TICKER>`: Evaluates sentiment for any specific stock (e.g. `/news RELIANCE`, `/news TATAMOTORS`).
 - `📈 /positions` — Displays open positions with live Dhan/Yahoo prices, Company Names, Sector, SL, Target, and Unrealized PnL.
-- `🏦 /summary` — Summarizes Portfolio Value, Cash, Realized PnL, Win Rate %, Total Return %, CAGR %, and XIRR %.
+- `🏦 /summary` — Summarizes Portfolio Value, Cash, Realized PnL, **Capital Risk per Trade (%) and (₹)**, Win Rate %, Total Return %, CAGR %, and XIRR %.
 - `🤝 /history` — Lists all completed trades with full Company Names, Entry/Exit prices, Realized PnL (₹), and PnL %.
 - `📅 /schedules` — Displays all dynamic scan and sentiment schedules from Google Sheets with live DUE status.
 - `🚀 /start` — Welcomes user and dynamically registers Chat ID into Google Sheets `TelegramChats` table.
@@ -348,14 +366,17 @@ Simulations were executed across all 50 Nifty index constituents across 745 acti
 
 ## 🔍 11. Operational Walkthrough & End-to-End Verification (`walkthrough.md`)
 
-Both systems have undergone rigorous end-to-end integration and verification:
+Both systems have undergone full end-to-end integration testing and operational verification:
 
-1. **Streamlit UI Verification**: Dashboards load successfully on both Render web services. KPI metric cards (Total Portfolio Value, Cash Balance, Unrealized PnL, Realized PnL, Total Return %, CAGR %, and XIRR %) render without latency.
-2. **Telegram Bot Interactive Verification**: Both bots (`@nse_swing_123_bot` and `@ai_swing_trade_2_bot`) respond to `/start`, `/menu`, `/scan`, `/news`, `/positions`, `/summary`, `/history`, and `/schedules` in under 1.5 seconds.
-3. **DhanHQ Live Ingestion & Fallback**: Successfully streams tick quotes (LTP) with cached Scrip Master. Fallback tests confirmed seamless switchover to `yfinance` when Dhan tokens are unset or expired.
-4. **Google Sheets Persistence**: Real-time read/write operations verified against `NSE_Swing_Trading_Portfolio_1` and `NSE_Swing_Trading_Portfolio_2`. Rate limit retry decorators successfully intercept and recover from HTTP 429 backoff conditions.
-5. **Market Sentiment Guardrails**: Dual-layer synthesis tested with real financial news feeds. The engine successfully extracted 35+ headlines, evaluated macro cues, and assigned color-coded guardrail directives (`🟢 ALLOW`, `🟡 SELECTIVE`, `🔴 HALT`).
-6. **Container Health & Supervisor**: Both services maintain `200 ok` health status with zero-downtime rolling restart capabilities.
+1. **Streamlit UI Verification**: Dashboards load successfully on both Render web services. KPI metric cards (Total Portfolio Value, Cash Balance, Dynamic Risk per Trade %, Unrealized PnL, Realized PnL, Total Return %, CAGR %, and XIRR %) render without latency.
+2. **Telegram Bot Interactive Verification**: Both bots (`@nse_swing_123_bot` and `@ai_swing_trade_2_bot`) respond to `/start`, `/menu`, `/scan`, `/news`, `/positions`, `/summary` (with dynamic Capital Risk per trade output), `/history`, and `/schedules` in under 1.5 seconds.
+3. **Dynamic Sheet-Driven Sizing Ingestion**: Verified live reading from Google Sheets `Account` worksheet:
+   - System 1 accurately loads `Risk Percent = 0.05` (5.0%) on `₹100,000.00` capital, allocating ₹5,000.00 risk per trade.
+   - System 2 accurately loads `Risk Percent = 0.075` (7.5%) on `₹100,000.00` capital, allocating ₹7,500.00 risk per trade.
+4. **DhanHQ Live Ingestion & Fallback**: Successfully streams tick quotes (LTP) with cached Scrip Master. Fallback tests confirmed seamless switchover to `yfinance` when Dhan tokens are unset or expired.
+5. **Google Sheets Persistence**: Real-time read/write operations verified against `NSE_Swing_Trading_Portfolio_1` and `NSE_Swing_Trading_Portfolio_2`. Rate limit retry decorators successfully intercept and recover from HTTP 429 backoff conditions.
+6. **Market Sentiment Guardrails**: Dual-layer synthesis tested with real financial news feeds. The engine successfully extracted 35+ headlines, evaluated macro cues, and assigned color-coded guardrail directives (`🟢 ALLOW`, `🟡 SELECTIVE`, `🔴 HALT`).
+7. **Container Health & Supervisor**: Both services maintain `200 ok` health status with zero-downtime rolling restart capabilities.
 
 ---
 
@@ -363,22 +384,22 @@ Both systems have undergone rigorous end-to-end integration and verification:
 
 Below are the complete, verbatim master prompts used to recreate each trading engine from scratch:
 
-### Universal Master Prompt — System #1 (Classic Breakout, 1.0% Risk)
+### Universal Master Prompt — System #1 (Classic Breakout, Dynamic Risk Sizing)
 ```text
 Build a complete, production-grade NSE Swing Trading & Portfolio Manager in Python, ready to deploy to Render (Free Tier). The system must run a Streamlit web dashboard and a Telegram bot concurrently inside a single container. The database must be Google Sheets (managed via gspread).
 
 1. FILE STRUCTURE & RESPONSIBILITIES:
-- `dhan_client.py`: Integrates DhanHQ API ('dhanhq'). Downloads and caches the Dhan NSE Scrip Master CSV ('https://images.dhan.co/api-data/api-scrip-master.csv') in memory to map symbols (e.g. 'RELIANCE' -> 2885). Provides get_dhan_ltp(tickers) for zero-latency live quotes with graceful fallback to yfinance if unconfigured.
+- `dhan_client.py`: Integrates DhanHQ API ('dhanhq'). Downloads and caches the Dhan NSE Scrip Master CSV in memory to map symbols (e.g. 'RELIANCE' -> 2885). Provides get_dhan_ltp(tickers) for zero-latency live quotes with graceful fallback to yfinance if unconfigured.
 - `sentiment_analyzer.py`: Comprehensive Market Sentiment Analyzer. Ingests dual news feeds across Global macro cues (US Wall Street, Fed rate outlook, Crude Oil, US Dollar Index DXY) and Indian domestic cues (Nifty 50, Bank Nifty, FII/DII institutional flows) scraping 35+ top headlines from Moneycontrol, Economic Times, Mint, NDTV Profit, and Reuters. Invokes Gemini 3.6-flash to deliver actionable color-coded guardrail directives:
   * 🟢 ALLOW / RISK-ON: Market stable/bullish, breakout buy limit = 3/day.
   * 🟡 SELECTIVE / CAUTION: High volatility/mixed news, breakout buy limit reduced to 1/day, tighter SL.
   * 🔴 HALT / RISK-OFF: Severe negative macro shock/geopolitical escalation, all new breakout buys HALTED (0 buys), open positions monitored with trailing stop alerts tightened to Today's Low.
   Also evaluates stock-specific micro news headlines.
 - `screener.py`: Fetches Nifty 50 symbols from NSE, downloads 60d daily historical data in parallel via yfinance, and filters for breakouts. Includes official Company Name mappings (e.g. 'HCL Technologies Ltd.' for 'HCLTECH.NS'). Checks macro and stock-specific market sentiment before qualifying candidates. Filters out penny stocks (Price < 20) and low-volume stocks (Vol SMA 20 < 50,000).
-- `portfolio_manager.py`: Google Sheets database operations for 'NSE_Swing_Trading_Portfolio_1'. Handles sheets initialization, fetching open/closed positions, registering chat IDs, adding positions, closing positions, calculating performance metrics (Total Return, CAGR, XIRR, PnL %), and syncing live quotes from DhanHQ (with yfinance fallback). Implements retry_gspread for 429 rate limit backoff. In add_position, blocks duplicates and validates stop loss (20 SMA clamped between 3% and 15% distance).
-- `trading_graph.py`: Builds a stateful LangGraph workflow representing the trading cycle (Sync Portfolio -> Scan Market -> Position Sizer -> Execute Trades) and formats a text-based scan report with IST timestamps and Company Names. Sizer enforces 1.0% risk per trade, 20 SMA stop loss (3%-15% clamp), max 90% portfolio exposure (10% cash buffer), and max 3 daily purchases.
-- `bot.py`: Telegram Bot handler and dynamic scheduler. Implements interactive InlineKeyboardMarkup 6-button menus ([🔍 Run Market Scan], [🌐 Market Sentiment], [📈 Open Positions], [🏦 Portfolio Summary], [📅 Scan Schedules], [🤝 Trade History]), native BotCommand menu registration, IST Date/Time timestamps, Company Names, and commands (/menu, /scan, /news, /positions, /history, /summary, /schedules, /start).
-- `app.py`: Streamlit frontend dashboard displaying KPI cards for Value, Cash, Unrealized/Realized PnL, Total Return, CAGR, XIRR, Closed Trades table with PnL % and win rate metrics, and Plotly charts.
+- `portfolio_manager.py`: Google Sheets database operations for 'NSE_Swing_Trading_Portfolio_1'. Handles sheets initialization, fetching open/closed positions, registering chat IDs, adding positions, closing positions, calculating performance metrics (Total Return, CAGR, XIRR, PnL %), and syncing live quotes from DhanHQ (with yfinance fallback). Implements retry_gspread for 429 rate limit backoff. Dynamically reads 'Total Portfolio Value', 'Cash Balance', and 'Risk Percent' (or 'Risk Percentage') from the Account sheet on every run without hardcoded overrides. Enforces 20 SMA stop loss (3%-15% clamp).
+- `trading_graph.py`: Builds a stateful LangGraph workflow representing the trading cycle (Sync Portfolio -> Scan Market -> Position Sizer -> Execute Trades) and formats a text-based scan report with IST timestamps and Company Names. Sizer dynamically pulls Risk Percent and Portfolio Value from Account sheet, enforcing 20 SMA stop loss (3%-15% clamp), max 90% portfolio exposure (10% cash buffer), and max 3 daily purchases.
+- `bot.py`: Telegram Bot handler and dynamic scheduler. Implements interactive InlineKeyboardMarkup 6-button menus ([🔍 Run Market Scan], [🌐 Market Sentiment], [📈 Open Positions], [🏦 Portfolio Summary], [📅 Scan Schedules], [🤝 Trade History]), native BotCommand menu registration, IST Date/Time timestamps, Company Names, and commands (/menu, /scan, /news, /positions, /history, /summary, /schedules, /start). /summary displays live Capital Risk per Trade % and INR amount from Account sheet.
+- `app.py`: Streamlit frontend dashboard displaying KPI cards for Value, Cash, Risk per Trade (% and INR), Unrealized/Realized PnL, Total Return, CAGR, XIRR, Closed Trades table with PnL % and win rate metrics, and Plotly charts.
 - `start.sh`: Shell script launching `python -u bot.py &` in the background and `streamlit run app.py --server.port $PORT --server.address 0.0.0.0 --server.fileWatcherType none --server.headless true` in the foreground.
 - `Procfile`: Contains `web: sh start.sh`
 - `requirements.txt`: Dependencies (streamlit, python-telegram-bot[all], gspread, google-auth, yfinance, pandas, numpy, langgraph, pytz, plotly, requests, google-generativeai, dhanhq).
@@ -397,12 +418,12 @@ Build a complete, production-grade NSE Swing Trading & Portfolio Manager in Pyth
 3. GOOGLE SHEETS SCHEMAS:
 Create 'NSE_Swing_Trading_Portfolio_1' with tabs:
 - 'Holdings' (14 Columns): Ticker, Entry Date, Entry Price, Quantity, Entry Value, Initial SL, Current SL, Target, Status, Exit Date, Exit Price, Exit Value, PnL, Exit Reason.
-- 'Account' (2 Columns): Parameter (Total Portfolio Value, Cash Balance, Risk Percent [0.01], Initial Capital) and Value.
+- 'Account' (2 Columns): Parameter (Total Portfolio Value, Cash Balance, Risk Percent [e.g. 0.05 / 5.0%], Initial Capital) and Value. Dynamically read on every run.
 - 'TelegramChats' (1 Column): ChatID.
 - 'Schedules' (6 Columns): Date, Time, Mode, Status, Last Run, Notes.
 
-4. RISK MANAGEMENT & SIZING:
-- Risk Amount: 1.0% of 'Total Portfolio Value' from Account sheet.
+4. DYNAMIC RISK MANAGEMENT & SIZING:
+- Risk Amount: 'Risk Percent' × 'Total Portfolio Value' (read dynamically from Account sheet, e.g. 0.05 × 100,000 = 5,000 INR).
 - Stop-Loss: Breakout 20 SMA, clamped between 3% and 15% distance.
 - Quantity: Risk Amount / (Entry Price - Initial SL).
 - Capital Scaling: Ensure max 90% allocation limit; scale down if cash insufficient. Max 3 buys per day.
@@ -410,22 +431,22 @@ Create 'NSE_Swing_Trading_Portfolio_1' with tabs:
 
 ---
 
-### Universal Master Prompt — System #2 (Strategy v2 Optimized, 1.5% Risk)
+### Universal Master Prompt — System #2 (Strategy v2 Optimized, Dynamic Risk Sizing)
 ```text
 Build a complete, production-grade NSE Swing Trading & Portfolio Manager in Python, ready to deploy to Render (Free Tier). The system must run a Streamlit web dashboard and a Telegram bot concurrently inside a single container. The database must be Google Sheets (managed via gspread).
 
 1. FILE STRUCTURE & RESPONSIBILITIES:
-- `dhan_client.py`: Integrates DhanHQ API ('dhanhq'). Downloads and caches the Dhan NSE Scrip Master CSV ('https://images.dhan.co/api-data/api-scrip-master.csv') in memory to map symbols (e.g. 'RELIANCE' -> 2885). Provides get_dhan_ltp(tickers) for zero-latency live quotes with graceful fallback to yfinance if unconfigured.
+- `dhan_client.py`: Integrates DhanHQ API ('dhanhq'). Downloads and caches the Dhan NSE Scrip Master CSV in memory to map symbols (e.g. 'RELIANCE' -> 2885). Provides get_dhan_ltp(tickers) for zero-latency live quotes with graceful fallback to yfinance if unconfigured.
 - `sentiment_analyzer.py`: Comprehensive Market Sentiment Analyzer. Ingests dual news feeds across Global macro cues (US Wall Street, Fed rate outlook, Crude Oil, US Dollar Index DXY) and Indian domestic cues (Nifty 50, Bank Nifty, FII/DII institutional flows) scraping 35+ top headlines from Moneycontrol, Economic Times, Mint, NDTV Profit, and Reuters. Invokes Gemini 3.6-flash to deliver actionable color-coded guardrail directives:
   * 🟢 ALLOW / RISK-ON: Market stable/bullish, breakout buy limit = 3/day.
   * 🟡 SELECTIVE / CAUTION: High volatility/mixed news, breakout buy limit reduced to 1/day, tighter 1.5x ATR/SL.
   * 🔴 HALT / RISK-OFF: Severe negative macro shock/geopolitical escalation, all new breakout buys HALTED (0 buys), open positions monitored with trailing stop alerts tightened to Today's Low.
   Also evaluates stock-specific micro news headlines.
 - `screener.py`: Fetches Nifty 50 symbols from NSE, downloads 60d daily historical data in parallel via yfinance, and filters for breakouts. Includes official Company Name mappings (e.g. 'HCL Technologies Ltd.' for 'HCLTECH.NS'). Checks macro and stock-specific market sentiment before qualifying candidates. Filters out penny stocks (Price < 20) and low-volume stocks (Vol SMA 20 < 50,000).
-- `portfolio_manager.py`: Google Sheets database operations for 'NSE_Swing_Trading_Portfolio_2'. Handles sheets initialization, fetching open/closed positions, registering chat IDs, adding positions, closing positions, calculating performance metrics (Total Return, CAGR, XIRR, PnL %), and syncing live quotes from DhanHQ (with yfinance fallback). Implements retry_gspread for 429 rate limit backoff. In add_position, blocks duplicates, enforces Sector Concentration limit (max 3/sector), and validates stop loss (2x ATR below entry, clamped to 20 SMA floor).
-- `trading_graph.py`: Builds a stateful LangGraph workflow representing the trading cycle (Sync Portfolio -> Scan Market -> Position Sizer -> Execute Trades) and formats a text-based scan report with IST timestamps, Company Names, and Sector classifications. Sizer enforces 1.5% risk per trade, 2x ATR(14) stop loss, max 3 open per sector, max 90% portfolio exposure (10% cash buffer), and max 3 daily purchases.
-- `bot.py`: Telegram Bot handler and dynamic scheduler. Implements interactive InlineKeyboardMarkup 6-button menus ([🔍 Run Market Scan], [🌐 Market Sentiment], [📈 Open Positions], [🏦 Portfolio Summary], [📅 Scan Schedules], [🤝 Trade History]), native BotCommand menu registration, IST Date/Time timestamps, Company Names, and commands (/menu, /scan, /news, /positions, /history, /summary, /schedules, /start).
-- `app.py`: Streamlit frontend dashboard displaying KPI cards for Value, Cash, Unrealized/Realized PnL, Total Return, CAGR, XIRR, Closed Trades table with PnL % and win rate metrics, sector concentration charts, and Plotly charts.
+- `portfolio_manager.py`: Google Sheets database operations for 'NSE_Swing_Trading_Portfolio_2'. Handles sheets initialization, fetching open/closed positions, registering chat IDs, adding positions, closing positions, calculating performance metrics (Total Return, CAGR, XIRR, PnL %), and syncing live quotes from DhanHQ (with yfinance fallback). Implements retry_gspread for 429 rate limit backoff. Dynamically reads 'Total Portfolio Value', 'Cash Balance', and 'Risk Percent' (or 'Risk Percentage') from the Account sheet on every run without hardcoded overrides. Enforces Sector Concentration limit (max 3/sector) and 2x ATR stop loss (clamped to 20 SMA floor).
+- `trading_graph.py`: Builds a stateful LangGraph workflow representing the trading cycle (Sync Portfolio -> Scan Market -> Position Sizer -> Execute Trades) and formats a text-based scan report with IST timestamps, Company Names, and Sector classifications. Sizer dynamically pulls Risk Percent and Portfolio Value from Account sheet, enforcing 2x ATR(14) stop loss, max 3 open per sector, max 90% portfolio exposure (10% cash buffer), and max 3 daily purchases.
+- `bot.py`: Telegram Bot handler and dynamic scheduler. Implements interactive InlineKeyboardMarkup 6-button menus ([🔍 Run Market Scan], [🌐 Market Sentiment], [📈 Open Positions], [🏦 Portfolio Summary], [📅 Scan Schedules], [🤝 Trade History]), native BotCommand menu registration, IST Date/Time timestamps, Company Names, and commands (/menu, /scan, /news, /positions, /history, /summary, /schedules, /start). /summary displays live Capital Risk per Trade % and INR amount from Account sheet.
+- `app.py`: Streamlit frontend dashboard displaying KPI cards for Value, Cash, Risk per Trade (% and INR), Unrealized/Realized PnL, Total Return, CAGR, XIRR, Closed Trades table with PnL % and win rate metrics, sector concentration charts, and Plotly charts.
 - `start.sh`: Shell script launching `python -u bot.py &` in the background and `streamlit run app.py --server.port $PORT --server.address 0.0.0.0 --server.fileWatcherType none --server.headless true` in the foreground.
 - `Procfile`: Contains `web: sh start.sh`
 - `requirements.txt`: Dependencies (streamlit, python-telegram-bot[all], gspread, google-auth, yfinance, pandas, numpy, langgraph, pytz, plotly, requests, google-generativeai, dhanhq).
@@ -444,12 +465,12 @@ Build a complete, production-grade NSE Swing Trading & Portfolio Manager in Pyth
 3. GOOGLE SHEETS SCHEMAS:
 Create 'NSE_Swing_Trading_Portfolio_2' with tabs:
 - 'Holdings' (14 Columns): Ticker, Entry Date, Entry Price, Quantity, Entry Value, Initial SL, Current SL, Target, Status, Exit Date, Exit Price, Exit Value, PnL, Exit Reason.
-- 'Account' (2 Columns): Parameter (Total Portfolio Value, Cash Balance, Risk Percent [0.015], Initial Capital) and Value.
+- 'Account' (2 Columns): Parameter (Total Portfolio Value, Cash Balance, Risk Percent [e.g. 0.075 / 7.5%], Initial Capital) and Value. Dynamically read on every run.
 - 'TelegramChats' (1 Column): ChatID.
 - 'Schedules' (6 Columns): Date, Time, Mode, Status, Last Run, Notes.
 
-4. RISK MANAGEMENT & SIZING (v2):
-- Risk Amount: 1.5% of 'Total Portfolio Value' from Account sheet.
+4. DYNAMIC RISK MANAGEMENT & SIZING (v2):
+- Risk Amount: 'Risk Percent' × 'Total Portfolio Value' (read dynamically from Account sheet, e.g. 0.075 × 100,000 = 7,500 INR).
 - Stop-Loss: 2× ATR(14) below entry, clamped to 20 SMA floor: max(20 SMA, Entry - 2*ATR).
 - Quantity: Risk Amount / (2 * ATR(14)).
 - Sector Concentration Limit: Maximum 3 open positions per sector.

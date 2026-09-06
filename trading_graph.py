@@ -42,11 +42,7 @@ def sync_portfolio_node(state: TradingState) -> Dict[str, Any]:
         account = portfolio_manager.get_account_details(sh)
         portfolio_value = account["Total Portfolio Value"]
         cash_balance = account["Cash Balance"]
-        risk_pct = account.get("Risk Percent", 0.015)
-        # Migrate 1.0% to 1.5% for Strategy v2 if needed
-        if risk_pct == 0.01:
-            portfolio_manager.update_account_details(sh, {"Risk Percent": 0.015})
-            risk_pct = 0.015
+        risk_pct = account.get("Risk Percent", 0.075)
         
         open_positions = portfolio_manager.get_open_positions(sh)
         

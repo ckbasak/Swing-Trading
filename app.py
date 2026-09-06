@@ -223,10 +223,15 @@ if account is not None and holdings is not None:
         closed_df["PnL"] = pd.to_numeric(closed_df["PnL"], errors='coerce')
         realized_pnl = closed_df["PnL"].sum()
         
+    # Dynamic Risk per trade from Account sheet
+    risk_pct = account.get("Risk Percent", account.get("Risk Percentage", 0.075))
+    risk_amt = portfolio_value * risk_pct
+
     # KPI Columns
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col_risk, col3, col4 = st.columns(5)
     col1.metric("🏦 Total Portfolio Value", f"₹{portfolio_value:,.2f}")
-    col2.metric("💵 Available Cash Balance", f"₹{cash:,.2f}")
+    col2.metric("💵 Available Cash", f"₹{cash:,.2f}")
+    col_risk.metric("🛡️ Risk / Trade", f"{risk_pct * 100:.1f}%", f"₹{risk_amt:,.2f}")
     
     pnl_label = "🟢 Unrealized PnL" if unrealized_pnl >= 0 else "🔴 Unrealized PnL"
     col3.metric(pnl_label, f"₹{unrealized_pnl:,.2f}", delta=f"{unrealized_pnl:,.2f}")

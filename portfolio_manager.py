@@ -293,49 +293,99 @@ def is_schedule_due(item: Dict[str, Any], now_ist: datetime) -> bool:
 def get_account_details(sh: gspread.Spreadsheet) -> Dict[str, float]:
     """
     Retrieves the account details (Portfolio Value, Cash, Risk %, Initial Capital) from the Account sheet.
+    Dynamically supports parameter aliases ('Risk Percent', 'Risk Percentage', 'Risk %') and formats.
     """
     _, account_name, _ = get_worksheet_names(sh)
     ws = sh.worksheet(account_name)
     records = ws.get_all_records()
     details = {}
     for r in records:
-        param = str(r["Parameter"]).strip()
-        val = float(r["Value"])
+        param = str(r.get("Parameter", "")).strip()
+        raw_val = str(r.get("Value", "")).strip().replace("%", "").replace(",", "")
+        try:
+            val = float(raw_val)
+        except (ValueError, TypeError):
+            continue
+            
+        norm_key = param.lower().replace(" ", "").replace("_", "")
+        # Convert whole percentage like 5 or 7.5 to decimal 0.05 or 0.075
+        if "risk" in norm_key and val > 1.0:
+            val = val / 100.0
+            
         details[param] = val
+        if norm_key in ["riskpercent", "riskpercentage", "riskpct", "risk"]:
+            details["Risk Percent"] = val
+            details["Risk Percentage"] = val
+        elif norm_key in ["totalportfoliovalue", "portfoliovalue"]:
+            details["Total Portfolio Value"] = val
+        elif norm_key in ["cashbalance", "cash"]:
+            details["Cash Balance"] = val
+        elif norm_key in ["initialcapital", "startingcapital"]:
+            details["Initial Capital"] = val
+
     if "Initial Capital" not in details:
-        details["Initial Capital"] = 1000000.0
+        details["Initial Capital"] = 100000.0
     if "Risk Percent" not in details:
-        details["Risk Percent"] = 0.015
+        details["Risk Percent"] = 0.075
+    if "Risk Percentage" not in details:
+        details["Risk Percentage"] = details["Risk Percent"]
     return details
 
 def update_account_details(sh: gspread.Spreadsheet, updates: Dict[str, float]):
     """
-    Updates specific parameters in the Account worksheet.
+    Updates specific parameters in the Account worksheet while strictly preserving existing custom values.
     """
     _, account_name, _ = get_worksheet_names(sh)
     ws = sh.worksheet(account_name)
     records = ws.get_all_records()
     
+    # Read existing values first so we never overwrite user configurations
     data = {
-        "Total Portfolio Value": 1000000.0, 
-        "Cash Balance": 1000000.0, 
-        "Risk Percent": 0.015,
-        "Initial Capital": 1000000.0
+        "Total Portfolio Value": 100000.0, 
+        "Cash Balance": 100000.0, 
+        "Risk Percent": 0.075,
+        "Initial Capital": 100000.0
     }
+    risk_param_label = "Risk Percent"
     for r in records:
-        param = str(r["Parameter"]).strip()
-        if param in data:
-            data[param] = float(r["Value"])
+        param = str(r.get("Parameter", "")).strip()
+        raw_val = str(r.get("Value", "")).strip().replace("%", "").replace(",", "")
+        try:
+            val = float(raw_val)
+            norm_key = param.lower().replace(" ", "").replace("_", "")
+            if "risk" in norm_key:
+                risk_param_label = param
+                if val > 1.0:
+                    val = val / 100.0
+                data["Risk Percent"] = val
+            elif norm_key in ["totalportfoliovalue", "portfoliovalue"]:
+                data["Total Portfolio Value"] = val
+            elif norm_key in ["cashbalance", "cash"]:
+                data["Cash Balance"] = val
+            elif norm_key in ["initialcapital", "startingcapital"]:
+                data["Initial Capital"] = val
+        except Exception:
+            pass
             
     for k, v in updates.items():
-        if k in data:
-            data[k] = float(v)
+        norm_k = k.lower().replace(" ", "").replace("_", "")
+        if "risk" in norm_k:
+            v_float = float(v)
+            if v_float > 1.0:
+                v_float = v_float / 100.0
+            data["Risk Percent"] = v_float
+        elif norm_k in ["totalportfoliovalue", "portfoliovalue"]:
+            data["Total Portfolio Value"] = float(v)
+        elif norm_k in ["cashbalance", "cash"]:
+            data["Cash Balance"] = float(v)
+        elif norm_k in ["initialcapital", "startingcapital"]:
+            data["Initial Capital"] = float(v)
             
     ws.update('A1:B5', [
         ["Parameter", "Value"],
         ["Total Portfolio Value", str(data["Total Portfolio Value"])],
         ["Cash Balance", str(data["Cash Balance"])],
-        ["Risk Percent", str(data["Risk Percent"])],
+        [risk_param_label, str(data["Risk Percent"])],
         ["Initial Capital", str(data["Initial Capital"])]
     ])
 

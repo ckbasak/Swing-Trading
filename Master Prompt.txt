@@ -26,13 +26,13 @@ Build a complete, production-grade NSE Swing Trading & Portfolio Manager in Pyth
 3. GOOGLE SHEETS SCHEMAS:
 Create 'NSE_Swing_Trading_Portfolio_2' with tabs:
 - 'Holdings' (14 Columns): Ticker, Entry Date, Entry Price, Quantity, Entry Value, Initial SL, Current SL, Target, Status, Exit Date, Exit Price, Exit Value, PnL, Exit Reason.
-- 'Account' (2 Columns): Parameter (Total Portfolio Value, Cash Balance, Risk Percent [0.015], Initial Capital) and Value.
-- 'Schedules' (5 Columns): Date, Time, Mode (EXECUTE, PREVIEW, SENTIMENT), Status, Notes.
+- 'Account' (2 Columns): Parameter (Total Portfolio Value, Cash Balance, Risk Percent [or Risk Percentage], Initial Capital) and Value. Active values dynamically read from Google Sheet on every cycle (e.g. Total Portfolio Value: 100000, Risk Percent: 0.075).
+- 'Schedules' (6 Columns): Date, Time, Mode (EXECUTE, PREVIEW, SENTIMENT), Status, Last Run, Notes.
 - 'TelegramChats' (1 Column): ChatID.
 
-4. RISK MANAGEMENT & SIZING (v2):
-- Risk Amount: 1.5% of 'Total Portfolio Value' from Account sheet.
-- Stop-Loss: 2× ATR(14) below entry, no fixed clamp.
+4. DYNAMIC RISK MANAGEMENT & SIZING (v2):
+- Dynamic Risk per Trade: Risk Amount = 'Risk Percent' * 'Total Portfolio Value' (read dynamically from Account worksheet on every run; e.g. 0.075 * 100,000 = 7,500 INR).
+- Stop-Loss: Volatility-Adaptive 2× ATR(14) below entry, clamped to 20 SMA floor: max(20 SMA, Entry - 2*ATR).
 - Quantity: Risk Amount / (2 * ATR(14)).
 - Sector Concentration Limit: Maximum 3 open positions per sector.
 - Capital Scaling: Ensure max 90% allocation limit; scale down if cash insufficient. Max 3 buys per day.

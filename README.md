@@ -186,12 +186,12 @@ The database is housed inside Google Sheets (**`NSE_Swing_Trading_Portfolio_2`**
 ### 1. `Holdings` Worksheet (14 Columns)
 `Ticker`, `Entry Date`, `Entry Price`, `Quantity`, `Entry Value`, `Initial SL`, `Current SL`, `Target`, `Status` (`OPEN`/`CLOSED`), `Exit Date`, `Exit Price`, `Exit Value`, `PnL`, `Exit Reason`.
 
-### 2. `Account` Worksheet (2 Columns)
+### 2. `Account` Worksheet (2 Columns — Dynamically Read on Every Cycle)
 Key-value configuration store:
-* `Total Portfolio Value`: Current total equity (cash + open position value).
-* `Cash Balance`: Liquid capital available for new trades.
-* `Risk Percent`: `0.015` (1.5% risk per trade).
-* `Initial Capital`: Baseline starting capital (e.g. `1000000.00`).
+* `Total Portfolio Value`: Current total equity (cash + open position value, active: `100000.00`).
+* `Cash Balance`: Liquid capital available for new trades (active: `100000.00`).
+* `Risk Percent` (or `Risk Percentage`): Dynamic capital risk fraction per trade (active: `0.075` / 7.5% risk per trade = ₹7,500 INR on ₹1 Lakh).
+* `Initial Capital`: Baseline starting capital for CAGR and XIRR calculations (active: `100000.00`).
 
 ### 3. `Schedules` Worksheet (5 Columns)
 `Date`, `Time`, `Mode`, `Status`, `Notes`.

@@ -353,12 +353,17 @@ async def summary_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
         tz = pytz.timezone("Asia/Kolkata")
         now_ist = datetime.datetime.now(tz).strftime("%Y-%m-%d | %I:%M:%S %p IST")
         
+        risk_pct = account.get("Risk Percent", account.get("Risk Percentage", 0.075))
+        port_val = account.get("Total Portfolio Value", 0.0)
+        risk_val = port_val * risk_pct
+        
         msg = (
             "🏦 **Portfolio Performance Summary:**\n"
             f"📅 *As of: {now_ist}*\n"
             f"📡 *Data Engine: {feed_source}*\n\n"
-            f"💰 **Total Portfolio Value:** ₹{account.get('Total Portfolio Value', 0):,.2f}\n"
+            f"💰 **Total Portfolio Value:** ₹{port_val:,.2f}\n"
             f"💵 **Cash Balance:** ₹{account.get('Cash Balance', 0):,.2f}\n"
+            f"🛡️ **Capital Risk per Trade:** {risk_pct * 100:.2f}% (₹{risk_val:,.2f})\n"
             f"📊 **Open Positions:** {len(open_pos)}\n"
             f"🤝 **Closed Trades:** {len(closed_pos)}{win_rate_str}\n"
             f"📈 **Realized PnL (Closed):** ₹{total_pnl:,.2f}{avg_pct_str}\n"
