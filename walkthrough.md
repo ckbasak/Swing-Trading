@@ -54,8 +54,9 @@ graph TD
    * For qualifying breakout candidates, verifies individual stock market sentiment; discards candidates with **NEGATIVE** sentiment.
 
 3. **`Calculate Sizing Node` (Risk Management & Exposure Guardrails):**
-   * Enforces strict **1% Risk-per-Trade sizing**:
-     $$\text{Quantity} = \left\lfloor \frac{\text{Total Portfolio Value} \times 0.01}{\text{Entry Price} - \text{Initial SL}} \right\rfloor$$
+   * Enforces **Dynamic Sheet-Driven Sizing** (Active setting: **5.0% Risk** on ₹100,000 Portfolio = **₹5,000 INR** risk per trade):
+     $$\text{Quantity} = \left\lfloor \frac{\text{Total Portfolio Value} \times \text{Risk Percent}}{\text{Entry Price} - \text{Initial SL}} \right\rfloor$$
+     *(Note: `Total Portfolio Value` and `Risk Percent` / `Risk Percentage` are dynamically loaded from the `Account` worksheet on every cycle).*
    * **Double Buy Blocker:** Rejects candidates that already exist as active `OPEN` positions in Google Sheets.
    * **Stop Loss Distance Validation:** Verifies that the initial Stop Loss is between **3% and 15%** of the Entry Price (discards noise-prone tight stops and high-risk wide stops).
    * **90% Max Portfolio Allocation (10% Cash Buffer):** Limits total open position value to **90% of total portfolio value**, scaling down purchase quantities or skipping entries if cash is insufficient.
@@ -89,13 +90,13 @@ The database is hosted on Google Sheets under the spreadsheet name **`NSE_Swing_
 | **13** | `PnL` | Float | Realized profit/loss (`Exit Value - Entry Value`) |
 | **14** | `Exit Reason` | String | `Target Hit`, `Stop Loss Hit`, or `Manual Exit` |
 
-### Worksheet 2: `"Account"` (2 Columns)
-| Parameter | Default / Format | Description |
-| :--- | :--- | :--- |
-| `Total Portfolio Value` | Float (e.g. `1000000.00`) | Cash Balance + Current Value of Open Positions |
-| `Cash Balance` | Float (e.g. `1000000.00`) | Liquid unallocated cash available for trading |
-| `Risk Percent` | Float (`0.01`) | Risk percentage per trade (1%) |
-| `Initial Capital` | Float (`1000000.00`) | Capital baseline for CAGR & XIRR calculations |
+### Worksheet 2: `"Account"` (2 Columns — Dynamically Synced)
+| Parameter | Active Value (Sheet) | Default Value | Description |
+| :--- | :---: | :---: | :--- |
+| `Total Portfolio Value` | **`100000.00`** | `1000000.00` | Real-time equity base: Cash + Open Holdings Value |
+| `Cash Balance` | **`100000.00`** | `1000000.00` | Liquid unallocated cash available for trading |
+| `Risk Percent` *(or `Risk Percentage`)* | **`0.05` (5.0%)** | `0.01` (1.0%) | Capital risk percentage per trade (dynamically read) |
+| `Initial Capital` | **`100000.00`** | `1000000.00` | Performance baseline for CAGR & XIRR calculations |
 
 ### Worksheet 3: `"TelegramChats"` (1 Column)
 | Parameter | Description |
