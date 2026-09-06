@@ -9,7 +9,6 @@ except Exception:
 
 import os
 import asyncio
-import schedule
 import time
 from datetime import datetime
 import pandas as pd
@@ -189,7 +188,28 @@ def main():
     app.add_handler(CallbackQueryHandler(button_handler))
     
     print("AI-Swing-Trade-3 Telegram Bot starting polling...")
-    app.run_polling()
+    try:
+        app.run_polling(drop_pending_updates=True)
+    except Exception as e:
+        err_str = str(e)
+        if "Conflict" in err_str or "terminated by other getUpdates" in err_str:
+            print("\n" + "="*75)
+            print("⚠️  TELEGRAM BOT TOKEN CONFLICT DETECTED")
+            print("="*75)
+            print("The current TELEGRAM_BOT_TOKEN in .env is already in active use by")
+            print("Project 2 (@ai_swing_trade_2_bot) running on Render.")
+            print("Telegram only allows ONE active polling connection per bot token at a time.")
+            print("\nTo give Project 3 its own dedicated Telegram Bot:")
+            print("1. Open Telegram and message @BotFather.")
+            print("2. Type /newbot and give it a name (e.g., 'AI Swing Trade 3') and username")
+            print("   (e.g., 'ai_swing_trade_3_bot').")
+            print("3. Copy the HTTP API token provided by BotFather.")
+            print("4. Paste it into: c:\\Users\\ckbas\\Documents\\antigravity\\AI-Swing-Trade-3\\.env")
+            print("   TELEGRAM_BOT_TOKEN=<your_new_token_here>")
+            print("5. Re-run run_bot.bat!")
+            print("="*75 + "\n")
+        else:
+            print(f"Bot polling error: {e}")
 
 if __name__ == "__main__":
     main()
