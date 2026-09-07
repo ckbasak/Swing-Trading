@@ -48,17 +48,24 @@ def get_curated_tickers(pool_type: str = "top_50") -> List[str]:
             return df["ticker"].dropna().tolist()
         except Exception as e:
             print(f"Error loading curated pool {csv_file}: {e}")
-    # Fallback to defaults
     return list(COMPANY_METADATA.keys())[:50]
 
 def get_stock_sector(ticker: str) -> str:
-    return COMPANY_METADATA.get(ticker, {}).get("sector", "Diversified")
+    sym = ticker.strip().upper()
+    if not sym.endswith(".NS"):
+        sym = f"{sym}.NS"
+    return COMPANY_METADATA.get(sym, {}).get("sector", COMPANY_METADATA.get(ticker, {}).get("sector", "Diversified"))
 
 def get_stock_company(ticker: str) -> str:
-    return COMPANY_METADATA.get(ticker, {}).get("company", ticker)
+    sym = ticker.strip().upper()
+    if not sym.endswith(".NS"):
+        sym = f"{sym}.NS"
+    return COMPANY_METADATA.get(sym, {}).get("company", COMPANY_METADATA.get(ticker, {}).get("company", ticker.replace(".NS", "")))
+
+def get_company_name(ticker: str) -> str:
+    return get_stock_company(ticker)
 
 def get_nifty_250_tickers() -> List[str]:
-    # Backward compatibility alias - returns default active curated pool
     pool_setting = os.environ.get("ACTIVE_STOCK_POOL", "curated_pool_top_50.csv")
     pool_type = "top_101" if "101" in pool_setting else "top_50"
     return get_curated_tickers(pool_type)
@@ -83,33 +90,53 @@ def calculate_atr(df: pd.DataFrame, period: int = 14) -> pd.Series:
     tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
     return tr.ewm(alpha=1/period, adjust=False).mean()
 
-def screen_stocks(tickers: Optional[List[str]] = None, check_sentiment: bool = True) -> List[Dict[str, Any]]:
+def screen_stocks(
+    tickers: Optional[List[str]] = None, 
+    logs: Optional[List[str]] = None,
+    macro_data: Optional[Dict[str, Any]] = None,
+    check_sentiment: bool = True
+) -> List[Dict[str, Any]]:
     """
     Strategy 3: Hybrid Optimal Swing Screener
-    - Universe: Curated High-Performing Stock Pool
+    - Universe: Curated High-Performing Stock Pool (Top 50 Champions / Top 101 Winners)
     - Breakout: Close crosses above 20-day SMA
     - Volume Conviction: Volume > 2.25x 20-day Vol SMA (Sweet Spot)
     - Momentum: RSI 14 between 50 and 70
     - Targets: Target 1 at +2.0x ATR (50% partial), Target 2 at +4.5x ATR (runner)
     - Stop Loss: Dynamic 2.0x ATR below entry
     """
+    if logs is None:
+        logs = []
     if tickers is None:
         tickers = get_nifty_250_tickers()
 
     print(f"=== [Strategy 3] Scanning {len(tickers)} Curated Stocks ===")
 
-    # Check macro sentiment
-    macro_sentiment = "NEUTRAL"
-    if check_sentiment:
+    # 1. Comprehensive Global & Indian Macro Guardrail Check
+    if macro_data is None and check_sentiment:
         try:
-            macro_res = sentiment_analyzer.get_news_sentiment("Nifty 50 Index India")
-            macro_sentiment = macro_res.get("verdict", "NEUTRAL") if isinstance(macro_res, dict) else str(macro_res)
-            print(f"Macro Sentiment for Nifty 50: {macro_sentiment}")
-            if macro_sentiment.upper() == "NEGATIVE":
-                print("Macro sentiment is NEGATIVE. Strategy 3 market guardrail active: skipping new entries.")
-                return []
+            macro_data = sentiment_analyzer.get_comprehensive_market_macro_sentiment()
         except Exception as e:
-            print(f"Macro sentiment check skipped: {e}")
+            print(f"Notice: macro sentiment check failed: {e}")
+
+    if macro_data:
+        breakout_guard = macro_data.get("guardrail_breakouts", "ALLOW")
+        regime = macro_data.get("market_regime", "RISK-ON")
+        badge = macro_data.get("color_badge", "🟢")
+        color = macro_data.get("color", "GREEN")
+        
+        if breakout_guard == "HALT" or color == "RED":
+            msg = f"{badge} Macro Guardrail Alert: Market regime is {regime} (Breakouts: HALT). High macro risk environment."
+            print(msg)
+            logs.append(msg)
+        elif breakout_guard == "SELECTIVE" or color == "YELLOW":
+            msg = f"{badge} Macro Guardrail Caution: Market regime is {regime} (Breakouts: SELECTIVE). Prioritizing high-conviction volume breakouts only."
+            print(msg)
+            logs.append(msg)
+        else:
+            msg = f"{badge} Macro Market Sentiment: {regime} (Breakout entries: ALLOW). Normal trading active."
+            print(msg)
+            logs.append(msg)
 
     try:
         raw_data = yf.download(
@@ -123,6 +150,7 @@ def screen_stocks(tickers: Optional[List[str]] = None, check_sentiment: bool = T
         )
     except Exception as e:
         print(f"Error downloading batch data: {e}")
+        logs.append(f"Error downloading batch data: {e}")
         return []
 
     vol_multiplier = float(os.environ.get("VOLUME_MULTIPLIER", "2.25"))
@@ -157,19 +185,18 @@ def screen_stocks(tickers: Optional[List[str]] = None, check_sentiment: bool = T
             rsi_today = float(df['RSI_14'].iloc[-1])
             atr_today = float(df['ATR_14'].iloc[-1])
 
-            # Guardrails: price & liquidity
+            # Liquidity filter
             if close_today < 20.0 or vol_sma_today < 25000.0:
                 continue
             if np.isnan(sma_today) or np.isnan(vol_sma_today) or np.isnan(rsi_today) or np.isnan(atr_today):
                 continue
 
-            # Technical Conditions
+            # Technical Conditions: SMA Breakout, Volume Conviction (>2.25x), Bullish RSI (50-70)
             price_breakout = (close_yesterday <= sma_yesterday) and (close_today > sma_today)
             vol_confirmed = vol_today > (vol_multiplier * vol_sma_today)
             rsi_confirmed = 50.0 <= rsi_today <= 70.0
 
             if price_breakout and vol_confirmed and rsi_confirmed:
-                # Dynamic ATR Levels
                 if atr_today <= 0.01:
                     atr_today = close_today * 0.02
 
@@ -178,11 +205,10 @@ def screen_stocks(tickers: Optional[List[str]] = None, check_sentiment: bool = T
                 target_2 = round(close_today + (4.5 * atr_today), 2)
                 vol_ratio = round(vol_today / vol_sma_today, 2)
 
-                meta = COMPANY_METADATA.get(ticker, {})
-                company_name = meta.get("company", ticker)
-                sector = meta.get("sector", "Diversified")
+                company_name = get_stock_company(ticker)
+                sector = get_stock_sector(ticker)
 
-                # Individual stock news sentiment
+                # Individual stock news sentiment check
                 stock_sentiment = "NEUTRAL"
                 if check_sentiment:
                     try:
@@ -190,10 +216,10 @@ def screen_stocks(tickers: Optional[List[str]] = None, check_sentiment: bool = T
                         sent_res = sentiment_analyzer.get_news_sentiment(query)
                         stock_sentiment = sent_res.get("verdict", "NEUTRAL") if isinstance(sent_res, dict) else str(sent_res)
                         if stock_sentiment.upper() == "NEGATIVE":
-                            print(f"Skipping {ticker} due to NEGATIVE news sentiment.")
+                            logs.append(f"Skipping {ticker} due to NEGATIVE stock news sentiment.")
                             continue
-                    except Exception as e:
-                        print(f"Sentiment check failed for {ticker}: {e}")
+                    except Exception:
+                        pass
 
                 candidates.append({
                     "ticker": ticker,
@@ -203,7 +229,9 @@ def screen_stocks(tickers: Optional[List[str]] = None, check_sentiment: bool = T
                     "volume": int(vol_today),
                     "volume_ratio": vol_ratio,
                     "rsi": round(rsi_today, 2),
+                    "rsi_14": round(rsi_today, 2),
                     "atr": round(atr_today, 2),
+                    "atr_14": round(atr_today, 2),
                     "stop_loss": sl_price,
                     "target_1": target_1,
                     "target_2": target_2,
@@ -212,7 +240,6 @@ def screen_stocks(tickers: Optional[List[str]] = None, check_sentiment: bool = T
         except Exception:
             continue
 
-    # Clean memory
     del raw_data
     gc.collect()
 
