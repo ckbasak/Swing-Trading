@@ -88,11 +88,18 @@ def get_worksheet_names(sh: gspread.Spreadsheet) -> Tuple[str, str, str]:
     """Returns standard tab names: ('Holdings', 'Account', 'TelegramChats')."""
     return ("Holdings", "Account", "TelegramChats")
 
+_cached_sh = None
+
 def get_or_create_portfolio_sheet(client: Optional[gspread.Client] = None, sheet_name: Optional[str] = None) -> Optional[gspread.Spreadsheet]:
     """
-    Opens or initializes the standard 5-tab Google Sheet matching Projects 1 & 2:
+    Opens the standard 5-tab Google Sheet matching Projects 1 & 2:
     Tabs: 'Account', 'TelegramChats', 'Holdings', 'Schedules', 'DebugLogs'
+    Caches spreadsheet handle to prevent Google Sheets 429 rate limit quota exhaustion.
     """
+    global _cached_sh
+    if _cached_sh is not None and sheet_name is None:
+        return _cached_sh
+
     if client is None:
         client = get_gspread_client()
     if not client:
@@ -100,85 +107,16 @@ def get_or_create_portfolio_sheet(client: Optional[gspread.Client] = None, sheet
 
     target_name = sheet_name or os.environ.get("SPREADSHEET_NAME", DEFAULT_SPREADSHEET_NAME)
     try:
-        sh = client.open(target_name)
+        sh = retry_gspread(client.open, target_name)
     except Exception:
         try:
-            sh = client.open(DEFAULT_SPREADSHEET_NAME)
-        except Exception:
-            try:
-                sh = client.create(target_name)
-            except Exception as e:
-                print(f"Could not open/create Google Sheet {target_name}: {e}")
-                return None
+            sh = retry_gspread(client.open, DEFAULT_SPREADSHEET_NAME)
+        except Exception as e:
+            print(f"Could not open Google Sheet {target_name}: {e}")
+            return None
 
-    holdings_name, account_name, chats_name = get_worksheet_names(sh)
-
-    # 1. Holdings Sheet (Standard 14 columns)
-    try:
-        holdings_ws = sh.worksheet(holdings_name)
-        first_row = holdings_ws.row_values(1)
-        if not first_row or first_row[0] != "Ticker" or len(first_row) != 14:
-            holdings_ws.clear()
-            holdings_ws.resize(rows=1000, cols=14)
-            headers = [
-                "Ticker", "Entry Date", "Entry Price", "Quantity", "Entry Value",
-                "Initial SL", "Current SL", "Target", "Status", "Exit Date", 
-                "Exit Price", "Exit Value", "PnL", "Exit Reason"
-            ]
-            holdings_ws.update(range_name="A1:N1", values=[headers])
-    except gspread.WorksheetNotFound:
-        holdings_ws = sh.add_worksheet(title=holdings_name, rows=1000, cols=14)
-        headers = [
-            "Ticker", "Entry Date", "Entry Price", "Quantity", "Entry Value",
-            "Initial SL", "Current SL", "Target", "Status", "Exit Date", 
-            "Exit Price", "Exit Value", "PnL", "Exit Reason"
-        ]
-        holdings_ws.update(range_name="A1:N1", values=[headers])
-
-    # 2. Account Sheet (Standard 2-column Parameter/Value layout)
-    try:
-        sh.worksheet(account_name)
-    except gspread.WorksheetNotFound:
-        account_ws = sh.add_worksheet(title=account_name, rows=100, cols=2)
-        account_data = [
-            ["Parameter", "Value"],
-            ["Total Portfolio Value", str(INITIAL_CAPITAL)],
-            ["Cash Balance", str(INITIAL_CAPITAL)],
-            ["Risk Percent", "0.06"],
-            ["Initial Capital", str(INITIAL_CAPITAL)],
-            ["Realized PnL", "0"],
-            ["Total Return %", "+0.00%"],
-            ["CAGR %", "+0.00%"],
-            ["XIRR %", "+0.00%"],
-            ["Days Active", "1"],
-            ["Active Pool", "Top 50 Champions"]
-        ]
-        account_ws.update(range_name="A1:B11", values=account_data)
-
-    # 3. TelegramChats Sheet (Standard 1-column ChatID)
-    try:
-        sh.worksheet(chats_name)
-    except gspread.WorksheetNotFound:
-        chats_ws = sh.add_worksheet(title=chats_name, rows=100, cols=1)
-        chats_ws.update(range_name="A1:A3", values=[["ChatID"], ["6493910665"], ["7119022718"]])
-
-    # 4. Schedules Sheet
-    get_schedules_worksheet(sh)
-
-    # 5. DebugLogs Sheet
-    try:
-        sh.worksheet("DebugLogs")
-    except gspread.WorksheetNotFound:
-        log_ws = sh.add_worksheet(title="DebugLogs", rows=500, cols=3)
-        log_ws.update(range_name="A1:C1", values=[["Timestamp IST", "Source", "Message"]])
-
-    # Remove obsolete ClosedTrades tab if present
-    try:
-        old_ct = sh.worksheet("ClosedTrades")
-        sh.del_worksheet(old_ct)
-    except Exception:
-        pass
-
+    if sheet_name is None:
+        _cached_sh = sh
     return sh
 
 # Compatibility alias
