@@ -51,6 +51,12 @@ def get_curated_tickers(pool_type: str = "top_50") -> List[str]:
     # Fallback to defaults
     return list(COMPANY_METADATA.keys())[:50]
 
+def get_stock_sector(ticker: str) -> str:
+    return COMPANY_METADATA.get(ticker, {}).get("sector", "Diversified")
+
+def get_stock_company(ticker: str) -> str:
+    return COMPANY_METADATA.get(ticker, {}).get("company", ticker)
+
 def get_nifty_250_tickers() -> List[str]:
     # Backward compatibility alias - returns default active curated pool
     pool_setting = os.environ.get("ACTIVE_STOCK_POOL", "curated_pool_top_50.csv")

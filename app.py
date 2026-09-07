@@ -62,20 +62,26 @@ st.markdown("*Autonomous quantitative swing execution combining ATR noise immuni
 
 # Account KPIs
 acc = portfolio_manager.get_account_summary()
-holdings = portfolio_manager.get_holdings()
+holdings = portfolio_manager.get_open_positions()
 closed = portfolio_manager.get_closed_trades()
 
 kpi1, kpi2, kpi3, kpi4, kpi5, kpi6 = st.columns(6)
 kpi1.metric("Portfolio Value", f"₹{acc.get('portfolio_value', 100000):,.2f}")
 kpi2.metric("Available Cash", f"₹{acc.get('cash', 100000):,.2f}")
 kpi3.metric("Total Return", f"{acc.get('total_return_pct', 0):+.2f}%")
-kpi4.metric("CAGR", f"{acc.get('cagr_pct', 0):+.2f}%")
-kpi5.metric("XIRR", f"{acc.get('xirr_pct', 0):+.2f}%")
+kpi4.metric("Realized PnL", f"₹{acc.get('realized_pnl', 0):,.2f}")
+kpi5.metric("Capital Risk / Trade", f"{acc.get('risk_pct', 6.0):.1f}%")
 kpi6.metric("Active Positions", f"{len(holdings)}/10")
 
 st.markdown("---")
 
-tab1, tab2, tab3, tab4 = st.tabs(["📊 Active Holdings", "📜 Closed Trades", "🌟 Curated Stock Pools", "📈 Strategy 3 Architecture & Backtest"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
+    "📊 Active Holdings", 
+    "📜 Closed Trades", 
+    "📅 Scan Schedules", 
+    "🌟 Curated Stock Pools", 
+    "📈 Strategy 3 Architecture & Backtest"
+])
 
 with tab1:
     st.subheader(f"Current Portfolio Positions ({len(holdings)})")
@@ -94,6 +100,23 @@ with tab2:
         st.dataframe(df_c, use_container_width=True)
 
 with tab3:
+    st.subheader("📅 Automated Google Sheets Scan Schedules")
+    client = portfolio_manager.get_gspread_client()
+    sh = portfolio_manager.get_or_create_portfolio_sheet(client)
+    if sh:
+        try:
+            ws_s = portfolio_manager.get_schedules_worksheet(sh)
+            s_records = ws_s.get_all_records()
+            if s_records:
+                st.dataframe(pd.DataFrame(s_records), use_container_width=True)
+            else:
+                st.info("No schedule records found.")
+        except Exception as e:
+            st.error(f"Error loading schedules: {e}")
+    else:
+        st.warning("Google Sheet connection not available.")
+
+with tab4:
     st.subheader("🌟 High-Performing Curated Stock Universes")
     pool_choice = st.selectbox("View Universe Constituents:", ["Top 50 Champions Pool", "Top 101 Winners Pool"])
     target_csv = TOP_50_PATH if "50" in pool_choice else TOP_101_PATH
@@ -102,7 +125,7 @@ with tab3:
         st.dataframe(df_pool, use_container_width=True)
         st.caption(f"Total constituents: {len(df_pool)} stocks. Hand-picked through exhaustive multi-index historical backtesting.")
 
-with tab4:
+with tab5:
     st.subheader("📈 Performance Scorecard: Strategy 1 vs Strategy 2 vs Strategy 3")
     st.markdown("""
     | Strategy Configuration | Total Return | CAGR | Win Rate | Profit Factor | Max Drawdown | Sharpe |

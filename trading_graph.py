@@ -48,7 +48,7 @@ def run_trading_system(execute_trades: bool = False, pool_type: str = "top_50") 
     
     # Node 3: Risk Allocation & Sizing
     trades_to_execute = []
-    current_sectors = [h.get("Sector", "Diversified") for h in open_positions]
+    current_sectors = [screener.get_stock_sector(h.get("Ticker", "")) for h in open_positions]
     max_sector = int(os.environ.get("MAX_POSITIONS_PER_SECTOR", "3"))
     max_total = int(os.environ.get("MAX_TOTAL_POSITIONS", "10"))
     

@@ -28,6 +28,19 @@ import trading_graph
 
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN_3") or os.environ.get("TELEGRAM_BOT_TOKEN")
 
+def register_chat(chat_id: int):
+    try:
+        client = portfolio_manager.get_gspread_client()
+        sh = portfolio_manager.get_or_create_portfolio_sheet(client)
+        ws = sh.worksheet("TelegramChats")
+        values = ws.get_all_values()
+        chat_ids = [int(row[0]) for row in values[1:] if row and row[0].isdigit()]
+        if chat_id not in chat_ids:
+            ws.append_row([str(chat_id)])
+            print(f"Registered new Chat ID: {chat_id}")
+    except Exception as e:
+        print(f"Error registering Chat ID {chat_id}: {e}")
+
 def get_main_keyboard() -> InlineKeyboardMarkup:
     keyboard = [
         [
@@ -36,15 +49,19 @@ def get_main_keyboard() -> InlineKeyboardMarkup:
         ],
         [
             InlineKeyboardButton("📜 Closed Trades", callback_data="cmd_history"),
-            InlineKeyboardButton("🏆 Curated Pool", callback_data="cmd_pool")
+            InlineKeyboardButton("📅 Scan Schedules", callback_data="cmd_schedules")
         ],
         [
+            InlineKeyboardButton("🏆 Curated Pool", callback_data="cmd_pool"),
             InlineKeyboardButton("💼 Account Summary", callback_data="cmd_summary")
         ]
     ]
     return InlineKeyboardMarkup(keyboard)
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+    register_chat(chat_id)
+    
     msg = (
         "🤖 *AI SWING TRADE SYSTEM 3 (HYBRID OPTIMAL)*\n"
         "══════════════════════════════════════\n"
@@ -75,7 +92,7 @@ async def scan_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.callback_query.message.reply_text(report, reply_markup=get_main_keyboard())
 
 async def positions_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    holdings = portfolio_manager.get_holdings()
+    holdings = portfolio_manager.get_open_positions()
     if not holdings:
         txt = "📊 *Current Holdings*: No open positions currently."
     else:
@@ -85,13 +102,16 @@ async def positions_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             qty = h.get("Quantity")
             p = h.get("Entry Price")
             sl = h.get("Current SL")
-            t1 = h.get("Target 1")
-            t2 = h.get("Target 2")
-            partial = str(h.get("Partial Booked", "FALSE")).upper() == "TRUE"
-            unreal = h.get("Unrealized PnL %", "0.0%")
-            status = "🛡️ FREE RUNNER (Stop @ Break-Even)" if partial else "🎯 Aiming for T1 (50% Lock)"
-            lines.append(f"• *{t}* x {qty} @ ₹{p} ({unreal})")
-            lines.append(f"  SL: ₹{sl} | T1: ₹{t1} | T2: ₹{t2}")
+            target = h.get("Target")
+            
+            try:
+                is_runner = float(sl) >= float(p)
+            except Exception:
+                is_runner = False
+                
+            status = "🛡️ FREE RUNNER (Stop @ Break-Even)" if is_runner else "🎯 Aiming for T1 (50% Lock)"
+            lines.append(f"• *{t}* x {qty} @ ₹{p}")
+            lines.append(f"  SL: ₹{sl} | Target: {target}")
             lines.append(f"  Status: {status}\n")
         txt = "\n".join(lines)
         
@@ -107,8 +127,26 @@ async def history_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         lines = ["📜 *RECENT CLOSED TRADES & PARTIAL EXITS*:", "══════════════════════════════════════"]
         for c in closed[-10:]:
-            lines.append(f"• *{c.get('Ticker')}* x {c.get('Quantity')} shares | PnL: ₹{c.get('Realized PnL', 0):,.2f} ({c.get('Realized PnL %')})")
+            lines.append(f"• *{c.get('Ticker')}* x {c.get('Quantity')} shares | PnL: ₹{c.get('PnL', 0)}")
             lines.append(f"  Exit: ₹{c.get('Exit Price')} [{c.get('Exit Reason')}]\n")
+        txt = "\n".join(lines)
+        
+    if update.message:
+        await update.message.reply_text(txt, parse_mode="Markdown", reply_markup=get_main_keyboard())
+    elif update.callback_query:
+        await update.callback_query.message.reply_text(txt, parse_mode="Markdown", reply_markup=get_main_keyboard())
+
+async def schedules_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    client = portfolio_manager.get_gspread_client()
+    sh = portfolio_manager.get_or_create_portfolio_sheet(client)
+    scheds = portfolio_manager.get_pending_schedules(sh)
+    if not scheds:
+        txt = "📅 *Scan Schedules*: No active schedules configured in Google Sheets."
+    else:
+        lines = ["📅 *ACTIVE SCAN SCHEDULES (Google Sheets)*:", "══════════════════════════════════════"]
+        for s in scheds:
+            lines.append(f"• *{s.get('date')}* at *{s.get('time')} IST* [{s.get('mode')}]")
+            lines.append(f"  Status: `{s.get('status')}` | Note: {s.get('notes')}\n")
         txt = "\n".join(lines)
         
     if update.message:
@@ -136,7 +174,7 @@ async def pool_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def summary_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     acc = portfolio_manager.get_account_summary()
-    holdings = portfolio_manager.get_holdings()
+    holdings = portfolio_manager.get_open_positions()
     lines = [
         "💼 *ACCOUNT & PERFORMANCE SUMMARY*",
         "══════════════════════════════════════",
@@ -169,6 +207,8 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await positions_command(update, context)
     elif data == "cmd_history":
         await history_command(update, context)
+    elif data == "cmd_schedules":
+        await schedules_command(update, context)
     elif data == "cmd_pool":
         await pool_command(update, context)
     elif data == "cmd_summary":
@@ -179,7 +219,6 @@ def main():
         print("TELEGRAM_BOT_TOKEN not configured in .env. Bot will run in standalone engine mode.")
         return
         
-    # HTTPXRequest with generous 30s timeouts to prevent transient network dropouts
     request = HTTPXRequest(
         connect_timeout=30.0,
         read_timeout=30.0,
@@ -193,6 +232,7 @@ def main():
     app.add_handler(CommandHandler("scan", scan_command))
     app.add_handler(CommandHandler("positions", positions_command))
     app.add_handler(CommandHandler("history", history_command))
+    app.add_handler(CommandHandler("schedules", schedules_command))
     app.add_handler(CommandHandler("pool", pool_command))
     app.add_handler(CommandHandler("summary", summary_command))
     app.add_handler(CallbackQueryHandler(button_handler))
@@ -215,17 +255,6 @@ def run_forever():
             print("\n" + "="*75)
             print("⚠️  TELEGRAM BOT TOKEN CONFLICT DETECTED")
             print("="*75)
-            print("The current TELEGRAM_BOT_TOKEN in .env is already in active use by")
-            print("Project 2 (@ai_swing_trade_2_bot) running on Render.")
-            print("Telegram only allows ONE active polling connection per bot token at a time.")
-            print("\nTo give Project 3 its own dedicated Telegram Bot:")
-            print("1. Open Telegram and message @BotFather.")
-            print("2. Type /newbot and give it a name (e.g., 'AI Swing Trade 3') and username")
-            print("   (e.g., 'ai_swing_trade_3_bot').")
-            print("3. Copy the HTTP API token provided by BotFather.")
-            print("4. Paste it into: c:\\Users\\ckbas\\Documents\\antigravity\\AI-Swing-Trade-3\\.env")
-            print("   TELEGRAM_BOT_TOKEN=<your_new_token_here>")
-            print("="*75 + "\n")
             time.sleep(15)
         except Exception as e:
             err_str = str(e)
