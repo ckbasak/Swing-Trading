@@ -355,6 +355,13 @@ async def summary_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
         port_val = account.get("Total Portfolio Value", 0.0)
         risk_val = port_val * risk_pct
         
+        gross_pnl = float(account.get('Realized PnL', total_pnl))
+        charges = float(account.get('Total Realized Charges', 0.0))
+        net_pnl = float(account.get('Net Realized PnL', gross_pnl - charges))
+        est_tax = float(account.get('Estimated STCG Tax (20%)', 0.0))
+        take_home = float(account.get('Net Take-Home PnL', net_pnl - est_tax))
+        net_ret = str(account.get('Net Realized Return %', f"{(net_pnl/port_val*100.0 if port_val>0 else 0.0):+.2f}%"))
+        
         msg = (
             "🏦 **Portfolio Performance Summary:**\n"
             f"📅 *As of: {now_ist}*\n"
@@ -364,9 +371,14 @@ async def summary_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
             f"🛡️ **Capital Risk per Trade:** {risk_pct * 100:.2f}% (₹{risk_val:,.2f})\n"
             f"📊 **Open Positions:** {len(open_pos)}\n"
             f"🤝 **Closed Trades:** {len(closed_pos)}{win_rate_str}\n"
-            f"📈 **Realized PnL (Closed):** ₹{total_pnl:,.2f}{avg_pct_str}\n"
+            f"📈 **Gross Realized PnL:** ₹{gross_pnl:,.2f}{avg_pct_str}\n"
+            f"🧾 **Brokerage & Govt Fees:** ₹{charges:,.2f}\n"
+            f"💵 **Net Realized PnL:** ₹{net_pnl:,.2f}\n"
+            f"🏛️ **Est. STCG Tax (20%):** ₹{est_tax:,.2f}\n"
+            f"💎 **Net Take-Home PnL:** ₹{take_home:,.2f}\n"
+            f"🎯 **Gross Return:** {perf['Total Return (%)']}%\n"
+            f"📊 **Net Realized Return:** {net_ret}\n"
             f"⏱️ **Days Active:** {perf['Days Elapsed']} Days\n"
-            f"🎯 **Total Return:** {perf['Total Return (%)']}%\n"
             f"📊 **CAGR (Annualized):** {perf['CAGR (%)']}%\n"
             f"🌀 **XIRR:** {perf['XIRR (%)']}%\n"
         )

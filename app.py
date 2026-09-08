@@ -216,27 +216,44 @@ if account is not None and holdings is not None:
         unrealized_pnl = open_df["Unrealized PnL"].sum()
         open_holdings_value = open_df["Current Value"].sum()
     
-    # Realized PnL
-    realized_pnl = 0.0
+    # Realized PnL & Taxes
+    realized_pnl = float(account.get("Realized PnL", 0.0))
+    total_charges = float(account.get("Total Realized Charges", 0.0))
+    net_pnl = float(account.get("Net Realized PnL", realized_pnl - total_charges))
+    est_tax = float(account.get("Estimated STCG Tax (20%)", 0.0))
+    take_home = float(account.get("Net Take-Home PnL", net_pnl - est_tax))
+    
     if not closed_df.empty:
-        closed_df["PnL"] = pd.to_numeric(closed_df["PnL"], errors='coerce')
+        closed_df["PnL"] = pd.to_numeric(closed_df.get("Gross PnL", closed_df.get("PnL", 0)), errors='coerce').fillna(0.0)
         realized_pnl = closed_df["PnL"].sum()
+        if "Total Charges" in closed_df.columns:
+            total_charges = pd.to_numeric(closed_df["Total Charges"], errors='coerce').fillna(0.0).sum()
+        if "Net PnL" in closed_df.columns:
+            net_pnl = pd.to_numeric(closed_df["Net PnL"], errors='coerce').fillna(0.0).sum()
+        if "Est. Tax" in closed_df.columns or "Est. Tax (20%)" in closed_df.columns:
+            tax_col = "Est. Tax (20%)" if "Est. Tax (20%)" in closed_df.columns else "Est. Tax"
+            est_tax = pd.to_numeric(closed_df[tax_col], errors='coerce').fillna(0.0).sum()
+        take_home = net_pnl - est_tax
         
     # Dynamic Risk per trade from Account sheet
     risk_pct = account.get("Risk Percent", account.get("Risk Percentage", 0.05))
     risk_amt = portfolio_value * risk_pct
 
-    # KPI Columns
-    col1, col2, col_risk, col3, col4 = st.columns(5)
+    # KPI Columns Row 1
+    col1, col2, col_risk, col3 = st.columns(4)
     col1.metric("🏦 Total Portfolio Value", f"₹{portfolio_value:,.2f}")
     col2.metric("💵 Available Cash", f"₹{cash:,.2f}")
     col_risk.metric("🛡️ Risk / Trade", f"{risk_pct * 100:.1f}%", f"₹{risk_amt:,.2f}")
-    
     pnl_label = "🟢 Unrealized PnL" if unrealized_pnl >= 0 else "🔴 Unrealized PnL"
     col3.metric(pnl_label, f"₹{unrealized_pnl:,.2f}", delta=f"{unrealized_pnl:,.2f}")
     
-    rpnl_label = "🟢 Realized PnL" if realized_pnl >= 0 else "🔴 Realized PnL"
-    col4.metric(rpnl_label, f"₹{realized_pnl:,.2f}")
+    # KPI Columns Row 2 (Realized PnL, Fees & Taxes)
+    fcol1, fcol2, fcol3, fcol4, fcol5 = st.columns(5)
+    fcol1.metric("📈 Gross Realized PnL", f"₹{realized_pnl:,.2f}")
+    fcol2.metric("🧾 Brokerage & Fees", f"₹{total_charges:,.2f}")
+    fcol3.metric("💵 Net Realized PnL", f"₹{net_pnl:,.2f}")
+    fcol4.metric("🏛️ Est. STCG Tax (20%)", f"₹{est_tax:,.2f}")
+    fcol5.metric("💎 Net Take-Home PnL", f"₹{take_home:,.2f}")
     
     # Calculate CAGR & XIRR
     try:

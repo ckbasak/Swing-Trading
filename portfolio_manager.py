@@ -393,6 +393,75 @@ def get_open_positions(sh: gspread.Spreadsheet) -> List[Dict[str, Any]]:
         h["row_idx"] = idx + 2
     return [h for h in holdings if h["Status"] == "OPEN"]
 
+
+def calculate_transaction_charges(entry_price: float, exit_price: float, qty: int, is_delivery: bool = True) -> Dict[str, float]:
+    """
+    Computes exact statutory and broker charges for Indian Equity Delivery on NSE via Dhan.
+    Rates:
+    - Brokerage: ₹0
+    - STT: 0.1% on buy, 0.1% on sell
+    - NSE Transaction Fee: 0.00297% on buy & sell
+    - Stamp Duty: 0.015% on buy only
+    - SEBI Charges: ₹10 / crore (0.0001%) on buy & sell
+    - GST: 18% on (Brokerage + NSE fee + SEBI fee)
+    - DP Charges: ₹12.50 + 18% GST = ₹14.75 on sell only
+    """
+    buy_val = round(entry_price * qty, 2)
+    sell_val = round(exit_price * qty, 2)
+    
+    # 1. Buy Side
+    buy_stt = round(buy_val * 0.0010, 2)
+    buy_stamp = round(buy_val * 0.00015, 2)
+    buy_nse = round(buy_val * 0.0000297, 2)
+    buy_sebi = round(buy_val * 0.000001, 2)
+    buy_gst = round((buy_nse + buy_sebi) * 0.18, 2)
+    total_buy_charges = round(buy_stt + buy_stamp + buy_nse + buy_sebi + buy_gst, 2)
+    
+    # 2. Sell Side
+    sell_stt = round(sell_val * 0.0010, 2)
+    sell_nse = round(sell_val * 0.0000297, 2)
+    sell_sebi = round(sell_val * 0.000001, 2)
+    sell_gst = round((sell_nse + sell_sebi) * 0.18, 2)
+    dp_charges = 14.75 if is_delivery else 0.0
+    total_sell_charges = round(sell_stt + sell_nse + sell_sebi + sell_gst + dp_charges, 2)
+    
+    total_charges = round(total_buy_charges + total_sell_charges, 2)
+    gross_pnl = round(sell_val - buy_val, 2)
+    net_pnl = round(gross_pnl - total_charges, 2)
+    
+    # STCG Tax: 20% on positive net gains
+    est_stcg_tax = round(net_pnl * 0.20, 2) if net_pnl > 0 else 0.0
+    net_take_home = round(net_pnl - est_stcg_tax, 2)
+    
+    net_return_pct = round((net_pnl / buy_val) * 100.0, 2) if buy_val > 0 else 0.0
+    gross_return_pct = round((gross_pnl / buy_val) * 100.0, 2) if buy_val > 0 else 0.0
+    
+    return {
+        "buy_val": buy_val,
+        "sell_val": sell_val,
+        "buy_charges": total_buy_charges,
+        "sell_charges": total_sell_charges,
+        "total_charges": total_charges,
+        "gross_pnl": gross_pnl,
+        "gross_return_pct": gross_return_pct,
+        "net_pnl": net_pnl,
+        "net_return_pct": net_return_pct,
+        "est_stcg_tax": est_stcg_tax,
+        "net_take_home": net_take_home,
+        "dp_charges": dp_charges,
+        "total_stt": round(buy_stt + sell_stt, 2)
+    }
+
+def calculate_true_break_even_price(entry_price: float, qty: int) -> float:
+    """Computes exit price required so that Net PnL is >= ₹0.00 after all statutory & DP charges."""
+    if qty <= 0 or entry_price <= 0:
+        return entry_price
+    buy_val = entry_price * qty
+    buy_cost = buy_val * 1.001185
+    target_sell_val = (buy_cost + 14.75) / 0.998965
+    break_even_price = target_sell_val / qty
+    return round(break_even_price + 0.05, 2)
+
 def add_position(sh: gspread.Spreadsheet, ticker: str, entry_price: float, qty: int, initial_sl: float, target: float) -> str:
     """
     Adds a new open position to the Holdings sheet and updates the Cash Balance.
@@ -438,39 +507,62 @@ def add_position(sh: gspread.Spreadsheet, ticker: str, entry_price: float, qty: 
 
 def close_position(sh: gspread.Spreadsheet, row_idx: int, exit_price: float, reason: str) -> str:
     """
-    Closes a position in the Holdings worksheet, updates Cash Balance, and calculates PnL.
+    Closes a position in the standard 18-column Holdings worksheet, calculates charges & STCG tax, and credits net proceeds.
     """
     ws = sh.worksheet("Holdings")
     row_values = ws.row_values(row_idx)
     
-    # Row values mapping:
-    # 1: Ticker, 2: Entry Date, 3: Entry Price, 4: Quantity, 5: Initial SL, 
-    # 6: Current SL, 7: Target, 8: Status, 9: Exit Date, 10: Exit Price, 11: PnL, 12: Exit Reason
     ticker = row_values[0]
     entry_price = float(row_values[2])
     qty = int(row_values[3])
     
+    exit_val = round(exit_price * qty, 2)
+    charges = calculate_transaction_charges(entry_price, exit_price, qty)
+    gross_pnl = charges["gross_pnl"]
+    total_charges = charges["total_charges"]
+    net_pnl = charges["net_pnl"]
+    est_tax = charges["est_stcg_tax"]
+    net_return_pct = charges["net_return_pct"]
     exit_date = datetime.now().strftime("%Y-%m-%d")
-    pnl = (exit_price - entry_price) * qty
-    pnl_pct = ((exit_price - entry_price) / entry_price) * 100.0 if entry_price > 0 else 0.0
     
-    sell_value = exit_price * qty
-    # Update sheet cells using new 1-based column indexes with rate-limit retry:
-    # 9: Status, 10: Exit Date, 11: Exit Price, 12: Sell Value, 13: PnL, 14: Exit Reason
-    retry_gspread(ws.update_cell, row_idx, 9, "CLOSED")
-    retry_gspread(ws.update_cell, row_idx, 10, exit_date)
-    retry_gspread(ws.update_cell, row_idx, 11, str(exit_price))
-    retry_gspread(ws.update_cell, row_idx, 12, str(sell_value))
-    retry_gspread(ws.update_cell, row_idx, 13, str(pnl))
-    retry_gspread(ws.update_cell, row_idx, 14, reason)
+    # Batch update columns 9 (I) to 18 (R)
+    update_data = [
+        {"range": f"I{row_idx}", "values": [["CLOSED"]]},
+        {"range": f"J{row_idx}", "values": [[exit_date]]},
+        {"range": f"K{row_idx}", "values": [[str(round(exit_price, 2))]]},
+        {"range": f"L{row_idx}", "values": [[str(round(exit_val, 2))]]},
+        {"range": f"M{row_idx}", "values": [[str(round(gross_pnl, 2))]]},
+        {"range": f"N{row_idx}", "values": [[reason]]},
+        {"range": f"O{row_idx}", "values": [[str(round(total_charges, 2))]]},
+        {"range": f"P{row_idx}", "values": [[str(round(net_pnl, 2))]]},
+        {"range": f"Q{row_idx}", "values": [[str(round(est_tax, 2))]]},
+        {"range": f"R{row_idx}", "values": [[f"{net_return_pct:+.2f}%"]]}
+    ]
+    retry_gspread(ws.batch_update, update_data)
     
-    # Update account cash and total value
     account = get_account_details(sh)
-    new_cash = account["Cash Balance"] + (exit_price * qty)
-    update_account_details(sh, {"Cash Balance": new_cash})
+    net_proceeds = round(exit_val - charges["sell_charges"], 2)
+    new_cash = round(account.get("Cash Balance", 100000.0) + net_proceeds, 2)
+    cur_realized_gross = round(float(account.get("Realized PnL", 0.0)) + gross_pnl, 2)
+    cur_charges = round(float(account.get("Total Realized Charges", 0.0)) + total_charges, 2)
+    cur_net_pnl = round(float(account.get("Net Realized PnL", 0.0)) + net_pnl, 2)
+    cur_tax = round(float(account.get("Estimated STCG Tax (20%)", 0.0)) + est_tax, 2)
+    take_home = round(cur_net_pnl - cur_tax, 2)
+    init_cap = float(account.get("Initial Capital", 100000.0))
+    net_ret = round((cur_net_pnl / init_cap) * 100.0, 2) if init_cap > 0 else 0.0
     
-    pnl_sign = "+" if pnl >= 0 else ""
-    return f"Closed trade for {ticker} @ {exit_price:.2f} (Reason: {reason}, PnL: ₹{pnl:,.2f} / {pnl_sign}{pnl_pct:.2f}%)"
+    update_account_details(sh, {
+        "Cash Balance": new_cash,
+        "Realized PnL": cur_realized_gross,
+        "Total Realized Charges": cur_charges,
+        "Net Realized PnL": cur_net_pnl,
+        "Estimated STCG Tax (20%)": cur_tax,
+        "Net Take-Home PnL": take_home,
+        "Net Realized Return %": f"{net_ret:+.2f}%"
+    })
+    
+    pnl_sign = "+" if net_pnl >= 0 else ""
+    return f"Closed trade for {ticker} @ ₹{exit_price:.2f} (Reason: {reason}, Net PnL: ₹{net_pnl:,.2f} / {pnl_sign}{net_return_pct:.2f}%, Fees: ₹{total_charges:.2f}, Est. Tax: ₹{est_tax:.2f})"
 
 def sync_portfolio(sh: gspread.Spreadsheet, macro_data: Dict[str, Any] = None) -> List[str]:
     """
