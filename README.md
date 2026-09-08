@@ -25,14 +25,16 @@ An institutional-grade, multi-agent quantitative swing trading and portfolio man
 
 ---
 
-## 🏛️ Dual-Project Architecture Matrix
+## 🏛️ Triad System Architecture Matrix
 
-This repository hosts two independent trading systems on separate Git branches, completely isolated across databases, Telegram bots, and cloud services:
+This repository hosts three independent trading systems on separate Git branches, completely isolated across databases, Telegram bots, and cloud services:
 
 | System & Strategy | Git Branch | Render Cloud URL | Telegram Bot | Google Sheets Database |
 | :--- | :--- | :--- | :--- | :--- |
 | **System #1: Classic Breakout** | **`main`** | [ai-swing-trade-1.onrender.com](https://ai-swing-trade-1.onrender.com) | [@ai_swing_trade_1_bot](https://t.me/ai_swing_trade_1_bot) | `NSE_Swing_Trading_Portfolio_1` |
 | **System #2: Strategy v2 (Optimized)** | **`strategy-2`** *(This Branch)* | [ai-swing-trade-2.onrender.com](https://ai-swing-trade-2.onrender.com) | [@ai_swing_trade_2_bot](https://t.me/ai_swing_trade_2_bot) | `NSE_Swing_Trading_Portfolio_2` |
+| **System #3: Hybrid Optimal Swing** | **`strategy-3`** | [ai-swing-trade-3.onrender.com](https://ai-swing-trade-3.onrender.com) | [@ai_swing_trade_3_bot](https://t.me/ai_swing_trade_3_bot) | `NSE_Swing_Trading_Portfolio_3` |
+
 
 ---
 
