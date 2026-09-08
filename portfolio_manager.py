@@ -565,9 +565,9 @@ def close_position(sh: gspread.Spreadsheet, row_idx: int, exit_price: float, exi
     
     row_values = ws.row_values(row_idx)
     ticker = row_values[0]
-    entry_price = float(row_values[2])
-    qty = int(row_values[3])
-    entry_val = float(row_values[4])
+    entry_price = float(str(row_values[2]).strip().replace(",", ""))
+    qty = int(float(str(row_values[3]).strip().replace(",", "")))
+    entry_val = float(str(row_values[4]).strip().replace(",", ""))
     
     exit_val = round(exit_price * qty, 2)
     charges = calculate_transaction_charges(entry_price, exit_price, qty)
@@ -598,7 +598,7 @@ def close_position(sh: gspread.Spreadsheet, row_idx: int, exit_price: float, exi
     cur_realized_gross = round(float(account.get("Realized PnL", 0.0)) + gross_pnl, 2)
     cur_charges = round(float(account.get("Total Realized Charges", 0.0)) + total_charges, 2)
     cur_net_pnl = round(float(account.get("Net Realized PnL", 0.0)) + net_pnl, 2)
-    cur_tax = round(float(account.get("Estimated STCG Tax (20%)", 0.0)) + est_tax, 2)
+    cur_tax = round(cur_net_pnl * 0.20, 2) if cur_net_pnl > 0 else 0.0
     take_home = round(cur_net_pnl - cur_tax, 2)
     init_cap = float(account.get("Initial Capital", INITIAL_CAPITAL))
     net_ret = round((cur_net_pnl / init_cap) * 100.0, 2) if init_cap > 0 else 0.0
@@ -631,8 +631,8 @@ def execute_partial_exit(sh: gspread.Spreadsheet, row_idx: int, exit_price: floa
     row_values = ws.row_values(row_idx)
     ticker = row_values[0]
     entry_date = row_values[1]
-    entry_price = float(row_values[2])
-    initial_sl = float(row_values[5])
+    entry_price = float(str(row_values[2]).strip().replace(",", ""))
+    initial_sl = float(str(row_values[5]).strip().replace(",", ""))
     
     closed_val = round(exit_price * exit_qty, 2)
     closed_entry_val = round(entry_price * exit_qty, 2)
@@ -678,7 +678,7 @@ def execute_partial_exit(sh: gspread.Spreadsheet, row_idx: int, exit_price: floa
     cur_realized_gross = round(float(account.get("Realized PnL", 0.0)) + gross_pnl, 2)
     cur_charges = round(float(account.get("Total Realized Charges", 0.0)) + total_charges, 2)
     cur_net_pnl = round(float(account.get("Net Realized PnL", 0.0)) + net_pnl, 2)
-    cur_tax = round(float(account.get("Estimated STCG Tax (20%)", 0.0)) + est_tax, 2)
+    cur_tax = round(cur_net_pnl * 0.20, 2) if cur_net_pnl > 0 else 0.0
     take_home = round(cur_net_pnl - cur_tax, 2)
     init_cap = float(account.get("Initial Capital", INITIAL_CAPITAL))
     net_ret = round((cur_net_pnl / init_cap) * 100.0, 2) if init_cap > 0 else 0.0

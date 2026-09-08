@@ -1,17 +1,57 @@
 {
   "account": {
     "initial_capital": 100000.0,
-    "cash": 100000.0,
-    "portfolio_value": 100000.0,
-    "realized_pnl": 0.0,
-    "total_return_pct": 0.0,
-    "cagr_pct": 0.0,
-    "xirr_pct": 0.0,
-    "days_active": 0,
+    "cash": 99496.86,
+    "portfolio_value": 99496.86,
+    "realized_pnl": -309.34,
+    "total_charges": 290.64,
+    "net_realized_pnl": -599.98,
+    "est_stcg_tax": 0.0,
+    "net_take_home_pnl": -599.98,
+    "total_return_pct": -0.6,
     "risk_pct": 6.0,
     "active_pool": "Top 50 Champions"
   },
-  "holdings": [],
-  "closed_trades": [],
-  "telegram_chats": []
+  "holdings": [
+    {
+      "Ticker": "PVRINOX.NS",
+      "Entry Date": "2026-09-08",
+      "Entry Price": 1236.9,
+      "Quantity": 66,
+      "Entry Value": 81635.4,
+      "Initial SL": 1147.01,
+      "Current SL": 1201.91,
+      "Target": "T1: 1326.8 | T2: 1439.2",
+      "Status": "CLOSED",
+      "Exit Date": "2026-09-08",
+      "Exit Price": 1201.91,
+      "Exit Value": 79326.06,
+      "Gross PnL": -2309.34,
+      "Exit Reason": "Stop Loss Hit",
+      "Total Charges": 193.8,
+      "Net PnL": -2503.14,
+      "Est. Tax (20%)": 0.0,
+      "Net Return %": "-3.07%"
+    },
+    {
+      "Ticker": "INFY.NS",
+      "Entry Date": "2026-09-08",
+      "Entry Price": 1800,
+      "Quantity": 20,
+      "Entry Value": 36000,
+      "Initial SL": 1710,
+      "Current SL": 1710,
+      "Target": "T1: 1890.0 | T2: 1980.0",
+      "Status": "CLOSED",
+      "Exit Date": "2026-09-08",
+      "Exit Price": 1900.0,
+      "Exit Value": 38000.0,
+      "Gross PnL": 2000.0,
+      "Exit Reason": "Target Hit (Profit Booking)",
+      "Total Charges": 96.84,
+      "Net PnL": 1903.16,
+      "Est. Tax (20%)": 380.63,
+      "Net Return %": "+5.29%"
+    }
+  ]
 }
