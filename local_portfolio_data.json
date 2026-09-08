@@ -1,7 +1,7 @@
 {
   "account": {
     "initial_capital": 100000.0,
-    "cash": 104556.35,
+    "cash": 21774.24,
     "portfolio_value": 104556.35,
     "realized_pnl": 4940.66,
     "total_charges": 481.13,
@@ -92,6 +92,61 @@
       "Net PnL": 3403.85,
       "Est. Tax (20%)": 680.77,
       "Net Return %": "+9.73%"
+    },
+    {
+      "Ticker": "RELIANCE.NS",
+      "Entry Date": "2026-09-08",
+      "Entry Price": 1294.9,
+      "Quantity": 12,
+      "Entry Value": 15557.24,
+      "Initial SL": 1253.76,
+      "Current SL": 1253.76,
+      "Target": "T1: 1336.0 | T2: 1387.5",
+      "Status": "OPEN"
+    },
+    {
+      "Ticker": "ICICIBANK.NS",
+      "Entry Date": "2026-09-08",
+      "Entry Price": 1399.4,
+      "Quantity": 12,
+      "Entry Value": 16812.72,
+      "Initial SL": 1357.46,
+      "Current SL": 1357.46,
+      "Target": "T1: 1441.3 | T2: 1493.8",
+      "Status": "OPEN"
+    },
+    {
+      "Ticker": "BHARTIARTL.NS",
+      "Entry Date": "2026-09-08",
+      "Entry Price": 1844.0,
+      "Quantity": 10,
+      "Entry Value": 18461.88,
+      "Initial SL": 1778.01,
+      "Current SL": 1778.01,
+      "Target": "T1: 1910.0 | T2: 1992.5",
+      "Status": "OPEN"
+    },
+    {
+      "Ticker": "SBIN.NS",
+      "Entry Date": "2026-09-08",
+      "Entry Price": 1008.0,
+      "Quantity": 16,
+      "Entry Value": 16147.14,
+      "Initial SL": 975.66,
+      "Current SL": 975.66,
+      "Target": "T1: 1040.3 | T2: 1080.8",
+      "Status": "OPEN"
+    },
+    {
+      "Ticker": "LT.NS",
+      "Entry Date": "2026-09-08",
+      "Entry Price": 3946.1,
+      "Quantity": 4,
+      "Entry Value": 15803.13,
+      "Initial SL": 3846.0,
+      "Current SL": 3846.0,
+      "Target": "T1: 4046.2 | T2: 4171.3",
+      "Status": "OPEN"
     }
   ]
 }
