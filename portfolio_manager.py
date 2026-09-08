@@ -304,15 +304,13 @@ def get_account_details(sh: gspread.Spreadsheet) -> Dict[str, float]:
         raw_val = str(r.get("Value", "")).strip().replace("%", "").replace(",", "")
         try:
             val = float(raw_val)
+            norm_key = param.lower().replace(" ", "").replace("_", "")
+            if "risk" in norm_key and val > 1.0:
+                val = val / 100.0
+            details[param] = val
         except (ValueError, TypeError):
-            continue
-            
-        norm_key = param.lower().replace(" ", "").replace("_", "")
-        # Convert whole percentage like 5 or 7.5 to decimal 0.05 or 0.075
-        if "risk" in norm_key and val > 1.0:
-            val = val / 100.0
-            
-        details[param] = val
+            details[param] = str(r.get("Value", "")).strip()
+            norm_key = param.lower().replace(" ", "").replace("_", "")
         if norm_key in ["riskpercent", "riskpercentage", "riskpct", "risk"]:
             details["Risk Percent"] = val
             details["Risk Percentage"] = val
@@ -331,63 +329,34 @@ def get_account_details(sh: gspread.Spreadsheet) -> Dict[str, float]:
         details["Risk Percentage"] = details["Risk Percent"]
     return details
 
-def update_account_details(sh: gspread.Spreadsheet, updates: Dict[str, float]):
-    """
-    Updates specific parameters in the Account worksheet while strictly preserving existing custom values.
-    """
-    _, account_name, _ = get_worksheet_names(sh)
+def update_account_details(sh: gspread.Spreadsheet, updates: Dict[str, Any]):
+    """Updates parameters in the Account worksheet while strictly preserving all existing rows."""
+    try:
+        _, account_name, _ = get_worksheet_names(sh)
+    except Exception:
+        account_name = "Account"
     ws = sh.worksheet(account_name)
-    records = ws.get_all_records()
-    
-    # Read existing values first so we never overwrite user configurations
-    data = {
-        "Total Portfolio Value": 100000.0, 
-        "Cash Balance": 100000.0, 
-        "Risk Percent": 0.075,
-        "Initial Capital": 100000.0
-    }
-    risk_param_label = "Risk Percent"
-    for r in records:
-        param = str(r.get("Parameter", "")).strip()
-        raw_val = str(r.get("Value", "")).strip().replace("%", "").replace(",", "")
-        try:
-            val = float(raw_val)
-            norm_key = param.lower().replace(" ", "").replace("_", "")
-            if "risk" in norm_key:
-                risk_param_label = param
-                if val > 1.0:
-                    val = val / 100.0
-                data["Risk Percent"] = val
-            elif norm_key in ["totalportfoliovalue", "portfoliovalue"]:
-                data["Total Portfolio Value"] = val
-            elif norm_key in ["cashbalance", "cash"]:
-                data["Cash Balance"] = val
-            elif norm_key in ["initialcapital", "startingcapital"]:
-                data["Initial Capital"] = val
-        except Exception:
-            pass
+    all_rows = ws.get_all_values()
+    if not all_rows:
+        all_rows = [["Parameter", "Value"]]
+        
+    param_map = {}
+    for idx, row in enumerate(all_rows[1:], start=2):
+        if row:
+            param_map[row[0].strip().lower().replace(" ", "").replace("_", "")] = idx
             
     for k, v in updates.items():
-        norm_k = k.lower().replace(" ", "").replace("_", "")
-        if "risk" in norm_k:
-            v_float = float(v)
-            if v_float > 1.0:
-                v_float = v_float / 100.0
-            data["Risk Percent"] = v_float
-        elif norm_k in ["totalportfoliovalue", "portfoliovalue"]:
-            data["Total Portfolio Value"] = float(v)
-        elif norm_k in ["cashbalance", "cash"]:
-            data["Cash Balance"] = float(v)
-        elif norm_k in ["initialcapital", "startingcapital"]:
-            data["Initial Capital"] = float(v)
+        norm_k = k.strip().lower().replace(" ", "").replace("_", "")
+        formatted_val = str(v)
+        if isinstance(v, float):
+            formatted_val = f"{v:.2f}"
             
-    ws.update('A1:B5', [
-        ["Parameter", "Value"],
-        ["Total Portfolio Value", str(data["Total Portfolio Value"])],
-        ["Cash Balance", str(data["Cash Balance"])],
-        [risk_param_label, str(data["Risk Percent"])],
-        ["Initial Capital", str(data["Initial Capital"])]
-    ])
+        if norm_k in param_map:
+            row_idx = param_map[norm_k]
+            retry_gspread(ws.update_cell, row_idx, 2, formatted_val)
+        else:
+            retry_gspread(ws.append_row, [k, formatted_val])
+            param_map[norm_k] = len(all_rows) + 1
 
 def get_all_holdings(sh: gspread.Spreadsheet) -> List[Dict[str, Any]]:
     """
@@ -405,43 +374,137 @@ def get_open_positions(sh: gspread.Spreadsheet) -> List[Dict[str, Any]]:
     return [h for h in holdings if h["Status"] == "OPEN"]
 
 
-def calculate_transaction_charges(entry_price: float, exit_price: float, qty: int, is_delivery: bool = True) -> Dict[str, float]:
+# ----------------- Dynamic Regulatory Fee & Tax Configuration -----------------
+DEFAULT_FEE_CONFIG: Dict[str, float] = {
+    "stt_buy_pct": 0.10,         # 0.10% on buy turnover
+    "stt_sell_pct": 0.10,        # 0.10% on sell turnover
+    "stamp_duty_pct": 0.015,     # 0.015% on buy turnover only
+    "nse_fee_pct": 0.00297,      # 0.00297% on turnover
+    "sebi_fee_per_cr": 10.0,     # ₹10 per crore (0.0001%)
+    "gst_pct": 18.0,             # 18% on (Brokerage + NSE fee + SEBI fee)
+    "dp_charges": 14.75,         # ₹14.75 flat per scrip/day on sell
+    "stcg_tax_pct": 20.0,        # 20% on positive net capital gains (Finance Act 2024)
+    "brokerage_flat": 0.0        # ₹0 for Dhan equity delivery
+}
+
+_fee_config_cache: Dict[str, Any] = {"config": None, "ts": 0.0}
+
+def get_fee_and_tax_config(sh_or_account: Optional[Any] = None, force_refresh: bool = False) -> Dict[str, float]:
+    """
+    Retrieves active statutory charges and STCG tax rates.
+    Priorities:
+    1. Values configured in Google Sheet 'Account' tab (dynamic regulatory & user control)
+    2. Environment variable overrides (e.g. STCG_TAX_RATE, DP_CHARGES, STT_BUY_RATE)
+    3. Default statutory rates (Finance Act 2024 / NSE / SEBI standard schedule)
+    """
+    global _fee_config_cache
+    now = time.time()
+    if not force_refresh and _fee_config_cache["config"] is not None and (now - _fee_config_cache["ts"]) < 60:
+        return dict(_fee_config_cache["config"])
+        
+    cfg = dict(DEFAULT_FEE_CONFIG)
+    
+    # Environment variable overrides
+    if os.environ.get("STT_BUY_RATE"):
+        try: cfg["stt_buy_pct"] = float(os.environ["STT_BUY_RATE"])
+        except Exception: pass
+    if os.environ.get("STT_SELL_RATE"):
+        try: cfg["stt_sell_pct"] = float(os.environ["STT_SELL_RATE"])
+        except Exception: pass
+    if os.environ.get("STCG_TAX_RATE"):
+        try: cfg["stcg_tax_pct"] = float(os.environ["STCG_TAX_RATE"])
+        except Exception: pass
+    if os.environ.get("DP_CHARGES"):
+        try: cfg["dp_charges"] = float(os.environ["DP_CHARGES"])
+        except Exception: pass
+    if os.environ.get("GST_RATE"):
+        try: cfg["gst_pct"] = float(os.environ["GST_RATE"])
+        except Exception: pass
+
+    # Google Sheet 'Account' tab parameters
+    acc_details = None
+    if isinstance(sh_or_account, dict):
+        acc_details = sh_or_account
+    elif sh_or_account is not None:
+        try:
+            acc_details = get_account_details(sh_or_account)
+        except Exception:
+            pass
+    else:
+        try:
+            acc_details = get_account_details()
+        except Exception:
+            pass
+            
+    if acc_details:
+        def _parse_f(val, fallback):
+            if val is None: return fallback
+            try:
+                s = str(val).replace("%", "").replace("₹", "").replace(",", "").strip()
+                return float(s)
+            except Exception:
+                return fallback
+                
+        for k, v in acc_details.items():
+            norm = str(k).lower().replace(" ", "").replace("_", "")
+            if "sttbuy" in norm:
+                cfg["stt_buy_pct"] = _parse_f(v, cfg["stt_buy_pct"])
+            elif "sttsell" in norm:
+                cfg["stt_sell_pct"] = _parse_f(v, cfg["stt_sell_pct"])
+            elif "stamp" in norm:
+                cfg["stamp_duty_pct"] = _parse_f(v, cfg["stamp_duty_pct"])
+            elif "nse" in norm:
+                cfg["nse_fee_pct"] = _parse_f(v, cfg["nse_fee_pct"])
+            elif "sebi" in norm:
+                cfg["sebi_fee_per_cr"] = _parse_f(v, cfg["sebi_fee_per_cr"])
+            elif "gst" in norm:
+                cfg["gst_pct"] = _parse_f(v, cfg["gst_pct"])
+            elif "dpcharge" in norm or norm == "dp" or "dpchargesflat" in norm:
+                cfg["dp_charges"] = _parse_f(v, cfg["dp_charges"])
+            elif ("stcgtaxrate" in norm or "taxrate" in norm or norm in ["stcgtax%", "stcgtaxrate%"]) and not norm.startswith("estimated"):
+                cfg["stcg_tax_pct"] = _parse_f(v, cfg["stcg_tax_pct"])
+            elif "brokerage" in norm:
+                cfg["brokerage_flat"] = _parse_f(v, cfg["brokerage_flat"])
+
+    _fee_config_cache = {"config": cfg, "ts": now}
+    return dict(cfg)
+
+def calculate_transaction_charges(entry_price: float, exit_price: float, qty: int, is_delivery: bool = True, config: Optional[Dict[str, float]] = None) -> Dict[str, float]:
     """
     Computes exact statutory and broker charges for Indian Equity Delivery on NSE via Dhan.
-    Rates:
-    - Brokerage: ₹0
-    - STT: 0.1% on buy, 0.1% on sell
-    - NSE Transaction Fee: 0.00297% on buy & sell
-    - Stamp Duty: 0.015% on buy only
-    - SEBI Charges: ₹10 / crore (0.0001%) on buy & sell
-    - GST: 18% on (Brokerage + NSE fee + SEBI fee)
-    - DP Charges: ₹12.50 + 18% GST = ₹14.75 on sell only
+    Dynamically loads rates from Google Sheet 'Account' tab or environment variables.
     """
+    if config is None:
+        config = get_fee_and_tax_config()
+        
     buy_val = round(entry_price * qty, 2)
     sell_val = round(exit_price * qty, 2)
     
     # 1. Buy Side
-    buy_stt = round(buy_val * 0.0010, 2)
-    buy_stamp = round(buy_val * 0.00015, 2)
-    buy_nse = round(buy_val * 0.0000297, 2)
-    buy_sebi = round(buy_val * 0.000001, 2)
-    buy_gst = round((buy_nse + buy_sebi) * 0.18, 2)
-    total_buy_charges = round(buy_stt + buy_stamp + buy_nse + buy_sebi + buy_gst, 2)
+    buy_stt = round(buy_val * (config["stt_buy_pct"] / 100.0), 2)
+    buy_stamp = round(buy_val * (config["stamp_duty_pct"] / 100.0), 2)
+    buy_nse = round(buy_val * (config["nse_fee_pct"] / 100.0), 2)
+    buy_sebi = round(buy_val * (config["sebi_fee_per_cr"] / 10000000.0), 2)
+    buy_brokerage = round(config.get("brokerage_flat", 0.0), 2)
+    buy_gst = round((buy_nse + buy_sebi + buy_brokerage) * (config["gst_pct"] / 100.0), 2)
+    total_buy_charges = round(buy_stt + buy_stamp + buy_nse + buy_sebi + buy_brokerage + buy_gst, 2)
     
     # 2. Sell Side
-    sell_stt = round(sell_val * 0.0010, 2)
-    sell_nse = round(sell_val * 0.0000297, 2)
-    sell_sebi = round(sell_val * 0.000001, 2)
-    sell_gst = round((sell_nse + sell_sebi) * 0.18, 2)
-    dp_charges = 14.75 if is_delivery else 0.0
-    total_sell_charges = round(sell_stt + sell_nse + sell_sebi + sell_gst + dp_charges, 2)
+    sell_stt = round(sell_val * (config["stt_sell_pct"] / 100.0), 2)
+    sell_nse = round(sell_val * (config["nse_fee_pct"] / 100.0), 2)
+    sell_sebi = round(sell_val * (config["sebi_fee_per_cr"] / 10000000.0), 2)
+    sell_brokerage = round(config.get("brokerage_flat", 0.0), 2)
+    sell_gst = round((sell_nse + sell_sebi + sell_brokerage) * (config["gst_pct"] / 100.0), 2)
+    dp_charges = config["dp_charges"] if is_delivery else 0.0
+    total_sell_charges = round(sell_stt + sell_nse + sell_sebi + sell_brokerage + sell_gst + dp_charges, 2)
     
     total_charges = round(total_buy_charges + total_sell_charges, 2)
     gross_pnl = round(sell_val - buy_val, 2)
     net_pnl = round(gross_pnl - total_charges, 2)
     
-    # STCG Tax: 20% on positive net gains
-    est_stcg_tax = round(net_pnl * 0.20, 2) if net_pnl > 0 else 0.0
+    # STCG Tax: using active configurable rate on positive net gains
+    stcg_rate = config["stcg_tax_pct"] / 100.0
+    est_stcg_tax = round(net_pnl * stcg_rate, 2) if net_pnl > 0 else 0.0
     net_take_home = round(net_pnl - est_stcg_tax, 2)
     
     net_return_pct = round((net_pnl / buy_val) * 100.0, 2) if buy_val > 0 else 0.0
@@ -460,16 +523,26 @@ def calculate_transaction_charges(entry_price: float, exit_price: float, qty: in
         "est_stcg_tax": est_stcg_tax,
         "net_take_home": net_take_home,
         "dp_charges": dp_charges,
-        "total_stt": round(buy_stt + sell_stt, 2)
+        "total_stt": round(buy_stt + sell_stt, 2),
+        "rates_used": config
     }
 
-def calculate_true_break_even_price(entry_price: float, qty: int) -> float:
-    """Computes exit price required so that Net PnL is >= ₹0.00 after all statutory & DP charges."""
+def calculate_true_break_even_price(entry_price: float, qty: int, config: Optional[Dict[str, float]] = None) -> float:
+    """Computes exit price required so that Net PnL is >= ₹0.00 after all statutory & DP charges, dynamically adapting to any rate revisions."""
     if qty <= 0 or entry_price <= 0:
         return entry_price
+    if config is None:
+        config = get_fee_and_tax_config()
+        
+    buy_fee_pct = (config["stt_buy_pct"] + config["stamp_duty_pct"] + config["nse_fee_pct"]) / 100.0
+    buy_fee_pct += (config["sebi_fee_per_cr"] / 10000000.0) + ((config["nse_fee_pct"] / 100.0 + config["sebi_fee_per_cr"] / 10000000.0) * (config["gst_pct"] / 100.0))
+    
+    sell_fee_pct = (config["stt_sell_pct"] + config["nse_fee_pct"]) / 100.0
+    sell_fee_pct += (config["sebi_fee_per_cr"] / 10000000.0) + ((config["nse_fee_pct"] / 100.0 + config["sebi_fee_per_cr"] / 10000000.0) * (config["gst_pct"] / 100.0))
+    
     buy_val = entry_price * qty
-    buy_cost = buy_val * 1.001185
-    target_sell_val = (buy_cost + 14.75) / 0.998965
+    buy_cost = buy_val * (1.0 + buy_fee_pct)
+    target_sell_val = (buy_cost + config["dp_charges"]) / (1.0 - sell_fee_pct)
     break_even_price = target_sell_val / qty
     return round(break_even_price + 0.05, 2)
 
@@ -534,7 +607,8 @@ def close_position(sh: gspread.Spreadsheet, row_idx: int, exit_price: float, exi
     entry_val = float(str(row_values[4]).strip().replace(",", ""))
     
     exit_val = round(exit_price * qty, 2)
-    charges = calculate_transaction_charges(entry_price, exit_price, qty)
+    cfg = get_fee_and_tax_config(account)
+    charges = calculate_transaction_charges(entry_price, exit_price, qty, config=cfg)
     gross_pnl = charges["gross_pnl"]
     total_charges = charges["total_charges"]
     net_pnl = charges["net_pnl"]
@@ -562,7 +636,8 @@ def close_position(sh: gspread.Spreadsheet, row_idx: int, exit_price: float, exi
     cur_realized_gross = round(float(account.get("Realized PnL", 0.0)) + gross_pnl, 2)
     cur_charges = round(float(account.get("Total Realized Charges", 0.0)) + total_charges, 2)
     cur_net_pnl = round(float(account.get("Net Realized PnL", 0.0)) + net_pnl, 2)
-    cur_tax = round(cur_net_pnl * 0.20, 2) if cur_net_pnl > 0 else 0.0
+    stcg_rate = cfg["stcg_tax_pct"] / 100.0
+    cur_tax = round(cur_net_pnl * stcg_rate, 2) if cur_net_pnl > 0 else 0.0
     take_home = round(cur_net_pnl - cur_tax, 2)
     init_cap = float(account.get("Initial Capital", 100000.0))
     net_ret = round((cur_net_pnl / init_cap) * 100.0, 2) if init_cap > 0 else 0.0

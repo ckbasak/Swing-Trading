@@ -317,6 +317,38 @@ async def positions_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
 async def positions_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await positions_action(update.effective_chat.id, context)
 
+async def rates_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
+    loop = asyncio.get_event_loop()
+    try:
+        cfg = await loop.run_in_executor(None, lambda: portfolio_manager.get_fee_and_tax_config(force_refresh=True))
+        lines = [
+            f"🏛️ **Active Regulatory Charges & Tax Schedule (Strategy #2)**",
+            "────────────────────────────",
+            f"• **STT (Buy Turnover)**: `{cfg['stt_buy_pct']:.3f}%`",
+            f"• **STT (Sell Turnover)**: `{cfg['stt_sell_pct']:.3f}%`",
+            f"• **Stamp Duty (Buy)**: `{cfg['stamp_duty_pct']:.3f}%`",
+            f"• **NSE Turnover Fee**: `{cfg['nse_fee_pct']:.5f}%`",
+            f"• **SEBI Turnover Fee**: `₹{cfg['sebi_fee_per_cr']:.0f} / crore`",
+            f"• **GST Rate**: `{cfg['gst_pct']:.1f}%` (on NSE+SEBI+Brokerage)",
+            f"• **DP Charges (Sell)**: `₹{cfg['dp_charges']:.2f}` flat per scrip/day",
+            f"• **Brokerage**: `₹{cfg.get('brokerage_flat', 0.0):.2f}` (Dhan Zero Delivery)",
+            f"• **STCG Tax Rate**: `{cfg['stcg_tax_pct']:.1f}%` (Section 111A)",
+            "────────────────────────────",
+            "💡 **Dynamic Update Policy:**",
+            "Rates are dynamically read in real-time from the Google Sheet **Account** tab (or environment variables). Any modification in the sheet immediately updates all trade calculations and portfolio tax accounting."
+        ]
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text="\n".join(lines),
+            reply_markup=get_main_keyboard(),
+            parse_mode="Markdown"
+        )
+    except Exception as e:
+        await context.bot.send_message(chat_id=chat_id, text=f"❌ Error reading rates: {e}")
+
+async def rates_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await rates_action(update.effective_chat.id, context)
+
 async def summary_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
     loop = asyncio.get_event_loop()
     try:
@@ -691,6 +723,8 @@ async def menu_button_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         await positions_action(chat_id, context)
     elif action == "cmd_history":
         await history_action(chat_id, context)
+    elif action == "cmd_rates":
+        await rates_action(chat_id, context)
     elif action == "cmd_summary":
         await summary_action(chat_id, context)
     elif action == "cmd_schedules":
@@ -774,6 +808,7 @@ async def post_init_setup(application: Application):
         BotCommand("history", "🤝 Strategy #2 Closed Trades"),
         BotCommand("schedules", "📅 View Scan Schedules"),
         BotCommand("summary", "🏦 Strategy #2 Summary"),
+        BotCommand("rates", "🏛️ Statutory Fee & Tax Rates"),
         BotCommand("start", "🚀 Start & Register Chat")
     ]
     try:
@@ -1049,6 +1084,7 @@ def main():
     app.add_handler(CommandHandler(["history", "closed", "trades"], history_command))
     app.add_handler(CommandHandler(["schedules", "schedule"], schedules_command))
     app.add_handler(CommandHandler("summary", summary_command))
+    app.add_handler(CommandHandler(["rates", "fees", "tax"], rates_command))
     
     # Register callback query handler for interactive buttons
     app.add_handler(CallbackQueryHandler(menu_button_callback))
