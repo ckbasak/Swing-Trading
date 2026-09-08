@@ -154,15 +154,29 @@ with tab4:
         st.caption(f"Total constituents: {len(df_pool)} stocks. Hand-picked through exhaustive multi-index historical backtesting.")
 
 with tab5:
-    st.subheader("📈 Performance Scorecard: Strategy 1 vs Strategy 2 vs Strategy 3")
+    st.subheader("📈 Multi-Strategy Backtest Scorecard (Gross vs Post-Fee vs Post-Tax Take-Home)")
     st.markdown("""
-    | Strategy Configuration | Total Return | CAGR | Win Rate | Profit Factor | Max Drawdown | Sharpe |
-    | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-    | **Strategy 1 (Fixed 3% SL)** | +407.17% | +135.03% | 51.9% | 2.89 | -13.47% | 2.96 |
-    | **Strategy 2 (Dynamic 2x ATR)** | +330.67% | +115.65% | 50.6% | 2.39 | -19.45% | 2.26 |
-    | **Strategy 3 (HYBRID OPTIMAL)** | **+280.57%** | **+102.06%** | **59.4%** | **2.92** | **-11.85%** | 2.78 |
-    | **NIFTY 50 Benchmark** | **-4.40%** | **-2.22%** | N/A | N/A | **-18.20%** | Negative |
+    *Comprehensive 2-year simulation on ₹1,00,000 capital accounting for full Indian statutory charges (STT 0.1% buy/sell, Stamp Duty 0.015%, NSE 0.00297%, SEBI, GST 18%, DP ₹14.75) and 20.0% STCG capital gains taxation under Section 111A.*
+    
+    ### 🏆 Top 50 Champions Pool Scorecard
+    | Strategy Configuration | Gross Return | Total Fees Paid | Post-Fee Return | Post-Fee CAGR | 20% STCG Tax | Net Take-Home | Take-Home CAGR | Win Rate | Profit Factor | Max DD |
+    | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+    | **Strategy 1 (Fixed 3% SL / 6% Tgt)** | +330.13% | ₹41,305.60 | +289.24% | +104.68% | ₹57,764.55 | **+231.48%** | +88.06% | 49.0% | 2.45 | -12.80% |
+    | **Strategy 2 (Dynamic 2x ATR SL)** | +257.84% | ₹28,069.15 | +230.13% | +87.66% | ₹45,954.63 | **+184.18%** | +73.41% | 44.4% | 2.09 | -20.23% |
+    | **Strategy 3 (HYBRID OPTIMAL)** | +209.17% | ₹24,297.41 | +185.20% | +73.74% | ₹36,974.74 | **+148.22%** | +61.47% | **59.2%** | 2.39 | **-11.33%** |
+    | **Benchmark NIFTY 50** | **-5.68%** | N/A | **-5.68%** | -2.88% | ₹0.00 | **-5.68%** | -2.88% | N/A | N/A | -18.20% |
+
+    ### 🌟 Top 101 Winners Pool Scorecard
+    | Strategy Configuration | Gross Return | Total Fees Paid | Post-Fee Return | Post-Fee CAGR | 20% STCG Tax | Net Take-Home | Take-Home CAGR | Win Rate | Profit Factor | Max DD |
+    | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+    | **Strategy 1 (Fixed 3% SL / 6% Tgt)** | +496.21% | ₹85,799.81 | +410.95% | +136.24% | ₹82,081.88 | **+328.87%** | +115.41% | 46.8% | 1.75 | -29.14% |
+    | **Strategy 2 (Dynamic 2x ATR SL)** | +16.19% | ₹18,078.39 | -1.77% | -0.94% | ₹0.00 | **-1.77%** | -0.94% | 32.4% | 0.99 | -55.64% |
+    | **Strategy 3 (HYBRID OPTIMAL)** | +38.95% | ₹24,464.05 | +14.64% | +7.47% | ₹2,896.49 | **+11.75%** | +6.03% | **52.0%** | 1.08 | -48.32% |
     """)
-    chart_path = os.path.join(PROJECT_ROOT, "three_strategy_comparison.png")
-    if os.path.exists(chart_path):
-        st.image(chart_path, caption="Comparative Performance of Strategy 1, 2, and 3 across Curated Pools", use_container_width=True)
+
+    chart_post_tax = os.path.join(PROJECT_ROOT, "three_strategy_post_tax_comparison.png")
+    if os.path.exists(chart_post_tax):
+        st.image(chart_post_tax, caption="Comprehensive Net Take-Home Equity Curves, Frictional Drag & STCG Tax Comparison", use_container_width=True)
+    elif os.path.exists(os.path.join(PROJECT_ROOT, "three_strategy_comparison.png")):
+        st.image(os.path.join(PROJECT_ROOT, "three_strategy_comparison.png"), caption="Comparative Performance of Strategy 1, 2, and 3 across Curated Pools", use_container_width=True)
+
