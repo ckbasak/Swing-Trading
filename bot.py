@@ -29,6 +29,7 @@ import screener
 import trading_graph
 import dhan_client
 import sentiment_analyzer
+import tax_sentinel
 
 # Configure logging with rotating file handler
 log_formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -400,6 +401,30 @@ async def schedules_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
 async def schedules_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await schedules_action(update.effective_chat.id, context)
 
+async def checkrates_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
+    status_msg = await context.bot.send_message(
+        chat_id=chat_id,
+        text="⏳ *Autonomous Regulatory Sentinel is scanning Indian financial news & regulatory circulars via Gemini AI...*",
+        parse_mode="Markdown"
+    )
+    loop = asyncio.get_event_loop()
+    try:
+        client = await loop.run_in_executor(None, portfolio_manager.get_gspread_client)
+        sh = await loop.run_in_executor(None, lambda: portfolio_manager.get_or_create_portfolio_sheet(client))
+        report = await loop.run_in_executor(None, lambda: tax_sentinel.run_sentinel_cycle(sh))
+        cfg = await loop.run_in_executor(None, lambda: portfolio_manager.get_fee_and_tax_config(sh, force_refresh=True))
+        text = tax_sentinel.format_sentinel_status_message(report, cfg, strategy_num=3)
+        
+        kb = get_main_keyboard() if "get_main_keyboard" in globals() else get_main_menu_keyboard()
+        await status_msg.edit_text(text=text, reply_markup=kb, parse_mode="Markdown")
+    except Exception as e:
+        logger.error(f"Error in checkrates_action: {e}")
+        kb = get_main_keyboard() if "get_main_keyboard" in globals() else get_main_menu_keyboard()
+        await status_msg.edit_text(text=f"❌ Error scanning regulatory news: {e}", reply_markup=kb)
+
+async def checkrates_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await checkrates_action(update.effective_chat.id, context)
+
 async def rates_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
     loop = asyncio.get_event_loop()
     try:
@@ -420,10 +445,14 @@ async def rates_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
             "💡 **Dynamic Update Policy:**",
             "Rates are dynamically read in real-time from the Google Sheet **Account** tab (or environment variables). Any modification in the sheet immediately updates all trade calculations and portfolio tax accounting."
         ]
+        rates_kb = InlineKeyboardMarkup([
+            [InlineKeyboardButton("🔍 Scan Regulatory & Tax News Now", callback_data="cmd_checkrates")],
+            [InlineKeyboardButton("🎛️ Main Menu", callback_data="cmd_menu")]
+        ])
         await context.bot.send_message(
             chat_id=chat_id,
             text="\n".join(lines),
-            reply_markup=get_main_keyboard(),
+            reply_markup=rates_kb,
             parse_mode="Markdown"
         )
     except Exception as e:
@@ -778,6 +807,39 @@ async def market_hours_sync_job(context: ContextTypes.DEFAULT_TYPE):
         except Exception as e:
             logger.error(f"Error during intraday market sync: {e}")
 
+async def regulatory_sentinel_job(context: ContextTypes.DEFAULT_TYPE):
+    """
+    Scheduled background task that scans financial news RSS & regulatory circulars.
+    If an official statutory revision is enacted, updates Google Sheets, recalculates taxes,
+    and broadcasts an urgent alert to all registered Telegram chats.
+    """
+    logger.info(f"Starting scheduled Regulatory & Tax Sentinel news check (Strategy #3)...")
+    loop = asyncio.get_event_loop()
+    try:
+        client = await loop.run_in_executor(None, portfolio_manager.get_gspread_client)
+        sh = await loop.run_in_executor(None, lambda: portfolio_manager.get_or_create_portfolio_sheet(client))
+        report = await loop.run_in_executor(None, lambda: tax_sentinel.run_sentinel_cycle(sh))
+        
+        if report.get("has_official_change") and report.get("changes_detected"):
+            cfg = await loop.run_in_executor(None, lambda: portfolio_manager.get_fee_and_tax_config(sh, force_refresh=True))
+            alert_text = tax_sentinel.format_sentinel_status_message(report, cfg, strategy_num=3)
+            chat_ids = await loop.run_in_executor(None, get_registered_chats)
+            kb = get_main_keyboard() if "get_main_keyboard" in globals() else get_main_menu_keyboard()
+            for cid in chat_ids:
+                try:
+                    await context.bot.send_message(
+                        chat_id=cid,
+                        text=alert_text,
+                        reply_markup=kb,
+                        parse_mode="Markdown"
+                    )
+                except Exception as ex:
+                    logger.error(f"Failed sending regulatory alert to {cid}: {ex}")
+        else:
+            logger.info(f"Regulatory Sentinel scan complete: No statutory changes detected ({report.get('scanned_count', 0)} sources evaluated).")
+    except Exception as e:
+        logger.error(f"Error in regulatory_sentinel_job: {e}")
+
 async def render_keep_alive_job(context: ContextTypes.DEFAULT_TYPE):
     render_url = os.environ.get("RENDER_EXTERNAL_URL") or os.environ.get("RENDER_SERVICE_URL") or "https://ai-swing-trade-3.onrender.com"
     target = f"{render_url.rstrip('/')}/_stcore/health"
@@ -843,6 +905,23 @@ def main():
         job_kwargs={"misfire_grace_time": 180}
     )
     logger.info("Morning scan job scheduled for 08:00 IST daily.")
+
+    # Autonomous Regulatory Sentinel Jobs (8:15 AM & 4:15 PM IST)
+    app.job_queue.run_daily(
+        regulatory_sentinel_job,
+        time=datetime.time(hour=8, minute=15, second=0, tzinfo=tz),
+        days=(0, 1, 2, 3, 4, 5, 6),
+        name="sentinel_morning_check",
+        job_kwargs={"misfire_grace_time": 180}
+    )
+    app.job_queue.run_daily(
+        regulatory_sentinel_job,
+        time=datetime.time(hour=16, minute=15, second=0, tzinfo=tz),
+        days=(0, 1, 2, 3, 4),
+        name="sentinel_evening_check",
+        job_kwargs={"misfire_grace_time": 180}
+    )
+    logger.info("Autonomous Regulatory Sentinel scheduled (08:15 & 16:15 IST).")
 
     # 2. Dynamic Google Sheets Scan Scheduler (polls every 60s)
     app.job_queue.run_repeating(

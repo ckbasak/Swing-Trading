@@ -99,6 +99,7 @@ with st.expander("🏛️ Active Statutory Charges & Tax Schedule (Live from Goo
     - **STCG Tax Rate**: `{cfg['stcg_tax_pct']:.1f}%`
     """)
     c4.info("💡 **Dynamic Update Policy**: Rates are read in real-time from the Google Sheet **Account** tab. Modifying any rate in the sheet immediately updates portfolio trade sizing, break-even targets, and capital gains taxation.")
+    st.caption("🛡️ **Autonomous Regulatory Sentinel**: Active — Periodically scans official Indian financial news & circulars via Gemini AI to automatically reflect enacted statutory rate revisions.")
 
 st.markdown("---")
 
