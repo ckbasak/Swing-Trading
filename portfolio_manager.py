@@ -834,12 +834,9 @@ def calculate_performance_metrics(sh: gspread.Spreadsheet) -> Dict[str, Any]:
     all_dates = []
     if holdings:
         for h in holdings:
-            dt_str = h.get("Entry Date")
-            if dt_str:
-                try:
-                    all_dates.append(datetime.strptime(str(dt_str).strip(), "%Y-%m-%d"))
-                except (ValueError, TypeError):
-                    pass
+            dt = _parse_date(h.get("Entry Date"))
+            if dt:
+                all_dates.append(dt)
                     
     # If no trades have ever been opened, portfolio is pristine (0 days active, 0.0% metrics)
     if not all_dates:
