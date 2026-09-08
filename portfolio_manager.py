@@ -234,6 +234,28 @@ def is_schedule_due(item: Dict[str, Any], now_ist: datetime) -> bool:
         return diff_seconds >= -60
     return -60 <= diff_seconds <= 1800
 
+def _parse_num(val: Any, fallback: float = 0.0) -> float:
+    """Safely parse numbers with commas, currency symbols, and percentage signs into float."""
+    if val is None or str(val).strip() == "":
+        return fallback
+    try:
+        s = str(val).replace("₹", "").replace("%", "").replace(",", "").strip()
+        return float(s)
+    except Exception:
+        return fallback
+
+def _parse_date(val: Any) -> Optional[datetime]:
+    """Safely parse dates across standard Indian & global formats."""
+    if not val:
+        return None
+    s = str(val).strip()
+    for fmt in ("%d-%b-%Y", "%Y-%m-%d", "%d-%m-%Y", "%d/%m/%Y"):
+        try:
+            return datetime.strptime(s, fmt)
+        except (ValueError, TypeError):
+            pass
+    return None
+
 # ----------------- Account & Holdings Handlers -----------------
 
 def get_account_details(sh: Optional[gspread.Spreadsheet] = None) -> Dict[str, Any]:
@@ -253,21 +275,22 @@ def get_account_details(sh: Optional[gspread.Spreadsheet] = None) -> Dict[str, A
                 norm_key = param.lower().replace(" ", "").replace("_", "")
                 
                 try:
-                    num_val = float(val_str.replace("%", "").replace(",", ""))
+                    num_val = _parse_num(val_str)
                     if "risk" in norm_key and num_val > 1.0:
                         num_val = num_val / 100.0
                     details[param] = num_val
-                except ValueError:
+                except Exception:
                     details[param] = val_str
 
                 if norm_key in ["totalportfoliovalue", "portfoliovalue"]:
-                    details["Total Portfolio Value"] = float(val_str.replace(",", ""))
+                    details["Total Portfolio Value"] = _parse_num(val_str, INITIAL_CAPITAL)
                 elif norm_key in ["cashbalance", "cash"]:
-                    details["Cash Balance"] = float(val_str.replace(",", ""))
+                    details["Cash Balance"] = _parse_num(val_str, INITIAL_CAPITAL)
                 elif norm_key in ["riskpercent", "riskpercentage", "risk"]:
-                    details["Risk Percent"] = float(val_str.replace("%", "")) / 100.0 if float(val_str.replace("%", "")) > 1.0 else float(val_str.replace("%", ""))
+                    rp = _parse_num(val_str, 6.0)
+                    details["Risk Percent"] = rp / 100.0 if rp > 1.0 else rp
                 elif norm_key in ["initialcapital", "startingcapital"]:
-                    details["Initial Capital"] = float(val_str.replace(",", ""))
+                    details["Initial Capital"] = _parse_num(val_str, INITIAL_CAPITAL)
                     
             if "Initial Capital" not in details:
                 details["Initial Capital"] = INITIAL_CAPITAL
@@ -656,14 +679,14 @@ def add_position(*args, **kwargs) -> Optional[Dict[str, Any]]:
         print(f"Insufficient cash for {ticker}. Total Cost (incl charges): ₹{cost}, Cash: ₹{cash}")
         return None
 
-    date_str = datetime.now().strftime("%Y-%m-%d")
+    date_str = datetime.now().strftime("%d-%b-%Y")
     target_str = f"T1: {target_1:.1f} | T2: {target_2:.1f}"
 
     # Standard 18-column row:
     # Ticker, Entry Date, Entry Price, Quantity, Entry Value, Initial SL, Current SL, Target, Status, Exit Date, Exit Price, Exit Value, Gross PnL, Exit Reason, Total Charges, Net PnL, Est. Tax (20%), Net Return %
     row_data = [
         ticker, date_str, round(entry_price, 2), qty, round(entry_price * qty, 2),
-        initial_sl, initial_sl, target_str, "OPEN", "", "", "", "", "",
+        round(initial_sl, 2), round(initial_sl, 2), target_str, "OPEN", "", "", "", "", "",
         "", "", "", ""
     ]
 
@@ -697,9 +720,9 @@ def close_position(sh: gspread.Spreadsheet, row_idx: int, exit_price: float, exi
     
     row_values = ws.row_values(row_idx)
     ticker = row_values[0]
-    entry_price = float(str(row_values[2]).strip().replace(",", ""))
-    qty = int(float(str(row_values[3]).strip().replace(",", "")))
-    entry_val = float(str(row_values[4]).strip().replace(",", ""))
+    entry_price = _parse_num(row_values[2])
+    qty = int(_parse_num(row_values[3]))
+    entry_val = _parse_num(row_values[4])
     
     exit_val = round(exit_price * qty, 2)
     cfg = get_fee_and_tax_config(account)
@@ -709,19 +732,19 @@ def close_position(sh: gspread.Spreadsheet, row_idx: int, exit_price: float, exi
     net_pnl = charges["net_pnl"]
     est_tax = charges["est_stcg_tax"]
     net_return_pct = charges["net_return_pct"]
-    date_str = datetime.now().strftime("%Y-%m-%d")
+    date_str = datetime.now().strftime("%d-%b-%Y")
     
     update_data = [
         {"range": f"I{row_idx}", "values": [["CLOSED"]]},
         {"range": f"J{row_idx}", "values": [[date_str]]},
-        {"range": f"K{row_idx}", "values": [[str(round(exit_price, 2))]]},
-        {"range": f"L{row_idx}", "values": [[str(round(exit_val, 2))]]},
-        {"range": f"M{row_idx}", "values": [[str(round(gross_pnl, 2))]]},
+        {"range": f"K{row_idx}", "values": [[round(exit_price, 2)]]},
+        {"range": f"L{row_idx}", "values": [[round(exit_val, 2)]]},
+        {"range": f"M{row_idx}", "values": [[round(gross_pnl, 2)]]},
         {"range": f"N{row_idx}", "values": [[exit_reason]]},
-        {"range": f"O{row_idx}", "values": [[str(round(total_charges, 2))]]},
-        {"range": f"P{row_idx}", "values": [[str(round(net_pnl, 2))]]},
-        {"range": f"Q{row_idx}", "values": [[str(round(est_tax, 2))]]},
-        {"range": f"R{row_idx}", "values": [[f"{net_return_pct:+.2f}%"]]}
+        {"range": f"O{row_idx}", "values": [[round(total_charges, 2)]]},
+        {"range": f"P{row_idx}", "values": [[round(net_pnl, 2)]]},
+        {"range": f"Q{row_idx}", "values": [[round(est_tax, 2)]]},
+        {"range": f"R{row_idx}", "values": [[round(net_return_pct / 100.0, 4)]]}
     ]
     retry_gspread(ws.batch_update, update_data)
     
@@ -765,8 +788,8 @@ def execute_partial_exit(sh: gspread.Spreadsheet, row_idx: int, exit_price: floa
     row_values = ws.row_values(row_idx)
     ticker = row_values[0]
     entry_date = row_values[1]
-    entry_price = float(str(row_values[2]).strip().replace(",", ""))
-    initial_sl = float(str(row_values[5]).strip().replace(",", ""))
+    entry_price = _parse_num(row_values[2])
+    initial_sl = _parse_num(row_values[5])
     
     closed_val = round(exit_price * exit_qty, 2)
     closed_entry_val = round(entry_price * exit_qty, 2)
@@ -777,22 +800,22 @@ def execute_partial_exit(sh: gspread.Spreadsheet, row_idx: int, exit_price: floa
     net_pnl = charges["net_pnl"]
     est_tax = charges["est_stcg_tax"]
     net_return_pct = charges["net_return_pct"]
-    date_str = datetime.now().strftime("%Y-%m-%d")
+    date_str = datetime.now().strftime("%d-%b-%Y")
     
     # 1. Update row_idx to closed 50% tranche (cols D, E, I-R)
     update_data = [
-        {"range": f"D{row_idx}", "values": [[str(exit_qty)]]},
-        {"range": f"E{row_idx}", "values": [[str(closed_entry_val)]]},
+        {"range": f"D{row_idx}", "values": [[exit_qty]]},
+        {"range": f"E{row_idx}", "values": [[round(closed_entry_val, 2)]]},
         {"range": f"I{row_idx}", "values": [["CLOSED"]]},
         {"range": f"J{row_idx}", "values": [[date_str]]},
-        {"range": f"K{row_idx}", "values": [[str(round(exit_price, 2))]]},
-        {"range": f"L{row_idx}", "values": [[str(round(closed_val, 2))]]},
-        {"range": f"M{row_idx}", "values": [[str(round(gross_pnl, 2))]]},
+        {"range": f"K{row_idx}", "values": [[round(exit_price, 2)]]},
+        {"range": f"L{row_idx}", "values": [[round(closed_val, 2)]]},
+        {"range": f"M{row_idx}", "values": [[round(gross_pnl, 2)]]},
         {"range": f"N{row_idx}", "values": [["Target 1 Hit (50% Partial Lock)"]]},
-        {"range": f"O{row_idx}", "values": [[str(round(total_charges, 2))]]},
-        {"range": f"P{row_idx}", "values": [[str(round(net_pnl, 2))]]},
-        {"range": f"Q{row_idx}", "values": [[str(round(est_tax, 2))]]},
-        {"range": f"R{row_idx}", "values": [[f"{net_return_pct:+.2f}%"]]}
+        {"range": f"O{row_idx}", "values": [[round(total_charges, 2)]]},
+        {"range": f"P{row_idx}", "values": [[round(net_pnl, 2)]]},
+        {"range": f"Q{row_idx}", "values": [[round(est_tax, 2)]]},
+        {"range": f"R{row_idx}", "values": [[round(net_return_pct / 100.0, 4)]]}
     ]
     retry_gspread(ws.batch_update, update_data)
     
@@ -802,7 +825,7 @@ def execute_partial_exit(sh: gspread.Spreadsheet, row_idx: int, exit_price: floa
     true_break_even_sl = calculate_true_break_even_price(entry_price, remaining_qty, config=cfg)
     runner_row = [
         ticker, entry_date, round(entry_price, 2), remaining_qty, runner_entry_val,
-        initial_sl, true_break_even_sl, f"T2: {target_2_price:.1f}", "OPEN", "", "", "", "", "",
+        round(initial_sl, 2), round(true_break_even_sl, 2), f"T2: {target_2_price:.1f}", "OPEN", "", "", "", "", "",
         "", "", "", ""
     ]
     retry_gspread(ws.append_row, runner_row)
@@ -855,15 +878,15 @@ def sync_portfolio(sh: Optional[gspread.Spreadsheet] = None, macro_data: Optiona
                     "row_idx": idx,
                     "Ticker": r[0].strip(),
                     "Entry Date": r[1].strip(),
-                    "Entry Price": float(r[2]),
-                    "Quantity": int(r[3]),
-                    "Entry Value": float(r[4]),
-                    "Initial SL": float(r[5]),
-                    "Current SL": float(r[6]),
+                    "Entry Price": _parse_num(r[2]),
+                    "Quantity": int(_parse_num(r[3])),
+                    "Entry Value": _parse_num(r[4]),
+                    "Initial SL": _parse_num(r[5]),
+                    "Current SL": _parse_num(r[6]),
                     "Target": r[7].strip()
                 })
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"Notice parsing open position row {idx}: {e}")
 
     logs = []
     if not open_positions:
