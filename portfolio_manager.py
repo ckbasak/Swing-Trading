@@ -560,22 +560,47 @@ def get_closed_trades() -> List[Dict[str, Any]]:
 def calculate_position_size(entry_price: float, atr: float, portfolio_value: float, available_cash: float) -> int:
     """
     Position sizing for Strategy 3:
-    Risk % = 6.0% per trade (configurable in Account sheet)
-    Stop Distance = 2.0x ATR
+    Dynamically reads 'Risk Percent' from the Google Sheet 'Account' tab (default 6.0% = 0.06).
+    Allocates ~6% of portfolio capital per trade, enforcing even share quantities (>= 2)
+    to support seamless dual-tranche 50% partial profit locking on Target 1.
     """
     risk_pct = 0.06
     try:
         acc = get_account_details()
-        risk_pct = float(acc.get("Risk Percent", 0.06))
+        val = acc.get("Risk Percent", 0.06)
+        if isinstance(val, str):
+            clean_s = val.replace("%", "").strip()
+            f_val = float(clean_s)
+            risk_pct = f_val / 100.0 if f_val > 1.0 else f_val
+        else:
+            f_val = float(val)
+            risk_pct = f_val if f_val < 1.0 else f_val / 100.0
     except Exception:
         pass
         
-    risk_amount = portfolio_value * risk_pct
-    risk_per_share = 2.0 * atr if atr > 0 else entry_price * 0.04
-    qty_by_risk = int(risk_amount / risk_per_share) if risk_per_share > 0 else 0
-    qty_by_cash = int(available_cash / entry_price) if entry_price > 0 else 0
-    qty = min(qty_by_risk, qty_by_cash)
-    return max(2, qty) if (qty >= 2 and (qty * entry_price) <= available_cash) else 0
+    target_capital = portfolio_value * risk_pct
+    if entry_price <= 0 or available_cash < entry_price * 2:
+        return 0
+        
+    max_even_qty = int(available_cash // entry_price)
+    if max_even_qty < 2:
+        return 0
+    if max_even_qty % 2 != 0:
+        max_even_qty -= 1
+        
+    candidates = [q for q in range(2, max_even_qty + 2, 2) if (q * entry_price) <= available_cash]
+    if not candidates:
+        return 0
+        
+    # Pick candidate closest to target_capital without exceeding 1.35x target_capital
+    capped_candidates = [q for q in candidates if (q * entry_price) <= target_capital * 1.35]
+    if capped_candidates:
+        best_qty = min(capped_candidates, key=lambda q: abs(q * entry_price - target_capital))
+    else:
+        best_qty = min(candidates, key=lambda q: abs(q * entry_price - target_capital))
+        
+    return best_qty
+
 
 def add_position(*args, **kwargs) -> Optional[Dict[str, Any]]:
     """
