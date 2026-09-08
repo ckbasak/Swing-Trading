@@ -320,44 +320,137 @@ def update_account_details(sh: gspread.Spreadsheet, updates: Dict[str, Any]):
             retry_gspread(ws.append_row, [k, formatted_val])
             param_map[norm_k] = len(all_rows) + 1
 
-# Backward compatibility helper
-def calculate_transaction_charges(entry_price: float, exit_price: float, qty: int, is_delivery: bool = True) -> Dict[str, float]:
+# ----------------- Dynamic Regulatory Fee & Tax Configuration -----------------
+DEFAULT_FEE_CONFIG: Dict[str, float] = {
+    "stt_buy_pct": 0.10,         # 0.10% on buy turnover
+    "stt_sell_pct": 0.10,        # 0.10% on sell turnover
+    "stamp_duty_pct": 0.015,     # 0.015% on buy turnover only
+    "nse_fee_pct": 0.00297,      # 0.00297% on turnover
+    "sebi_fee_per_cr": 10.0,     # ₹10 per crore (0.0001%)
+    "gst_pct": 18.0,             # 18% on (Brokerage + NSE fee + SEBI fee)
+    "dp_charges": 14.75,         # ₹14.75 flat per scrip/day on sell
+    "stcg_tax_pct": 20.0,        # 20% on positive net capital gains (Finance Act 2024)
+    "brokerage_flat": 0.0        # ₹0 for Dhan equity delivery
+}
+
+_fee_config_cache: Dict[str, Any] = {"config": None, "ts": 0.0}
+
+def get_fee_and_tax_config(sh_or_account: Optional[Any] = None, force_refresh: bool = False) -> Dict[str, float]:
+    """
+    Retrieves the active statutory charges and STCG tax rates.
+    Priorities:
+    1. Values configured in Google Sheet 'Account' tab (dynamic regulatory & user control)
+    2. Environment variable overrides (e.g. STCG_TAX_RATE, DP_CHARGES, STT_BUY_RATE)
+    3. Default statutory rates (Finance Act 2024 / NSE / SEBI standard schedule)
+    """
+    global _fee_config_cache
+    now = time.time()
+    if not force_refresh and _fee_config_cache["config"] is not None and (now - _fee_config_cache["ts"]) < 60:
+        return dict(_fee_config_cache["config"])
+        
+    cfg = dict(DEFAULT_FEE_CONFIG)
+    
+    # Environment variable overrides
+    if os.environ.get("STT_BUY_RATE"):
+        try: cfg["stt_buy_pct"] = float(os.environ["STT_BUY_RATE"])
+        except Exception: pass
+    if os.environ.get("STT_SELL_RATE"):
+        try: cfg["stt_sell_pct"] = float(os.environ["STT_SELL_RATE"])
+        except Exception: pass
+    if os.environ.get("STCG_TAX_RATE"):
+        try: cfg["stcg_tax_pct"] = float(os.environ["STCG_TAX_RATE"])
+        except Exception: pass
+    if os.environ.get("DP_CHARGES"):
+        try: cfg["dp_charges"] = float(os.environ["DP_CHARGES"])
+        except Exception: pass
+    if os.environ.get("GST_RATE"):
+        try: cfg["gst_pct"] = float(os.environ["GST_RATE"])
+        except Exception: pass
+
+    # Google Sheet 'Account' tab parameters
+    acc_details = None
+    if isinstance(sh_or_account, dict):
+        acc_details = sh_or_account
+    elif sh_or_account is not None:
+        try:
+            acc_details = get_account_details(sh_or_account)
+        except Exception:
+            pass
+    else:
+        try:
+            acc_details = get_account_details()
+        except Exception:
+            pass
+            
+    if acc_details:
+        def _parse_f(val, fallback):
+            if val is None: return fallback
+            try:
+                s = str(val).replace("%", "").replace("₹", "").replace(",", "").strip()
+                return float(s)
+            except Exception:
+                return fallback
+                
+        for k, v in acc_details.items():
+            norm = str(k).lower().replace(" ", "").replace("_", "")
+            if "sttbuy" in norm:
+                cfg["stt_buy_pct"] = _parse_f(v, cfg["stt_buy_pct"])
+            elif "sttsell" in norm:
+                cfg["stt_sell_pct"] = _parse_f(v, cfg["stt_sell_pct"])
+            elif "stamp" in norm:
+                cfg["stamp_duty_pct"] = _parse_f(v, cfg["stamp_duty_pct"])
+            elif "nse" in norm:
+                cfg["nse_fee_pct"] = _parse_f(v, cfg["nse_fee_pct"])
+            elif "sebi" in norm:
+                cfg["sebi_fee_per_cr"] = _parse_f(v, cfg["sebi_fee_per_cr"])
+            elif "gst" in norm:
+                cfg["gst_pct"] = _parse_f(v, cfg["gst_pct"])
+            elif "dpcharge" in norm or norm == "dp" or "dpchargesflat" in norm:
+                cfg["dp_charges"] = _parse_f(v, cfg["dp_charges"])
+            elif ("stcgtaxrate" in norm or "taxrate" in norm or norm in ["stcgtax%", "stcgtaxrate%"]) and not norm.startswith("estimated"):
+                cfg["stcg_tax_pct"] = _parse_f(v, cfg["stcg_tax_pct"])
+            elif "brokerage" in norm:
+                cfg["brokerage_flat"] = _parse_f(v, cfg["brokerage_flat"])
+
+    _fee_config_cache = {"config": cfg, "ts": now}
+    return dict(cfg)
+
+def calculate_transaction_charges(entry_price: float, exit_price: float, qty: int, is_delivery: bool = True, config: Optional[Dict[str, float]] = None) -> Dict[str, float]:
     """
     Computes exact statutory and broker charges for Indian Equity Delivery on NSE via Dhan.
-    Rates:
-    - Brokerage: ₹0
-    - STT: 0.1% on buy, 0.1% on sell
-    - NSE Transaction Fee: 0.00297% on buy & sell
-    - Stamp Duty: 0.015% on buy only
-    - SEBI Charges: ₹10 / crore (0.0001%) on buy & sell
-    - GST: 18% on (Brokerage + NSE fee + SEBI fee)
-    - DP Charges: ₹12.50 + 18% GST = ₹14.75 on sell only
+    Dynamically loads rates from Google Sheet 'Account' tab or environment variables.
     """
+    if config is None:
+        config = get_fee_and_tax_config()
+        
     buy_val = round(entry_price * qty, 2)
     sell_val = round(exit_price * qty, 2)
     
     # 1. Buy Side
-    buy_stt = round(buy_val * 0.0010, 2)
-    buy_stamp = round(buy_val * 0.00015, 2)
-    buy_nse = round(buy_val * 0.0000297, 2)
-    buy_sebi = round(buy_val * 0.000001, 2)
-    buy_gst = round((buy_nse + buy_sebi) * 0.18, 2)
-    total_buy_charges = round(buy_stt + buy_stamp + buy_nse + buy_sebi + buy_gst, 2)
+    buy_stt = round(buy_val * (config["stt_buy_pct"] / 100.0), 2)
+    buy_stamp = round(buy_val * (config["stamp_duty_pct"] / 100.0), 2)
+    buy_nse = round(buy_val * (config["nse_fee_pct"] / 100.0), 2)
+    buy_sebi = round(buy_val * (config["sebi_fee_per_cr"] / 10000000.0), 2)
+    buy_brokerage = round(config.get("brokerage_flat", 0.0), 2)
+    buy_gst = round((buy_nse + buy_sebi + buy_brokerage) * (config["gst_pct"] / 100.0), 2)
+    total_buy_charges = round(buy_stt + buy_stamp + buy_nse + buy_sebi + buy_brokerage + buy_gst, 2)
     
     # 2. Sell Side
-    sell_stt = round(sell_val * 0.0010, 2)
-    sell_nse = round(sell_val * 0.0000297, 2)
-    sell_sebi = round(sell_val * 0.000001, 2)
-    sell_gst = round((sell_nse + sell_sebi) * 0.18, 2)
-    dp_charges = 14.75 if is_delivery else 0.0
-    total_sell_charges = round(sell_stt + sell_nse + sell_sebi + sell_gst + dp_charges, 2)
+    sell_stt = round(sell_val * (config["stt_sell_pct"] / 100.0), 2)
+    sell_nse = round(sell_val * (config["nse_fee_pct"] / 100.0), 2)
+    sell_sebi = round(sell_val * (config["sebi_fee_per_cr"] / 10000000.0), 2)
+    sell_brokerage = round(config.get("brokerage_flat", 0.0), 2)
+    sell_gst = round((sell_nse + sell_sebi + sell_brokerage) * (config["gst_pct"] / 100.0), 2)
+    dp_charges = config["dp_charges"] if is_delivery else 0.0
+    total_sell_charges = round(sell_stt + sell_nse + sell_sebi + sell_brokerage + sell_gst + dp_charges, 2)
     
     total_charges = round(total_buy_charges + total_sell_charges, 2)
     gross_pnl = round(sell_val - buy_val, 2)
     net_pnl = round(gross_pnl - total_charges, 2)
     
-    # STCG Tax: 20% on positive net gains
-    est_stcg_tax = round(net_pnl * 0.20, 2) if net_pnl > 0 else 0.0
+    # STCG Tax: using active configurable rate on positive net gains
+    stcg_rate = config["stcg_tax_pct"] / 100.0
+    est_stcg_tax = round(net_pnl * stcg_rate, 2) if net_pnl > 0 else 0.0
     net_take_home = round(net_pnl - est_stcg_tax, 2)
     
     net_return_pct = round((net_pnl / buy_val) * 100.0, 2) if buy_val > 0 else 0.0
@@ -376,21 +469,32 @@ def calculate_transaction_charges(entry_price: float, exit_price: float, qty: in
         "est_stcg_tax": est_stcg_tax,
         "net_take_home": net_take_home,
         "dp_charges": dp_charges,
-        "total_stt": round(buy_stt + sell_stt, 2)
+        "total_stt": round(buy_stt + sell_stt, 2),
+        "rates_used": config
     }
 
-def calculate_true_break_even_price(entry_price: float, qty: int) -> float:
-    """Computes exit price required so that Net PnL is >= ₹0.00 after all statutory & DP charges."""
+def calculate_true_break_even_price(entry_price: float, qty: int, config: Optional[Dict[str, float]] = None) -> float:
+    """Computes exit price required so that Net PnL is >= ₹0.00 after all statutory & DP charges, dynamically adapting to any rate revisions."""
     if qty <= 0 or entry_price <= 0:
         return entry_price
+    if config is None:
+        config = get_fee_and_tax_config()
+        
+    buy_fee_pct = (config["stt_buy_pct"] + config["stamp_duty_pct"] + config["nse_fee_pct"]) / 100.0
+    buy_fee_pct += (config["sebi_fee_per_cr"] / 10000000.0) + ((config["nse_fee_pct"] / 100.0 + config["sebi_fee_per_cr"] / 10000000.0) * (config["gst_pct"] / 100.0))
+    
+    sell_fee_pct = (config["stt_sell_pct"] + config["nse_fee_pct"]) / 100.0
+    sell_fee_pct += (config["sebi_fee_per_cr"] / 10000000.0) + ((config["nse_fee_pct"] / 100.0 + config["sebi_fee_per_cr"] / 10000000.0) * (config["gst_pct"] / 100.0))
+    
     buy_val = entry_price * qty
-    buy_cost = buy_val * 1.001185
-    target_sell_val = (buy_cost + 14.75) / 0.998965
+    buy_cost = buy_val * (1.0 + buy_fee_pct)
+    target_sell_val = (buy_cost + config["dp_charges"]) / (1.0 - sell_fee_pct)
     break_even_price = target_sell_val / qty
     return round(break_even_price + 0.05, 2)
 
 def get_account_summary() -> Dict[str, Any]:
     acc = get_account_details()
+    cfg = get_fee_and_tax_config(acc)
     pv = float(acc.get("Total Portfolio Value", INITIAL_CAPITAL))
     cash = float(acc.get("Cash Balance", INITIAL_CAPITAL))
     init_cap = float(acc.get("Initial Capital", INITIAL_CAPITAL))
@@ -399,7 +503,8 @@ def get_account_summary() -> Dict[str, Any]:
     gross_pnl = float(acc.get("Realized PnL", 0.0))
     charges = float(acc.get("Total Realized Charges", 0.0))
     net_pnl = float(acc.get("Net Realized PnL", gross_pnl - charges))
-    tax = float(acc.get("Estimated STCG Tax (20%)", 0.0))
+    tax_key = f"Estimated STCG Tax ({int(cfg['stcg_tax_pct'])}%)" if cfg['stcg_tax_pct'].is_integer() else f"Estimated STCG Tax ({cfg['stcg_tax_pct']}%)"
+    tax = float(acc.get(tax_key, acc.get("Estimated STCG Tax (20%)", 0.0)))
     take_home = float(acc.get("Net Take-Home PnL", net_pnl - tax))
     net_ret_pct = float(str(acc.get("Net Realized Return %", "0.0")).replace("%", ""))
     
@@ -411,6 +516,8 @@ def get_account_summary() -> Dict[str, Any]:
         "total_charges": charges,
         "net_realized_pnl": net_pnl,
         "est_stcg_tax": tax,
+        "stcg_tax_pct": cfg["stcg_tax_pct"],
+        "fee_config": cfg,
         "net_take_home_pnl": take_home,
         "total_return_pct": ret_pct,
         "net_return_pct": net_ret_pct,
@@ -570,7 +677,8 @@ def close_position(sh: gspread.Spreadsheet, row_idx: int, exit_price: float, exi
     entry_val = float(str(row_values[4]).strip().replace(",", ""))
     
     exit_val = round(exit_price * qty, 2)
-    charges = calculate_transaction_charges(entry_price, exit_price, qty)
+    cfg = get_fee_and_tax_config(account)
+    charges = calculate_transaction_charges(entry_price, exit_price, qty, config=cfg)
     gross_pnl = charges["gross_pnl"]
     total_charges = charges["total_charges"]
     net_pnl = charges["net_pnl"]
@@ -598,7 +706,8 @@ def close_position(sh: gspread.Spreadsheet, row_idx: int, exit_price: float, exi
     cur_realized_gross = round(float(account.get("Realized PnL", 0.0)) + gross_pnl, 2)
     cur_charges = round(float(account.get("Total Realized Charges", 0.0)) + total_charges, 2)
     cur_net_pnl = round(float(account.get("Net Realized PnL", 0.0)) + net_pnl, 2)
-    cur_tax = round(cur_net_pnl * 0.20, 2) if cur_net_pnl > 0 else 0.0
+    stcg_rate = cfg["stcg_tax_pct"] / 100.0
+    cur_tax = round(cur_net_pnl * stcg_rate, 2) if cur_net_pnl > 0 else 0.0
     take_home = round(cur_net_pnl - cur_tax, 2)
     init_cap = float(account.get("Initial Capital", INITIAL_CAPITAL))
     net_ret = round((cur_net_pnl / init_cap) * 100.0, 2) if init_cap > 0 else 0.0
@@ -636,7 +745,8 @@ def execute_partial_exit(sh: gspread.Spreadsheet, row_idx: int, exit_price: floa
     
     closed_val = round(exit_price * exit_qty, 2)
     closed_entry_val = round(entry_price * exit_qty, 2)
-    charges = calculate_transaction_charges(entry_price, exit_price, exit_qty)
+    cfg = get_fee_and_tax_config(account)
+    charges = calculate_transaction_charges(entry_price, exit_price, exit_qty, config=cfg)
     gross_pnl = charges["gross_pnl"]
     total_charges = charges["total_charges"]
     net_pnl = charges["net_pnl"]
@@ -661,10 +771,10 @@ def execute_partial_exit(sh: gspread.Spreadsheet, row_idx: int, exit_price: floa
     ]
     retry_gspread(ws.batch_update, update_data)
     
-    # 2. Append runner tranche row (Shift SL to TRUE COST Break-Even!)
+    # 2. Append runner tranche row (Shift SL to TRUE COST Break-Even using active fee schedule!)
     remaining_qty = current_qty - exit_qty
     runner_entry_val = round(entry_price * remaining_qty, 2)
-    true_break_even_sl = calculate_true_break_even_price(entry_price, remaining_qty)
+    true_break_even_sl = calculate_true_break_even_price(entry_price, remaining_qty, config=cfg)
     runner_row = [
         ticker, entry_date, round(entry_price, 2), remaining_qty, runner_entry_val,
         initial_sl, true_break_even_sl, f"T2: {target_2_price:.1f}", "OPEN", "", "", "", "", "",
@@ -678,7 +788,8 @@ def execute_partial_exit(sh: gspread.Spreadsheet, row_idx: int, exit_price: floa
     cur_realized_gross = round(float(account.get("Realized PnL", 0.0)) + gross_pnl, 2)
     cur_charges = round(float(account.get("Total Realized Charges", 0.0)) + total_charges, 2)
     cur_net_pnl = round(float(account.get("Net Realized PnL", 0.0)) + net_pnl, 2)
-    cur_tax = round(cur_net_pnl * 0.20, 2) if cur_net_pnl > 0 else 0.0
+    stcg_rate = cfg["stcg_tax_pct"] / 100.0
+    cur_tax = round(cur_net_pnl * stcg_rate, 2) if cur_net_pnl > 0 else 0.0
     take_home = round(cur_net_pnl - cur_tax, 2)
     init_cap = float(account.get("Initial Capital", INITIAL_CAPITAL))
     net_ret = round((cur_net_pnl / init_cap) * 100.0, 2) if init_cap > 0 else 0.0
@@ -732,8 +843,19 @@ def sync_portfolio(sh: Optional[gspread.Spreadsheet] = None, macro_data: Optiona
     logs = []
     if not open_positions:
         acc = get_account_details(sh)
-        update_account_details(sh, {"Total Portfolio Value": acc.get("Cash Balance", INITIAL_CAPITAL)})
-        logs.append("No open positions to sync.")
+        cfg = get_fee_and_tax_config(acc)
+        stcg_rate = cfg["stcg_tax_pct"] / 100.0
+        net_pnl = float(acc.get("Net Realized PnL", 0.0))
+        est_tax = round(net_pnl * stcg_rate, 2) if net_pnl > 0 else 0.0
+        take_home = round(net_pnl - est_tax, 2)
+        
+        updates = {
+            "Total Portfolio Value": acc.get("Cash Balance", INITIAL_CAPITAL),
+            "Estimated STCG Tax (20%)": est_tax,
+            "Net Take-Home PnL": take_home
+        }
+        update_account_details(sh, updates)
+        logs.append(f"No open positions. Portfolio Value and Tax synchronized (STCG rate: {cfg['stcg_tax_pct']}%).")
         return logs
 
     tickers = [p["Ticker"] for p in open_positions]
@@ -819,9 +941,20 @@ def sync_portfolio(sh: Optional[gspread.Spreadsheet] = None, macro_data: Optiona
             logs.append(f"Error syncing {t}: {e}")
 
     acc = get_account_details(sh)
+    cfg = get_fee_and_tax_config(acc)
+    stcg_rate = cfg["stcg_tax_pct"] / 100.0
+    net_pnl = float(acc.get("Net Realized PnL", 0.0))
+    est_tax = round(net_pnl * stcg_rate, 2) if net_pnl > 0 else 0.0
+    take_home = round(net_pnl - est_tax, 2)
+    
     new_portfolio_val = round(float(acc.get("Cash Balance", INITIAL_CAPITAL)) + total_positions_val, 2)
-    update_account_details(sh, {"Total Portfolio Value": new_portfolio_val})
-    logs.append(f"Portfolio Sync Complete. Updated Total Portfolio Value: ₹{new_portfolio_val:,.2f}")
+    updates = {
+        "Total Portfolio Value": new_portfolio_val,
+        "Estimated STCG Tax (20%)": est_tax,
+        "Net Take-Home PnL": take_home
+    }
+    update_account_details(sh, updates)
+    logs.append(f"Portfolio Sync Complete. Updated Total Portfolio Value: ₹{new_portfolio_val:,.2f} (Tax rate: {cfg['stcg_tax_pct']}%)")
     return logs
 
 # Backward compatibility alias
