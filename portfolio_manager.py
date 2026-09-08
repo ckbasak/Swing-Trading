@@ -277,7 +277,27 @@ def is_schedule_due(item: Dict[str, Any], now_ist: datetime) -> bool:
         
     # For recurring schedules (DAILY / WEEKDAYS):
     # Generous 30-minute grace window (-60s to +1800s)
-    return -60 <= diff_seconds <= 1800
+def _parse_num(val: Any, fallback: float = 0.0) -> float:
+    """Safely parse numbers with commas, currency symbols, and percentage signs into float."""
+    if val is None or str(val).strip() == "":
+        return fallback
+    try:
+        s = str(val).replace("₹", "").replace("%", "").replace(",", "").strip()
+        return float(s)
+    except Exception:
+        return fallback
+
+def _parse_date(val: Any) -> Optional[datetime]:
+    """Safely parse dates across standard Indian & global formats."""
+    if not val:
+        return None
+    s = str(val).strip()
+    for fmt in ("%d-%b-%Y", "%Y-%m-%d", "%d-%m-%Y", "%d/%m/%Y"):
+        try:
+            return datetime.strptime(s, fmt)
+        except (ValueError, TypeError):
+            pass
+    return None
 
 def get_account_details(sh: gspread.Spreadsheet) -> Dict[str, float]:
     """
@@ -289,16 +309,12 @@ def get_account_details(sh: gspread.Spreadsheet) -> Dict[str, float]:
     details = {}
     for r in records:
         param = str(r.get("Parameter", "")).strip()
-        raw_val = str(r.get("Value", "")).strip().replace("%", "").replace(",", "")
-        try:
-            val = float(raw_val)
-            norm_key = param.lower().replace(" ", "").replace("_", "")
-            if "risk" in norm_key and val > 1.0:
-                val = val / 100.0
-            details[param] = val
-        except (ValueError, TypeError):
-            details[param] = str(r.get("Value", "")).strip()
-            norm_key = param.lower().replace(" ", "").replace("_", "")
+        raw_val = str(r.get("Value", "")).strip()
+        val = _parse_num(raw_val)
+        norm_key = param.lower().replace(" ", "").replace("_", "")
+        if "risk" in norm_key and val > 1.0:
+            val = val / 100.0
+        details[param] = val
         if norm_key in ["riskpercent", "riskpercentage", "riskpct", "risk"]:
             details["Risk Percent"] = val
             details["Risk Percentage"] = val
@@ -567,10 +583,11 @@ def add_position(sh: gspread.Spreadsheet, ticker: str, entry_price: float, qty: 
         return f"Insufficient cash to buy {qty} shares of {ticker}. Required: {cost:.2f}, Available: {cash:.2f}"
     
     ws = sh.worksheet("Holdings")
-    date_str = datetime.now().strftime("%Y-%m-%d")
+    date_str = datetime.now().strftime("%d-%b-%Y")
     row = [
-        ticker, date_str, entry_price, qty, str(cost),
-        initial_sl, initial_sl, target, "OPEN", "", "", "", "", ""
+        ticker, date_str, round(entry_price, 2), qty, round(cost, 2),
+        round(initial_sl, 2), round(initial_sl, 2), round(target, 2), "OPEN", "", "", "", "", "",
+        "", "", "", ""
     ]
     retry_gspread(ws.append_row, row)
     
@@ -587,8 +604,8 @@ def close_position(sh: gspread.Spreadsheet, row_idx: int, exit_price: float, rea
     row_values = ws.row_values(row_idx)
     
     ticker = row_values[0]
-    entry_price = float(str(row_values[2]).strip().replace(",", ""))
-    qty = int(float(str(row_values[3]).strip().replace(",", "")))
+    entry_price = _parse_num(row_values[2])
+    qty = int(_parse_num(row_values[3]))
     
     exit_val = round(exit_price * qty, 2)
     cfg = get_fee_and_tax_config(account)
@@ -598,20 +615,20 @@ def close_position(sh: gspread.Spreadsheet, row_idx: int, exit_price: float, rea
     net_pnl = charges["net_pnl"]
     est_tax = charges["est_stcg_tax"]
     net_return_pct = charges["net_return_pct"]
-    exit_date = datetime.now().strftime("%Y-%m-%d")
+    exit_date = datetime.now().strftime("%d-%b-%Y")
     
     # Batch update columns 9 (I) to 18 (R)
     update_data = [
         {"range": f"I{row_idx}", "values": [["CLOSED"]]},
         {"range": f"J{row_idx}", "values": [[exit_date]]},
-        {"range": f"K{row_idx}", "values": [[str(round(exit_price, 2))]]},
-        {"range": f"L{row_idx}", "values": [[str(round(exit_val, 2))]]},
-        {"range": f"M{row_idx}", "values": [[str(round(gross_pnl, 2))]]},
+        {"range": f"K{row_idx}", "values": [[round(exit_price, 2)]]},
+        {"range": f"L{row_idx}", "values": [[round(exit_val, 2)]]},
+        {"range": f"M{row_idx}", "values": [[round(gross_pnl, 2)]]},
         {"range": f"N{row_idx}", "values": [[reason]]},
-        {"range": f"O{row_idx}", "values": [[str(round(total_charges, 2))]]},
-        {"range": f"P{row_idx}", "values": [[str(round(net_pnl, 2))]]},
-        {"range": f"Q{row_idx}", "values": [[str(round(est_tax, 2))]]},
-        {"range": f"R{row_idx}", "values": [[f"{net_return_pct:+.2f}%"]]}
+        {"range": f"O{row_idx}", "values": [[round(total_charges, 2)]]},
+        {"range": f"P{row_idx}", "values": [[round(net_pnl, 2)]]},
+        {"range": f"Q{row_idx}", "values": [[round(est_tax, 2)]]},
+        {"range": f"R{row_idx}", "values": [[round(net_return_pct / 100.0, 4)]]}
     ]
     retry_gspread(ws.batch_update, update_data)
     
@@ -674,9 +691,9 @@ def sync_portfolio(sh: gspread.Spreadsheet, macro_data: Dict[str, Any] = None) -
     for p in open_positions:
         ticker = p["Ticker"]
         row_idx = p["row_idx"]
-        current_sl = float(p["Current SL"])
-        target = float(p["Target"])
-        qty = int(p["Quantity"])
+        current_sl = _parse_num(p.get("Current SL", 0))
+        target = _parse_num(p.get("Target", 0))
+        qty = int(_parse_num(p.get("Quantity", 0)))
         
         try:
             if isinstance(data.columns, pd.MultiIndex):
@@ -704,7 +721,7 @@ def sync_portfolio(sh: gspread.Spreadsheet, macro_data: Dict[str, Any] = None) -
                 new_sl = max(current_sl, low_today)
                 if new_sl > current_sl:
                     ws = sh.worksheet("Holdings")
-                    retry_gspread(ws.update_cell, row_idx, 7, str(round(new_sl, 2)))
+                    retry_gspread(ws.update_cell, row_idx, 7, round(new_sl, 2))
                     logs.append(f"🛡️ 🔴 MACRO GUARDRAIL TRIGGERED for {ticker}: Market Risk-Off. Tightened SL to today's low: ₹{new_sl:.2f}")
                     current_sl = new_sl
 
@@ -717,7 +734,7 @@ def sync_portfolio(sh: gspread.Spreadsheet, macro_data: Dict[str, Any] = None) -
                 new_sl = max(current_sl, low_today)
                 if new_sl > current_sl:
                     ws = sh.worksheet("Holdings")
-                    retry_gspread(ws.update_cell, row_idx, 7, str(round(new_sl, 2)))
+                    retry_gspread(ws.update_cell, row_idx, 7, round(new_sl, 2))
                     logs.append(f"⚠️ NEGATIVE NEWS detected for {ticker}. Tightened Trailing Stop to today's low: ₹{new_sl:.2f}")
                     current_sl = new_sl
             
@@ -733,7 +750,7 @@ def sync_portfolio(sh: gspread.Spreadsheet, macro_data: Dict[str, Any] = None) -
                 new_sl = max(current_sl, ema_20_today)
                 if new_sl > current_sl:
                     ws = sh.worksheet("Holdings")
-                    retry_gspread(ws.update_cell, row_idx, 7, str(round(new_sl, 2)))
+                    retry_gspread(ws.update_cell, row_idx, 7, round(new_sl, 2))
                     logs.append(f"Updated Trailing Stop for {ticker} from {current_sl:.2f} to {new_sl:.2f}")
         except Exception as e:
             logs.append(f"Error syncing {ticker}: {e}")

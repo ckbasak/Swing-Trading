@@ -25,6 +25,9 @@ import portfolio_manager
 import subprocess
 import sys
 
+def clean_numeric_col(series):
+    return pd.to_numeric(series.astype(str).str.replace('₹', '', regex=False).str.replace(',', '', regex=False).str.replace('+', '', regex=False).str.replace('%', '', regex=False).str.strip(), errors='coerce')
+
 # Failsafe background bot launcher & health checker
 def is_bot_pid_alive() -> bool:
     try:
@@ -186,11 +189,11 @@ if account is not None and holdings is not None:
     open_holdings_value = 0.0
     
     if not open_df.empty:
-        open_df["Entry Price"] = pd.to_numeric(open_df["Entry Price"], errors='coerce')
-        open_df["Quantity"] = pd.to_numeric(open_df["Quantity"], errors='coerce')
-        open_df["Target"] = pd.to_numeric(open_df["Target"], errors='coerce')
-        open_df["Current SL"] = pd.to_numeric(open_df["Current SL"], errors='coerce')
-        open_df["Initial SL"] = pd.to_numeric(open_df["Initial SL"], errors='coerce')
+        open_df["Entry Price"] = clean_numeric_col(open_df["Entry Price"])
+        open_df["Quantity"] = clean_numeric_col(open_df["Quantity"])
+        open_df["Target"] = clean_numeric_col(open_df["Target"])
+        open_df["Current SL"] = clean_numeric_col(open_df["Current SL"])
+        open_df["Initial SL"] = clean_numeric_col(open_df["Initial SL"])
         
         tickers = open_df["Ticker"].tolist()
         try:
@@ -224,15 +227,15 @@ if account is not None and holdings is not None:
     take_home = float(account.get("Net Take-Home PnL", net_pnl - est_tax))
     
     if not closed_df.empty:
-        closed_df["PnL"] = pd.to_numeric(closed_df.get("Gross PnL", closed_df.get("PnL", 0)), errors='coerce').fillna(0.0)
+        closed_df["PnL"] = clean_numeric_col(closed_df.get("Gross PnL", closed_df.get("PnL", 0))).fillna(0.0)
         realized_pnl = closed_df["PnL"].sum()
         if "Total Charges" in closed_df.columns:
-            total_charges = pd.to_numeric(closed_df["Total Charges"], errors='coerce').fillna(0.0).sum()
+            total_charges = clean_numeric_col(closed_df["Total Charges"]).fillna(0.0).sum()
         if "Net PnL" in closed_df.columns:
-            net_pnl = pd.to_numeric(closed_df["Net PnL"], errors='coerce').fillna(0.0).sum()
+            net_pnl = clean_numeric_col(closed_df["Net PnL"]).fillna(0.0).sum()
         if "Est. Tax" in closed_df.columns or "Est. Tax (20%)" in closed_df.columns:
             tax_col = "Est. Tax (20%)" if "Est. Tax (20%)" in closed_df.columns else "Est. Tax"
-            est_tax = pd.to_numeric(closed_df[tax_col], errors='coerce').fillna(0.0).sum()
+            est_tax = clean_numeric_col(closed_df[tax_col]).fillna(0.0).sum()
         take_home = net_pnl - est_tax
         
     # Dynamic Risk per trade from Account sheet
@@ -304,13 +307,13 @@ if account is not None and holdings is not None:
         if not open_df.empty:
             if "Entry Value" not in open_df.columns or open_df["Entry Value"].isna().all():
                 if "Buy Value" in open_df.columns and not open_df["Buy Value"].isna().all():
-                    open_df["Entry Value"] = pd.to_numeric(open_df["Buy Value"], errors='coerce')
+                    open_df["Entry Value"] = clean_numeric_col(open_df["Buy Value"])
                 elif "Traded Value" in open_df.columns and not open_df["Traded Value"].isna().all():
-                    open_df["Entry Value"] = pd.to_numeric(open_df["Traded Value"], errors='coerce')
+                    open_df["Entry Value"] = clean_numeric_col(open_df["Traded Value"])
                 else:
                     open_df["Entry Value"] = open_df["Entry Price"] * open_df["Quantity"]
             else:
-                open_df["Entry Value"] = pd.to_numeric(open_df["Entry Value"], errors='coerce')
+                open_df["Entry Value"] = clean_numeric_col(open_df["Entry Value"])
                 
             display_columns = [
                 "Ticker", "Entry Date", "Entry Price", "Quantity", "Entry Value",
@@ -337,27 +340,27 @@ if account is not None and holdings is not None:
         if not closed_df.empty:
             if "Entry Value" not in closed_df.columns or closed_df["Entry Value"].isna().all():
                 if "Buy Value" in closed_df.columns and not closed_df["Buy Value"].isna().all():
-                    closed_df["Entry Value"] = pd.to_numeric(closed_df["Buy Value"], errors='coerce')
+                    closed_df["Entry Value"] = clean_numeric_col(closed_df["Buy Value"])
                 else:
                     closed_df["Entry Value"] = closed_df["Entry Price"] * closed_df["Quantity"]
             else:
-                closed_df["Entry Value"] = pd.to_numeric(closed_df["Entry Value"], errors='coerce')
+                closed_df["Entry Value"] = clean_numeric_col(closed_df["Entry Value"])
                 
         if not closed_df.empty:
-            closed_df["Entry Price"] = pd.to_numeric(closed_df["Entry Price"], errors='coerce')
-            closed_df["Exit Price"] = pd.to_numeric(closed_df["Exit Price"], errors='coerce')
-            closed_df["Quantity"] = pd.to_numeric(closed_df["Quantity"], errors='coerce')
+            closed_df["Entry Price"] = clean_numeric_col(closed_df["Entry Price"])
+            closed_df["Exit Price"] = clean_numeric_col(closed_df["Exit Price"])
+            closed_df["Quantity"] = clean_numeric_col(closed_df["Quantity"])
             closed_df["Entry Value"] = closed_df["Entry Price"] * closed_df["Quantity"]
             
             if "Exit Value" not in closed_df.columns or closed_df["Exit Value"].isna().all():
                 if "Sell Value" in closed_df.columns and not closed_df["Sell Value"].isna().all():
-                    closed_df["Exit Value"] = pd.to_numeric(closed_df["Sell Value"], errors='coerce')
+                    closed_df["Exit Value"] = clean_numeric_col(closed_df["Sell Value"])
                 else:
                     closed_df["Exit Value"] = closed_df["Exit Price"] * closed_df["Quantity"]
             else:
-                closed_df["Exit Value"] = pd.to_numeric(closed_df["Exit Value"], errors='coerce')
+                closed_df["Exit Value"] = clean_numeric_col(closed_df["Exit Value"])
                 
-            closed_df["PnL"] = pd.to_numeric(closed_df["PnL"], errors='coerce')
+            closed_df["PnL"] = clean_numeric_col(closed_df["PnL"])
             closed_df["PnL %"] = ((closed_df["Exit Price"] - closed_df["Entry Price"]) / closed_df["Entry Price"]) * 100.0
                 
             # Summary Metrics for Closed Trades
