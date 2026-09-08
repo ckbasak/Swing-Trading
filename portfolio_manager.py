@@ -321,6 +321,74 @@ def update_account_details(sh: gspread.Spreadsheet, updates: Dict[str, Any]):
             param_map[norm_k] = len(all_rows) + 1
 
 # Backward compatibility helper
+def calculate_transaction_charges(entry_price: float, exit_price: float, qty: int, is_delivery: bool = True) -> Dict[str, float]:
+    """
+    Computes exact statutory and broker charges for Indian Equity Delivery on NSE via Dhan.
+    Rates:
+    - Brokerage: ₹0
+    - STT: 0.1% on buy, 0.1% on sell
+    - NSE Transaction Fee: 0.00297% on buy & sell
+    - Stamp Duty: 0.015% on buy only
+    - SEBI Charges: ₹10 / crore (0.0001%) on buy & sell
+    - GST: 18% on (Brokerage + NSE fee + SEBI fee)
+    - DP Charges: ₹12.50 + 18% GST = ₹14.75 on sell only
+    """
+    buy_val = round(entry_price * qty, 2)
+    sell_val = round(exit_price * qty, 2)
+    
+    # 1. Buy Side
+    buy_stt = round(buy_val * 0.0010, 2)
+    buy_stamp = round(buy_val * 0.00015, 2)
+    buy_nse = round(buy_val * 0.0000297, 2)
+    buy_sebi = round(buy_val * 0.000001, 2)
+    buy_gst = round((buy_nse + buy_sebi) * 0.18, 2)
+    total_buy_charges = round(buy_stt + buy_stamp + buy_nse + buy_sebi + buy_gst, 2)
+    
+    # 2. Sell Side
+    sell_stt = round(sell_val * 0.0010, 2)
+    sell_nse = round(sell_val * 0.0000297, 2)
+    sell_sebi = round(sell_val * 0.000001, 2)
+    sell_gst = round((sell_nse + sell_sebi) * 0.18, 2)
+    dp_charges = 14.75 if is_delivery else 0.0
+    total_sell_charges = round(sell_stt + sell_nse + sell_sebi + sell_gst + dp_charges, 2)
+    
+    total_charges = round(total_buy_charges + total_sell_charges, 2)
+    gross_pnl = round(sell_val - buy_val, 2)
+    net_pnl = round(gross_pnl - total_charges, 2)
+    
+    # STCG Tax: 20% on positive net gains
+    est_stcg_tax = round(net_pnl * 0.20, 2) if net_pnl > 0 else 0.0
+    net_take_home = round(net_pnl - est_stcg_tax, 2)
+    
+    net_return_pct = round((net_pnl / buy_val) * 100.0, 2) if buy_val > 0 else 0.0
+    gross_return_pct = round((gross_pnl / buy_val) * 100.0, 2) if buy_val > 0 else 0.0
+    
+    return {
+        "buy_val": buy_val,
+        "sell_val": sell_val,
+        "buy_charges": total_buy_charges,
+        "sell_charges": total_sell_charges,
+        "total_charges": total_charges,
+        "gross_pnl": gross_pnl,
+        "gross_return_pct": gross_return_pct,
+        "net_pnl": net_pnl,
+        "net_return_pct": net_return_pct,
+        "est_stcg_tax": est_stcg_tax,
+        "net_take_home": net_take_home,
+        "dp_charges": dp_charges,
+        "total_stt": round(buy_stt + sell_stt, 2)
+    }
+
+def calculate_true_break_even_price(entry_price: float, qty: int) -> float:
+    """Computes exit price required so that Net PnL is >= ₹0.00 after all statutory & DP charges."""
+    if qty <= 0 or entry_price <= 0:
+        return entry_price
+    buy_val = entry_price * qty
+    buy_cost = buy_val * 1.001185
+    target_sell_val = (buy_cost + 14.75) / 0.998965
+    break_even_price = target_sell_val / qty
+    return round(break_even_price + 0.05, 2)
+
 def get_account_summary() -> Dict[str, Any]:
     acc = get_account_details()
     pv = float(acc.get("Total Portfolio Value", INITIAL_CAPITAL))
@@ -328,13 +396,24 @@ def get_account_summary() -> Dict[str, Any]:
     init_cap = float(acc.get("Initial Capital", INITIAL_CAPITAL))
     risk_p = float(acc.get("Risk Percent", 0.06)) * 100.0 if float(acc.get("Risk Percent", 0.06)) < 1.0 else float(acc.get("Risk Percent", 0.06))
     ret_pct = ((pv - init_cap) / init_cap) * 100.0 if init_cap > 0 else 0.0
+    gross_pnl = float(acc.get("Realized PnL", 0.0))
+    charges = float(acc.get("Total Realized Charges", 0.0))
+    net_pnl = float(acc.get("Net Realized PnL", gross_pnl - charges))
+    tax = float(acc.get("Estimated STCG Tax (20%)", 0.0))
+    take_home = float(acc.get("Net Take-Home PnL", net_pnl - tax))
+    net_ret_pct = float(str(acc.get("Net Realized Return %", "0.0")).replace("%", ""))
     
     return {
         "portfolio_value": pv,
         "cash": cash,
         "initial_capital": init_cap,
-        "realized_pnl": float(acc.get("Realized PnL", 0.0)),
+        "realized_pnl": gross_pnl,
+        "total_charges": charges,
+        "net_realized_pnl": net_pnl,
+        "est_stcg_tax": tax,
+        "net_take_home_pnl": take_home,
         "total_return_pct": ret_pct,
+        "net_return_pct": net_ret_pct,
         "cagr_pct": float(str(acc.get("CAGR %", 0.0)).replace("%", "")),
         "xirr_pct": float(str(acc.get("XIRR %", 0.0)).replace("%", "")),
         "days_active": int(acc.get("Days Active", 1)),
@@ -436,21 +515,24 @@ def add_position(*args, **kwargs) -> Optional[Dict[str, Any]]:
         print(f"Sized quantity ({qty}) too low for {ticker}. Minimum 2 shares required.")
         return None
 
-    cost = round(qty * entry_price, 2)
+    charges = calculate_transaction_charges(entry_price, entry_price, qty)
+    buy_charges = charges["buy_charges"]
+    cost = round(qty * entry_price + buy_charges, 2)
     acc = get_account_details(sh)
     cash = float(acc.get("Cash Balance", INITIAL_CAPITAL))
     if cost > cash:
-        print(f"Insufficient cash for {ticker}. Cost: ₹{cost}, Cash: ₹{cash}")
+        print(f"Insufficient cash for {ticker}. Total Cost (incl charges): ₹{cost}, Cash: ₹{cash}")
         return None
 
     date_str = datetime.now().strftime("%Y-%m-%d")
     target_str = f"T1: {target_1:.1f} | T2: {target_2:.1f}"
 
-    # Standard 14-column row:
-    # Ticker, Entry Date, Entry Price, Quantity, Entry Value, Initial SL, Current SL, Target, Status, Exit Date, Exit Price, Exit Value, PnL, Exit Reason
+    # Standard 18-column row:
+    # Ticker, Entry Date, Entry Price, Quantity, Entry Value, Initial SL, Current SL, Target, Status, Exit Date, Exit Price, Exit Value, Gross PnL, Exit Reason, Total Charges, Net PnL, Est. Tax (20%), Net Return %
     row_data = [
-        ticker, date_str, round(entry_price, 2), qty, cost,
-        initial_sl, initial_sl, target_str, "OPEN", "", "", "", "", ""
+        ticker, date_str, round(entry_price, 2), qty, round(entry_price * qty, 2),
+        initial_sl, initial_sl, target_str, "OPEN", "", "", "", "", "",
+        "", "", "", ""
     ]
 
     holdings_name, _, _ = get_worksheet_names(sh)
@@ -459,7 +541,7 @@ def add_position(*args, **kwargs) -> Optional[Dict[str, Any]]:
 
     new_cash = round(cash - cost, 2)
     update_account_details(sh, {"Cash Balance": new_cash})
-    log_cloud_event(sh, "portfolio_manager.py", f"Added position {ticker} x {qty} @ ₹{entry_price:.2f} (Cost: ₹{cost})")
+    log_cloud_event(sh, "portfolio_manager.py", f"Added position {ticker} x {qty} @ ₹{entry_price:.2f} (Entry Value: ₹{round(entry_price * qty, 2)}, Buy Charges: ₹{buy_charges}, Cash Debited: ₹{cost})")
 
     # Keep local DB synchronized
     db = _load_local_db()
@@ -476,7 +558,7 @@ def add_position(*args, **kwargs) -> Optional[Dict[str, Any]]:
     return new_item
 
 def close_position(sh: gspread.Spreadsheet, row_idx: int, exit_price: float, exit_reason: str) -> str:
-    """Closes a position in the standard 14-column Holdings worksheet and credits cash."""
+    """Closes a position in the standard 18-column Holdings worksheet, calculates charges & STCG tax, and credits net proceeds."""
     holdings_name, _, _ = get_worksheet_names(sh)
     ws = sh.worksheet(holdings_name)
     account = get_account_details(sh)
@@ -488,8 +570,12 @@ def close_position(sh: gspread.Spreadsheet, row_idx: int, exit_price: float, exi
     entry_val = float(row_values[4])
     
     exit_val = round(exit_price * qty, 2)
-    pnl = round(exit_val - entry_val, 2)
-    pnl_pct = ((exit_price - entry_price) / entry_price) * 100.0 if entry_price > 0 else 0.0
+    charges = calculate_transaction_charges(entry_price, exit_price, qty)
+    gross_pnl = charges["gross_pnl"]
+    total_charges = charges["total_charges"]
+    net_pnl = charges["net_pnl"]
+    est_tax = charges["est_stcg_tax"]
+    net_return_pct = charges["net_return_pct"]
     date_str = datetime.now().strftime("%Y-%m-%d")
     
     update_data = [
@@ -497,25 +583,46 @@ def close_position(sh: gspread.Spreadsheet, row_idx: int, exit_price: float, exi
         {"range": f"J{row_idx}", "values": [[date_str]]},
         {"range": f"K{row_idx}", "values": [[str(round(exit_price, 2))]]},
         {"range": f"L{row_idx}", "values": [[str(round(exit_val, 2))]]},
-        {"range": f"M{row_idx}", "values": [[str(round(pnl, 2))]]},
-        {"range": f"N{row_idx}", "values": [[exit_reason]]}
+        {"range": f"M{row_idx}", "values": [[str(round(gross_pnl, 2))]]},
+        {"range": f"N{row_idx}", "values": [[exit_reason]]},
+        {"range": f"O{row_idx}", "values": [[str(round(total_charges, 2))]]},
+        {"range": f"P{row_idx}", "values": [[str(round(net_pnl, 2))]]},
+        {"range": f"Q{row_idx}", "values": [[str(round(est_tax, 2))]]},
+        {"range": f"R{row_idx}", "values": [[f"{net_return_pct:+.2f}%"]]}
     ]
     retry_gspread(ws.batch_update, update_data)
     
-    new_cash = round(float(account["Cash Balance"]) + exit_val, 2)
-    cur_realized = float(account.get("Realized PnL", 0.0)) + pnl
-    update_account_details(sh, {"Cash Balance": new_cash, "Realized PnL": cur_realized})
-    log_cloud_event(sh, "portfolio_manager.py", f"Closed {ticker} x {qty} @ ₹{exit_price:.2f} (Reason: {exit_reason}, PnL: ₹{pnl:,.2f})")
+    # Net sell proceeds (Exit Value - Sell Charges) credited to cash ledger
+    net_proceeds = round(exit_val - charges["sell_charges"], 2)
+    new_cash = round(float(account.get("Cash Balance", INITIAL_CAPITAL)) + net_proceeds, 2)
+    cur_realized_gross = round(float(account.get("Realized PnL", 0.0)) + gross_pnl, 2)
+    cur_charges = round(float(account.get("Total Realized Charges", 0.0)) + total_charges, 2)
+    cur_net_pnl = round(float(account.get("Net Realized PnL", 0.0)) + net_pnl, 2)
+    cur_tax = round(float(account.get("Estimated STCG Tax (20%)", 0.0)) + est_tax, 2)
+    take_home = round(cur_net_pnl - cur_tax, 2)
+    init_cap = float(account.get("Initial Capital", INITIAL_CAPITAL))
+    net_ret = round((cur_net_pnl / init_cap) * 100.0, 2) if init_cap > 0 else 0.0
     
-    pnl_sign = "+" if pnl >= 0 else ""
-    return f"Closed trade: {ticker} @ {exit_price:.2f} (Reason: {exit_reason}, PnL: ₹{pnl:,.2f} / {pnl_sign}{pnl_pct:.2f}%)"
+    update_account_details(sh, {
+        "Cash Balance": new_cash,
+        "Realized PnL": cur_realized_gross,
+        "Total Realized Charges": cur_charges,
+        "Net Realized PnL": cur_net_pnl,
+        "Estimated STCG Tax (20%)": cur_tax,
+        "Net Take-Home PnL": take_home,
+        "Net Realized Return %": f"{net_ret:+.2f}%"
+    })
+    log_cloud_event(sh, "portfolio_manager.py", f"Closed {ticker} x {qty} @ ₹{exit_price:.2f} (Reason: {exit_reason}, Gross: ₹{gross_pnl:,.2f}, Fees: ₹{total_charges:.2f}, Net: ₹{net_pnl:,.2f}, Tax: ₹{est_tax:.2f})")
+    
+    pnl_sign = "+" if net_pnl >= 0 else ""
+    return f"Closed trade: {ticker} @ ₹{exit_price:.2f} (Reason: {exit_reason}, Net PnL: ₹{net_pnl:,.2f} / {pnl_sign}{net_return_pct:.2f}%, Fees: ₹{total_charges:.2f}, Est. Tax: ₹{est_tax:.2f})"
 
 def execute_partial_exit(sh: gspread.Spreadsheet, row_idx: int, exit_price: float, current_qty: int, exit_qty: int, target_2_price: float) -> str:
     """
     Strategy 3 Milestone: Target 1 Hit (50% Partial Lock)
-    1. Updates row `row_idx` to reflect closed 50% tranche (Quantity = exit_qty, Status = CLOSED, Exit Reason = Target 1 Hit).
-    2. Appends new row for remaining 50% runner (Quantity = remaining_qty, Status = OPEN, SL = Entry Price (Break-Even), Target = Target 2).
-    3. Credits cash and realized PnL.
+    1. Updates row `row_idx` to reflect closed 50% tranche (cols D, E, I-R).
+    2. Appends new row for remaining 50% runner (Quantity = remaining_qty, Status = OPEN, SL = True Cost Break-Even, Target = Target 2).
+    3. Credits cash and updates realized PnL, charges, and tax metrics.
     """
     holdings_name, _, _ = get_worksheet_names(sh)
     ws = sh.worksheet(holdings_name)
@@ -529,40 +636,65 @@ def execute_partial_exit(sh: gspread.Spreadsheet, row_idx: int, exit_price: floa
     
     closed_val = round(exit_price * exit_qty, 2)
     closed_entry_val = round(entry_price * exit_qty, 2)
-    pnl = round(closed_val - closed_entry_val, 2)
-    pnl_pct = ((exit_price - entry_price) / entry_price) * 100.0
+    charges = calculate_transaction_charges(entry_price, exit_price, exit_qty)
+    gross_pnl = charges["gross_pnl"]
+    total_charges = charges["total_charges"]
+    net_pnl = charges["net_pnl"]
+    est_tax = charges["est_stcg_tax"]
+    net_return_pct = charges["net_return_pct"]
     date_str = datetime.now().strftime("%Y-%m-%d")
     
-    # 1. Update row_idx to closed 50% tranche
+    # 1. Update row_idx to closed 50% tranche (cols D, E, I-R)
     update_data = [
         {"range": f"D{row_idx}", "values": [[str(exit_qty)]]},
         {"range": f"E{row_idx}", "values": [[str(closed_entry_val)]]},
         {"range": f"I{row_idx}", "values": [["CLOSED"]]},
         {"range": f"J{row_idx}", "values": [[date_str]]},
         {"range": f"K{row_idx}", "values": [[str(round(exit_price, 2))]]},
-        {"range": f"L{row_idx}", "values": [[str(closed_val)]]},
-        {"range": f"M{row_idx}", "values": [[str(pnl)]]},
-        {"range": f"N{row_idx}", "values": [["Target 1 Hit (50% Partial Lock)"]]}
+        {"range": f"L{row_idx}", "values": [[str(round(closed_val, 2))]]},
+        {"range": f"M{row_idx}", "values": [[str(round(gross_pnl, 2))]]},
+        {"range": f"N{row_idx}", "values": [["Target 1 Hit (50% Partial Lock)"]]},
+        {"range": f"O{row_idx}", "values": [[str(round(total_charges, 2))]]},
+        {"range": f"P{row_idx}", "values": [[str(round(net_pnl, 2))]]},
+        {"range": f"Q{row_idx}", "values": [[str(round(est_tax, 2))]]},
+        {"range": f"R{row_idx}", "values": [[f"{net_return_pct:+.2f}%"]]}
     ]
     retry_gspread(ws.batch_update, update_data)
     
-    # 2. Append runner tranche row (Shift SL to Break-Even!)
+    # 2. Append runner tranche row (Shift SL to TRUE COST Break-Even!)
     remaining_qty = current_qty - exit_qty
     runner_entry_val = round(entry_price * remaining_qty, 2)
-    break_even_sl = entry_price
+    true_break_even_sl = calculate_true_break_even_price(entry_price, remaining_qty)
     runner_row = [
         ticker, entry_date, round(entry_price, 2), remaining_qty, runner_entry_val,
-        initial_sl, break_even_sl, f"T2: {target_2_price:.1f}", "OPEN", "", "", "", "", ""
+        initial_sl, true_break_even_sl, f"T2: {target_2_price:.1f}", "OPEN", "", "", "", "", "",
+        "", "", "", ""
     ]
     retry_gspread(ws.append_row, runner_row)
     
-    # 3. Credit cash and realized PnL
-    new_cash = round(float(account["Cash Balance"]) + closed_val, 2)
-    cur_realized = float(account.get("Realized PnL", 0.0)) + pnl
-    update_account_details(sh, {"Cash Balance": new_cash, "Realized PnL": cur_realized})
-    log_cloud_event(sh, "portfolio_manager.py", f"Target 1 Partial Lock: {ticker} sold {exit_qty} @ ₹{exit_price:.2f} (PnL: ₹{pnl:,.2f}). SL shifted to Break-Even (₹{break_even_sl:.2f}).")
+    # 3. Credit cash and update account metrics
+    net_proceeds = round(closed_val - charges["sell_charges"], 2)
+    new_cash = round(float(account.get("Cash Balance", INITIAL_CAPITAL)) + net_proceeds, 2)
+    cur_realized_gross = round(float(account.get("Realized PnL", 0.0)) + gross_pnl, 2)
+    cur_charges = round(float(account.get("Total Realized Charges", 0.0)) + total_charges, 2)
+    cur_net_pnl = round(float(account.get("Net Realized PnL", 0.0)) + net_pnl, 2)
+    cur_tax = round(float(account.get("Estimated STCG Tax (20%)", 0.0)) + est_tax, 2)
+    take_home = round(cur_net_pnl - cur_tax, 2)
+    init_cap = float(account.get("Initial Capital", INITIAL_CAPITAL))
+    net_ret = round((cur_net_pnl / init_cap) * 100.0, 2) if init_cap > 0 else 0.0
     
-    return f"Target 1 Hit: {ticker} sold {exit_qty} shares @ ₹{exit_price:.2f} (+{pnl_pct:.1f}%). Runner {remaining_qty} shares stop moved to Break-Even (₹{break_even_sl:.2f})!"
+    update_account_details(sh, {
+        "Cash Balance": new_cash,
+        "Realized PnL": cur_realized_gross,
+        "Total Realized Charges": cur_charges,
+        "Net Realized PnL": cur_net_pnl,
+        "Estimated STCG Tax (20%)": cur_tax,
+        "Net Take-Home PnL": take_home,
+        "Net Realized Return %": f"{net_ret:+.2f}%"
+    })
+    log_cloud_event(sh, "portfolio_manager.py", f"Target 1 Partial Lock: {ticker} sold {exit_qty} @ ₹{exit_price:.2f} (Net PnL: ₹{net_pnl:,.2f}, Fees: ₹{total_charges:.2f}). Runner stop moved to True Break-Even (₹{true_break_even_sl:.2f}).")
+    
+    return f"Target 1 Hit: {ticker} sold {exit_qty} shares @ ₹{exit_price:.2f} (+{net_return_pct:.1f}% net). Runner {remaining_qty} shares stop moved to True Break-Even (₹{true_break_even_sl:.2f})!"
 
 def sync_portfolio(sh: Optional[gspread.Spreadsheet] = None, macro_data: Optional[Dict[str, Any]] = None) -> List[str]:
     """
