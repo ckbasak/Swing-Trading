@@ -252,7 +252,8 @@ if account is not None and holdings is not None:
     fcol1.metric("📈 Gross Realized PnL", f"₹{realized_pnl:,.2f}")
     fcol2.metric("🧾 Brokerage & Fees", f"₹{total_charges:,.2f}")
     fcol3.metric("💵 Net Realized PnL", f"₹{net_pnl:,.2f}")
-    fcol4.metric("🏛️ Est. STCG Tax (20%)", f"₹{est_tax:,.2f}")
+    tax_rate_disp = int(account.get('stcg_tax_pct', 20)) if float(account.get('stcg_tax_pct', 20)).is_integer() else account.get('stcg_tax_pct', 20)
+    fcol4.metric(f"🏛️ Est. STCG Tax ({tax_rate_disp}%)", f"₹{est_tax:,.2f}")
     fcol5.metric("💎 Net Take-Home PnL", f"₹{take_home:,.2f}")
     
     # Calculate CAGR & XIRR
@@ -270,6 +271,27 @@ if account is not None and holdings is not None:
     col7.metric("🌀 XIRR", f"{perf_metrics['XIRR (%)']}%")
     col8.metric("⏱️ Days Active", f"{perf_metrics['Days Elapsed']} Days")
     
+    cfg = account.get("fee_config", portfolio_manager.get_fee_and_tax_config())
+    with st.expander("🏛️ Active Statutory Charges & Tax Schedule (Live from Google Sheet)", expanded=False):
+        c1, c2, c3, c4 = st.columns(4)
+        c1.markdown(f"""
+        - **STT (Buy)**: `{cfg['stt_buy_pct']:.3f}%`
+        - **STT (Sell)**: `{cfg['stt_sell_pct']:.3f}%`
+        - **Stamp Duty**: `{cfg['stamp_duty_pct']:.3f}%`
+        """)
+        c2.markdown(f"""
+        - **NSE Turnover Fee**: `{cfg['nse_fee_pct']:.5f}%`
+        - **SEBI Turnover Fee**: `₹{cfg['sebi_fee_per_cr']:.0f}/Cr`
+        - **GST Rate**: `{cfg['gst_pct']:.1f}%`
+        """)
+        c3.markdown(f"""
+        - **DP Charges**: `₹{cfg['dp_charges']:.2f}` flat/sale
+        - **Brokerage**: `₹{cfg.get('brokerage_flat', 0.0):.2f}` (Free Delivery)
+        - **STCG Tax Rate**: `{cfg['stcg_tax_pct']:.1f}%`
+        """)
+        c4.info("💡 **Dynamic Update Policy**: Rates are read in real-time from the Google Sheet **Account** tab. Modifying any rate in the sheet immediately updates portfolio trade sizing, break-even targets, and capital gains taxation.")
+        st.caption("🛡️ **Autonomous Regulatory Sentinel**: Active — Periodically scans official Indian financial news & circulars via Gemini AI to automatically reflect enacted statutory rate revisions.")
+
     st.markdown("---")
     
     # Main Tabs
