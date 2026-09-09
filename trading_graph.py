@@ -171,8 +171,9 @@ def calculate_positions_node(state: TradingState) -> Dict[str, Any]:
             logs.append(f"Skipping {ticker}: Risk per share is <= 0.")
             continue
             
-        # Sizing Rule (1.5% Risk per trade): Quantity = Risk Per Trade / Risk Per Share
-        qty = math.floor(risk_per_trade / risk_per_share)
+        # Unified Capital Allocation Sizing: Entry Value ≈ 5% of Portfolio Capital (matching Strategies 1 & 3)
+        target_trade_val = portfolio_value * risk_pct
+        qty = math.floor(target_trade_val / entry_price)
         
         if qty <= 0:
             logs.append(f"Skipping {ticker}: Calculated quantity is 0.")
