@@ -144,7 +144,7 @@ def initialize_portfolio_sheet(sh: gspread.Spreadsheet) -> bool:
                 ["Net Take-Home PnL", "0.00"],
                 ["Net Realized Return %", "+0.00%"]
             ]
-            ws_acc.update(range_name="A1:B19", values=init_account_data)
+            ws_acc.update(init_account_data)
 
         # 2. Holdings worksheet
         if "Holdings" not in existing_titles:
@@ -158,7 +158,7 @@ def initialize_portfolio_sheet(sh: gspread.Spreadsheet) -> bool:
                  "Exit Value", "Gross PnL", "Exit Reason", "Total Charges", "Net PnL", 
                  "Est. Tax (20%)", "Net Return %"]
             ]
-            ws_hold.update(range_name="A1:S1", values=holdings_headers)
+            ws_hold.update(holdings_headers)
 
         # 3. TelegramChats worksheet
         if "TelegramChats" not in existing_titles:
@@ -166,7 +166,7 @@ def initialize_portfolio_sheet(sh: gspread.Spreadsheet) -> bool:
         else:
             ws_chats = sh.worksheet("TelegramChats")
         if len(ws_chats.get_all_values()) == 0:
-            ws_chats.update(range_name="A1:A2", values=[["ChatID"], ["6493910665"]])
+            ws_chats.update([["ChatID"], ["6493910665"]])
 
         # 4. Schedules worksheet
         if "Schedules" not in existing_titles:
@@ -182,7 +182,7 @@ def initialize_portfolio_sheet(sh: gspread.Spreadsheet) -> bool:
                 ["WEEKDAYS", "15:25", "EXECUTE", "ACTIVE", "", "ETF Market Close Scan & Trade Execution"],
                 ["WEEKDAYS", "18:00", "NEWS", "ACTIVE", "", "Evening Portfolio & Tax Sentinel Summary"]
             ]
-            ws_sched.update(range_name="A1:F6", values=sched_data)
+            ws_sched.update(sched_data)
 
         # 5. DebugLogs worksheet
         if "DebugLogs" not in existing_titles:
@@ -190,7 +190,7 @@ def initialize_portfolio_sheet(sh: gspread.Spreadsheet) -> bool:
         else:
             ws_logs = sh.worksheet("DebugLogs")
         if len(ws_logs.get_all_values()) == 0:
-            ws_logs.update(range_name="A1:C1", values=[["Timestamp IST", "Source", "Message"]])
+            ws_logs.update([["Timestamp IST", "Source", "Message"]])
 
         # Remove default 'Sheet1' if other sheets are set up
         if "Sheet1" in existing_titles and len(sh.worksheets()) > 1:

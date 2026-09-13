@@ -895,9 +895,10 @@ def main():
     # Configure JobQueue
     tz = pytz.timezone("Asia/Kolkata")
         
-    # 1. Morning Scan Job at 8:00 AM IST daily
-    morning_time = datetime.time(hour=8, minute=0, second=0, tzinfo=tz)
-    app.job_queue.run_daily(
+    if app.job_queue is not None:
+        # 1. Morning Scan Job at 8:00 AM IST daily
+        morning_time = datetime.time(hour=8, minute=0, second=0, tzinfo=tz)
+        app.job_queue.run_daily(
         daily_scan_job,
         time=morning_time,
         days=(0, 1, 2, 3, 4, 5, 6),
@@ -949,8 +950,10 @@ def main():
     logger.info("Intraday market hours sync job scheduled (every 5 minutes).")
 
     # 5. Render Keep-Alive every 9 minutes
-    app.job_queue.run_repeating(render_keep_alive_job, interval=540, first=30, job_kwargs={"misfire_grace_time": 60})
-    logger.info("Render keep-alive job scheduled (every 9 minutes).")
+        app.job_queue.run_repeating(render_keep_alive_job, interval=540, first=30, job_kwargs={"misfire_grace_time": 60})
+        logger.info("Render keep-alive job scheduled (every 9 minutes).")
+    else:
+        logger.warning("app.job_queue is None. Telegram bot running in standalone command & REST mode.")
     
     # Start bot
     logger.info("Starting Telegram Bot poll with JobQueue enabled...")
