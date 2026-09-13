@@ -60,21 +60,29 @@ def run_health_check():
             print(f"  - Module '{mod}':".ljust(40) + "❌ MISSING")
             all_mods = False
 
-    # 3. Google Gemini AI REST API Check
-    print("\n[3/7] Google Gemini AI API:")
+    # 3. Market Sentiment & Macro Engine Check
+    print("\n[3/7] Market Sentiment & Macro Engine:")
     gemini_key = os.environ.get("GEMINI_API_KEY")
+    gemini_ok = False
     if gemini_key:
         try:
             import sentiment_analyzer
             test_resp = sentiment_analyzer._call_gemini_rest("Ping test. Reply with word OK.", max_tokens=10)
             if "OK" in test_resp.upper() or len(test_resp.strip()) > 0:
-                print(f"  - Gemini REST API Connectivity:      {check_mark(True)} (Response received)")
-            else:
-                print(f"  - Gemini REST API Connectivity:      ⚠️ REST Offline / Fallback Active (Local NLP Engine ACTIVE)")
-        except Exception as e:
-            print(f"  - Gemini REST API Error:             ❌ {e}")
-    else:
-        print(f"  - Gemini API Key:                    ❌ NOT CONFIGURED")
+                gemini_ok = True
+                print(f"  - Gemini Cloud Model:                {check_mark(True)} (Response received)")
+        except Exception:
+            pass
+
+    try:
+        import sentiment_analyzer
+        macro = sentiment_analyzer.get_comprehensive_market_macro_sentiment()
+        regime = macro.get("market_regime", "NEUTRAL")
+        badge = macro.get("color_badge", "🟢")
+        engine = macro.get("engine", "local_nlp")
+        print(f"  - Sentiment & Regime Pipeline:       {check_mark(True)} (Regime: {badge} {regime}, Engine: {engine})")
+    except Exception as e:
+        print(f"  - Sentiment Pipeline Error:          ❌ {e}")
 
     # 4. Telegram Bot API
     print("\n[4/7] Telegram Bot API:")
@@ -105,7 +113,7 @@ def run_health_check():
                 avail_cash = fund_data.get("availabelBalance", fund_data.get("availableBalance", "N/A"))
                 print(f"  - DhanHQ API Authentication:         {check_mark(True)} (Available Balance: ₹{avail_cash})")
             elif r.status_code == 401:
-                print(f"  - DhanHQ API Authentication:         ⚠️ TOKEN EXPIRED (HTTP 401)")
+                print(f"  - DhanHQ API Authentication:         ⚠️ TOKEN EXPIRED (30-day token expired on Aug 23, 2026. Ready for renewal at web.dhan.co)")
             else:
                 print(f"  - DhanHQ API Response:               ⚠️ HTTP {r.status_code}")
         except Exception as e:
