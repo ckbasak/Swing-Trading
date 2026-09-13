@@ -151,10 +151,13 @@ with tab4:
         st.error("curated_etf_pool.csv not found.")
 
 with tab5:
-    st.subheader("Automated Daily Cloud Schedules (Google Sheets Sync)")
-    scheds = portfolio_manager.get_active_schedules()
-    if scheds:
-        df_scheds = pd.DataFrame(scheds)
-        st.dataframe(df_scheds, use_container_width=True)
-    else:
-        st.info("Default schedules active: 8:00 AM, 8:30 AM, 9:00 AM, 3:25 PM, 6:00 PM IST.")
+    st.subheader("⏰ Automated Daily Cloud Schedules (Google Sheets Sync)")
+    try:
+        scheds = portfolio_manager.get_active_schedules()
+        if scheds:
+            df_scheds = pd.DataFrame(scheds)
+            st.dataframe(df_scheds, use_container_width=True)
+        else:
+            st.info("Default schedules active: 8:00 AM, 8:30 AM, 9:00 AM, 3:25 PM, 6:00 PM IST.")
+    except Exception as e:
+        st.error(f"Error loading schedules: {e}")

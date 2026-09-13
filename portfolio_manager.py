@@ -261,6 +261,27 @@ def get_schedules_worksheet(sh: gspread.Spreadsheet) -> gspread.Worksheet:
         ws.update(range_name="A1:F6", values=headers)
         return ws
 
+def get_active_schedules(sh: Optional[gspread.Spreadsheet] = None) -> List[Dict[str, Any]]:
+    """Retrieves all schedule records from the Google Sheet Schedules tab, with fallback to default schedules."""
+    if sh is None:
+        client = get_gspread_client()
+        sh = get_or_create_portfolio_sheet(client)
+    if sh:
+        try:
+            ws = get_schedules_worksheet(sh)
+            records = retry_gspread(ws.get_all_records)
+            if records:
+                return records
+        except Exception:
+            pass
+    return [
+        {"Date": "WEEKDAYS", "Time": "8:00", "Mode": "PREVIEW", "Status": "ACTIVE", "Last Run": "", "Notes": "Morning Pre-Market ETF Scan"},
+        {"Date": "WEEKDAYS", "Time": "8:30", "Mode": "SENTIMENT", "Status": "ACTIVE", "Last Run": "", "Notes": "Market Macro Regime Analysis"},
+        {"Date": "WEEKDAYS", "Time": "9:00", "Mode": "SENTIMENT", "Status": "ACTIVE", "Last Run": "", "Notes": "Pre-Market Portfolio Status"},
+        {"Date": "WEEKDAYS", "Time": "15:25", "Mode": "EXECUTE", "Status": "ACTIVE", "Last Run": "", "Notes": "ETF Market Close Scan & Trade Execution"},
+        {"Date": "WEEKDAYS", "Time": "18:00", "Mode": "NEWS", "Status": "ACTIVE", "Last Run": "", "Notes": "Evening Portfolio & Tax Sentinel Summary"}
+    ]
+
 def get_pending_schedules(sh: gspread.Spreadsheet) -> List[Dict[str, Any]]:
     try:
         ws = get_schedules_worksheet(sh)

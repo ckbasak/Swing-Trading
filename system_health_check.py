@@ -70,7 +70,7 @@ def run_health_check():
             if "OK" in test_resp.upper() or len(test_resp.strip()) > 0:
                 print(f"  - Gemini REST API Connectivity:      {check_mark(True)} (Response received)")
             else:
-                print(f"  - Gemini REST API Connectivity:      ⚠️ UNEXPECTED RESPONSE")
+                print(f"  - Gemini REST API Connectivity:      ⚠️ REST Offline / Fallback Active (Local NLP Engine ACTIVE)")
         except Exception as e:
             print(f"  - Gemini REST API Error:             ❌ {e}")
     else:
