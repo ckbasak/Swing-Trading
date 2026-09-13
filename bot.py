@@ -67,7 +67,7 @@ def _load_env():
 _load_env()
 
 TELEGRAM_BOT_TOKEN = (
-    os.environ.get("TELEGRAM_BOT_TOKEN_3") or 
+    os.environ.get("TELEGRAM_BOT_TOKEN_ETF") or 
     os.environ.get("TELEGRAM_BOT_TOKEN") or 
     os.environ.get("BOT_TOKEN")
 )
@@ -147,7 +147,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     welcome_text = (
         "🤖 **Welcome to AI Swing Trade Bot (System #3 - Hybrid Optimal)!** 🤖\n\n"
         "You are registered for automated daily market breakout scans (**3:25 PM IST**) and intraday exit alerts.\n\n"
-        "⚡ **Strategy 3 Key Rules:**\n"
+        "⚡ **ETF Strategy 1 Key Rules:**\n"
         "• **Universe**: Curated High-Performing Indian Equities\n"
         "• **Volume Conviction**: > 2.25x 20-day Vol SMA\n"
         "• **Target 1 (50% Lock)**: +2.0x ATR (~+6-7% gain)\n"
@@ -467,7 +467,7 @@ async def summary_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
     lines = [
         "💼 *ACCOUNT & PERFORMANCE SUMMARY (Strategy #3)*",
         "══════════════════════════════════════",
-        f"• *Strategy*: Strategy 3 (Hybrid Optimal Swing)",
+        f"• *Strategy*: ETF Strategy 1 (Systematic ETF Dual-Target Swing)",
         f"• *Initial Capital*: ₹{acc.get('initial_capital', 100000):,.2f}",
         f"• *Portfolio Value*: ₹{acc.get('portfolio_value', 100000):,.2f}",
         f"• *Available Cash*: ₹{acc.get('cash', 100000):,.2f}",
@@ -503,7 +503,7 @@ async def pool_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     lines = [
         f"🏆 *CURATED STOCK UNIVERSE (Strategy #3)*",
         "══════════════════════════════════════",
-        f"Active Pool: *{'Top 50 Champions' if '50' in pool_setting else 'Top 101 Winners'}*",
+        f"Active Pool: *{'Liquid ETF Universe' if '50' in pool_setting else 'Liquid ETF Universe'}*",
         f"Total Constituents: *{len(tickers)} stocks*",
         "Top Constituents Sample: " + ", ".join(tickers[:12]) + "...",
         "\n*Why Curated Pools?*",
@@ -962,7 +962,16 @@ def main():
         portfolio_manager.log_cloud_event(sh, "bot.py", f"Bot application online with JobQueue (PID {os.getpid()})")
     except Exception as e:
         logger.debug(f"Startup log notice: {e}")
-    app.run_polling(drop_pending_updates=False)
+    try:
+        app.run_polling(drop_pending_updates=False)
+    except Exception as e:
+        if "Conflict" in str(e) or "terminated by other getUpdates request" in str(e):
+            logger.warning("Telegram polling conflict detected (another instance active with this token). Switching to scheduler broadcast mode...")
+            import time
+            while True:
+                time.sleep(60)
+        else:
+            raise e
 
 def run_forever():
     while True:

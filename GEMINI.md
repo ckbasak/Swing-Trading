@@ -1,4 +1,4 @@
-﻿# Antigravity Workspace Guidelines & Execution Policy
+# Antigravity Workspace Guidelines & Execution Policy
 
 ## ⚡ Autonomous Execution Policy
 - Automatically execute all necessary terminal commands, Python scripts, git commands, and file edits immediately.

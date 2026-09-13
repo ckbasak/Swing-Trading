@@ -20,15 +20,15 @@ class TradingState(TypedDict, total=False):
     macro_sentiment: Dict[str, Any]
     logs: List[str]
 
-def run_trading_system(execute_trades: bool = False, pool_type: str = "top_50") -> Dict[str, Any]:
+def run_trading_system(execute_trades: bool = False, pool_type: str = "etf") -> Dict[str, Any]:
     """
-    Executes Strategy 3: Hybrid Optimal Swing Trading Pipeline
+    Executes Strategy 3: Systematic ETF Dual-Target Swing Trading Pipeline
     1. Evaluates Global & Indian macro sentiment & guardrails.
     2. Syncs active open holdings & checks trailing stop updates.
     3. Scans high-conviction curated stock pool.
     4. Applies sector limit (max 3/sector) & 6.0% capital risk sizing.
     """
-    logs = ["=== [Strategy 3] Starting Hybrid Optimal Swing Trading Pipeline ==="]
+    logs = ["=== [ETF Strategy 1] Starting Systematic ETF Dual-Target Swing Trading Pipeline ==="]
     
     # Node 1: Macro Sentiment & Portfolio Sync
     macro_data = None
@@ -58,16 +58,16 @@ def run_trading_system(execute_trades: bool = False, pool_type: str = "top_50") 
     logs.append(f"Portfolio Value: ₹{port_val:,.2f} | Cash: ₹{cash:,.2f} | Open Positions: {len(open_positions)}/10")
     
     # Node 2: Screen Curated Universe
-    tickers = screener.get_curated_tickers(pool_type)
-    logs.append(f"Scanning {len(tickers)} curated stocks ({pool_type.upper()} Pool)...")
+    tickers = screener.get_etf_tickers()
+    logs.append(f"Scanning {len(tickers)} liquid ETFs ({pool_type.upper()} Pool)...")
     candidates = screener.screen_stocks(tickers, logs=logs, macro_data=macro_data, check_sentiment=True)
     logs.append(f"Screener returned {len(candidates)} breakout candidate(s).")
     
     # Node 3: Risk Allocation & Sizing
     trades_to_execute = []
     current_sectors = [screener.get_stock_sector(h.get("Ticker", "")) for h in open_positions]
-    max_sector = int(os.environ.get("MAX_POSITIONS_PER_SECTOR", "3"))
-    max_total = int(os.environ.get("MAX_TOTAL_POSITIONS", "10"))
+    max_sector = int(os.environ.get("MAX_POSITIONS_PER_SECTOR", "2"))
+    max_total = int(os.environ.get("MAX_TOTAL_POSITIONS", "4"))
     
     remaining_cash = cash
     available_slots = max_total - len(open_positions)

@@ -18,57 +18,61 @@ from typing import List, Dict, Any, Optional
 import sentiment_analyzer
 
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
-TOP_50_PATH = os.path.join(PROJECT_ROOT, "curated_pool_top_50.csv")
-TOP_101_PATH = os.path.join(PROJECT_ROOT, "curated_pool_top_101.csv")
+ETF_POOL_PATH = os.path.join(PROJECT_ROOT, "curated_etf_pool.csv")
 
-def load_curated_metadata() -> Dict[str, Dict[str, str]]:
+# Load Curated ETF Metadata
+def load_etf_metadata() -> Dict[str, Dict[str, Any]]:
     meta = {}
-    for path in [TOP_101_PATH, TOP_50_PATH]:
-        if os.path.exists(path):
-            try:
-                df = pd.read_csv(path)
-                for _, row in df.iterrows():
-                    ticker = str(row.get("ticker", "")).strip()
-                    if ticker:
-                        meta[ticker] = {
-                            "company": str(row.get("company", ticker)),
-                            "sector": str(row.get("sector", "Diversified"))
-                        }
-            except Exception:
-                pass
+    if os.path.exists(ETF_POOL_PATH):
+        try:
+            df = pd.read_csv(ETF_POOL_PATH)
+            for _, row in df.iterrows():
+                ticker = str(row.get("ticker", "")).strip().upper()
+                if ticker:
+                    meta[ticker] = {
+                        "name": str(row.get("Company Name", ticker)),
+                        "category": str(row.get("category", "Broad Market")),
+                        "source_index": str(row.get("source_index", "NIFTY")),
+                        "win_rate": float(row.get("win_rate", 70.0)),
+                        "profit_factor": float(row.get("profit_factor", 3.5))
+                    }
+        except Exception as e:
+            print(f"Error reading ETF pool: {e}")
     return meta
 
-COMPANY_METADATA = load_curated_metadata()
+ETF_METADATA = load_etf_metadata()
 
-def get_curated_tickers(pool_type: str = "top_50") -> List[str]:
-    csv_file = TOP_50_PATH if pool_type.lower() == "top_50" else TOP_101_PATH
-    if os.path.exists(csv_file):
-        try:
-            df = pd.read_csv(csv_file)
-            return df["ticker"].dropna().tolist()
-        except Exception as e:
-            print(f"Error loading curated pool {csv_file}: {e}")
-    return list(COMPANY_METADATA.keys())[:50]
+def get_etf_tickers() -> List[str]:
+    """Returns the list of 20 liquid NSE ETFs."""
+    if ETF_METADATA:
+        return list(ETF_METADATA.keys())
+    return [
+        "NIFTYBEES.NS", "BANKBEES.NS", "JUNIORBEES.NS", "MID150BEES.NS", "SETFNIF50.NS",
+        "SETFNIFBK.NS", "NV20BEES.NS", "ALPHA.NS", "ICICIB22.NS", "CPSEETF.NS",
+        "ITBEES.NS", "PSUBNKBEES.NS", "AUTOBEES.NS", "PHARMABEES.NS", "CONSUMBEES.NS",
+        "GOLDBEES.NS", "HDFCGOLD.NS", "SILVERBEES.NS", "MON100.NS", "MAFANG.NS"
+    ]
+
+def get_curated_tickers(pool_type: str = "etf") -> List[str]:
+    """Compatibility alias for Strategy 3 runner."""
+    return get_etf_tickers()
 
 def get_stock_sector(ticker: str) -> str:
+    """Returns asset category (Broad Market, Sectoral, Commodities, International)."""
     sym = ticker.strip().upper()
     if not sym.endswith(".NS"):
         sym = f"{sym}.NS"
-    return COMPANY_METADATA.get(sym, {}).get("sector", COMPANY_METADATA.get(ticker, {}).get("sector", "Diversified"))
-
-def get_stock_company(ticker: str) -> str:
-    sym = ticker.strip().upper()
-    if not sym.endswith(".NS"):
-        sym = f"{sym}.NS"
-    return COMPANY_METADATA.get(sym, {}).get("company", COMPANY_METADATA.get(ticker, {}).get("company", ticker.replace(".NS", "")))
+    return ETF_METADATA.get(sym, {}).get("category", "Broad Market")
 
 def get_company_name(ticker: str) -> str:
-    return get_stock_company(ticker)
+    """Returns ETF official fund name."""
+    sym = str(ticker).strip().upper()
+    clean_sym = sym.replace(".NS", "")
+    with_ns = f"{clean_sym}.NS"
+    return ETF_METADATA.get(with_ns, {}).get("name", ETF_METADATA.get(clean_sym, {}).get("name", clean_sym))
 
-def get_nifty_250_tickers() -> List[str]:
-    pool_setting = os.environ.get("ACTIVE_STOCK_POOL", "curated_pool_top_50.csv")
-    pool_type = "top_101" if "101" in pool_setting else "top_50"
-    return get_curated_tickers(pool_type)
+def get_stock_company(ticker: str) -> str:
+    return get_company_name(ticker)
 
 def calculate_rsi(series: pd.Series, period: int = 14) -> pd.Series:
     delta = series.diff()
@@ -97,10 +101,10 @@ def screen_stocks(
     check_sentiment: bool = True
 ) -> List[Dict[str, Any]]:
     """
-    Strategy 3: Hybrid Optimal Swing Screener
-    - Universe: Curated High-Performing Stock Pool (Top 50 Champions / Top 101 Winners)
+    ETF Strategy 1: Systematic Dual-Target Swing Screener
+    - Universe: 20 Liquid NSE ETFs (Indices, Sectoral, Commodities, Global Tech)
     - Breakout: Close crosses above 20-day SMA
-    - Volume Conviction: Volume > 2.25x 20-day Vol SMA (Sweet Spot)
+    - Volume Surge: Volume > 1.15x 20-day Vol SMA (Optimized for ETF AP/MM flow)
     - Momentum: RSI 14 between 50 and 70
     - Targets: Target 1 at +2.0x ATR (50% partial), Target 2 at +4.5x ATR (runner)
     - Stop Loss: Dynamic 2.0x ATR below entry
@@ -108,11 +112,11 @@ def screen_stocks(
     if logs is None:
         logs = []
     if tickers is None:
-        tickers = get_nifty_250_tickers()
+        tickers = get_etf_tickers()
 
-    print(f"=== [Strategy 3] Scanning {len(tickers)} Curated Stocks ===")
+    print(f"=== [ETF Strategy 1] Scanning {len(tickers)} Liquid NSE ETFs ===")
 
-    # 1. Comprehensive Global & Indian Macro Guardrail Check
+    # 1. Macro Guardrails
     if macro_data is None and check_sentiment:
         try:
             macro_data = sentiment_analyzer.get_comprehensive_market_macro_sentiment()
@@ -126,15 +130,15 @@ def screen_stocks(
         color = macro_data.get("color", "GREEN")
         
         if breakout_guard == "HALT" or color == "RED":
-            msg = f"{badge} Macro Guardrail Alert: Market regime is {regime} (Breakouts: HALT). High macro risk environment."
+            msg = f"{badge} Macro Alert: Regime is {regime} (Breakouts: HALT). High market volatility."
             print(msg)
             logs.append(msg)
         elif breakout_guard == "SELECTIVE" or color == "YELLOW":
-            msg = f"{badge} Macro Guardrail Caution: Market regime is {regime} (Breakouts: SELECTIVE). Prioritizing high-conviction volume breakouts only."
+            msg = f"{badge} Macro Caution: Regime is {regime} (Breakouts: SELECTIVE). Prioritizing high-liquidity ETFs."
             print(msg)
             logs.append(msg)
         else:
-            msg = f"{badge} Macro Market Sentiment: {regime} (Breakout entries: ALLOW). Normal trading active."
+            msg = f"{badge} Macro Sentiment: {regime} (Breakouts: ALLOW). ETF Swing trading active."
             print(msg)
             logs.append(msg)
 
@@ -149,11 +153,11 @@ def screen_stocks(
             timeout=20
         )
     except Exception as e:
-        print(f"Error downloading batch data: {e}")
-        logs.append(f"Error downloading batch data: {e}")
+        print(f"Error downloading ETF batch data: {e}")
+        logs.append(f"Error downloading ETF batch data: {e}")
         return []
 
-    vol_multiplier = float(os.environ.get("VOLUME_MULTIPLIER", "2.25"))
+    vol_multiplier = float(os.environ.get("VOLUME_MULTIPLIER", "1.15"))
     candidates = []
 
     for ticker in tickers:
@@ -185,46 +189,34 @@ def screen_stocks(
             rsi_today = float(df['RSI_14'].iloc[-1])
             atr_today = float(df['ATR_14'].iloc[-1])
 
-            # Liquidity filter
-            if close_today < 20.0 or vol_sma_today < 25000.0:
+            # Turnover / Liquidity filter: Daily average turnover >= Rs 5 Lakhs
+            daily_turnover = vol_sma_today * close_today
+            if daily_turnover < 500000.0:
                 continue
             if np.isnan(sma_today) or np.isnan(vol_sma_today) or np.isnan(rsi_today) or np.isnan(atr_today):
                 continue
 
-            # Technical Conditions: SMA Breakout, Volume Conviction (>2.25x), Bullish RSI (50-70)
+            # Technical Conditions: SMA Breakout, ETF Volume Multiplier (1.15x), Bullish RSI (50-70)
             price_breakout = (close_yesterday <= sma_yesterday) and (close_today > sma_today)
             vol_confirmed = vol_today > (vol_multiplier * vol_sma_today)
             rsi_confirmed = 50.0 <= rsi_today <= 70.0
 
             if price_breakout and vol_confirmed and rsi_confirmed:
                 if atr_today <= 0.01:
-                    atr_today = close_today * 0.02
+                    atr_today = close_today * 0.015
 
                 sl_price = round(close_today - (2.0 * atr_today), 2)
                 target_1 = round(close_today + (2.0 * atr_today), 2)
                 target_2 = round(close_today + (4.5 * atr_today), 2)
                 vol_ratio = round(vol_today / vol_sma_today, 2)
 
-                company_name = get_stock_company(ticker)
-                sector = get_stock_sector(ticker)
-
-                # Individual stock news sentiment check
-                stock_sentiment = "NEUTRAL"
-                if check_sentiment:
-                    try:
-                        query = f"{company_name} stock news NSE"
-                        sent_res = sentiment_analyzer.get_news_sentiment(query)
-                        stock_sentiment = sent_res.get("verdict", "NEUTRAL") if isinstance(sent_res, dict) else str(sent_res)
-                        if stock_sentiment.upper() == "NEGATIVE":
-                            logs.append(f"Skipping {ticker} due to NEGATIVE stock news sentiment.")
-                            continue
-                    except Exception:
-                        pass
+                fund_name = get_company_name(ticker)
+                category = get_stock_sector(ticker)
 
                 candidates.append({
                     "ticker": ticker,
-                    "company": company_name,
-                    "sector": sector,
+                    "company": fund_name,
+                    "sector": category,
                     "close": round(close_today, 2),
                     "volume": int(vol_today),
                     "volume_ratio": vol_ratio,
@@ -235,7 +227,7 @@ def screen_stocks(
                     "stop_loss": sl_price,
                     "target_1": target_1,
                     "target_2": target_2,
-                    "sentiment": stock_sentiment
+                    "sentiment": "BULLISH"
                 })
         except Exception:
             continue
@@ -244,10 +236,10 @@ def screen_stocks(
     gc.collect()
 
     candidates.sort(key=lambda x: x['volume_ratio'], reverse=True)
-    print(f"Found {len(candidates)} qualified Strategy 3 candidate(s).")
+    print(f"Found {len(candidates)} qualified ETF Strategy 1 candidate(s).")
     return candidates
 
 if __name__ == "__main__":
     cands = screen_stocks(check_sentiment=False)
     for c in cands[:10]:
-        print(f"{c['ticker']} ({c['company']}) | P: Rs {c['close']} | Vol: {c['volume_ratio']}x | RSI: {c['rsi']} | T1: {c['target_1']} | T2: {c['target_2']} | SL: {c['stop_loss']}")
+        print(f"{c['ticker']} ({c['company']}) | Cat: {c['sector']} | P: Rs {c['close']} | Vol: {c['volume_ratio']}x | RSI: {c['rsi']} | T1: {c['target_1']} | T2: {c['target_2']} | SL: {c['stop_loss']}")

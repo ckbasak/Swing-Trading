@@ -17,7 +17,7 @@ from typing import List, Dict, Any, Tuple, Optional
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 SERVICE_ACCOUNT_FILE = os.path.join(PROJECT_ROOT, "service_account.json")
 LOCAL_DB_FILE = os.path.join(PROJECT_ROOT, "local_portfolio_data.json")
-DEFAULT_SPREADSHEET_NAME = os.environ.get("SPREADSHEET_NAME", "NSE_Swing_Trading_Portfolio_3")
+DEFAULT_SPREADSHEET_NAME = "NSE_ETF_Swing_Trading_Portfolio_1"
 INITIAL_CAPITAL = 100000.0
 
 def _load_env():
@@ -88,7 +88,122 @@ def get_worksheet_names(sh: gspread.Spreadsheet) -> Tuple[str, str, str]:
     """Returns standard tab names: ('Holdings', 'Account', 'TelegramChats')."""
     return ("Holdings", "Account", "TelegramChats")
 
+_company_cache = None
+
+def get_company_name(ticker: str) -> str:
+    """Returns the official registered company name for an NSE ticker symbol."""
+    global _company_cache
+    if _company_cache is None:
+        cache_path = os.path.join(PROJECT_ROOT, "nse_company_names.json")
+        if os.path.exists(cache_path):
+            try:
+                with open(cache_path, "r", encoding="utf-8") as f:
+                    _company_cache = json.load(f)
+            except Exception:
+                _company_cache = {}
+        else:
+            _company_cache = {}
+    clean = str(ticker).strip().upper()
+    return _company_cache.get(clean) or _company_cache.get(clean.replace(".NS", "")) or clean.replace(".NS", "")
+
 _cached_sh = None
+
+
+def initialize_portfolio_sheet(sh: gspread.Spreadsheet) -> bool:
+    """
+    Auto-initializes all 5 standard worksheets with complete column schemas,
+    initial account ledger records, Telegram admin chat ID, and default schedule rows.
+    """
+    try:
+        existing_titles = [ws.title for ws in sh.worksheets()]
+        
+        # 1. Account worksheet
+        if "Account" not in existing_titles:
+            ws_acc = sh.add_worksheet(title="Account", rows=50, cols=2)
+        else:
+            ws_acc = sh.worksheet("Account")
+        if len(ws_acc.get_all_values()) == 0:
+            init_account_data = [
+                ["Parameter", "Value"],
+                ["Initial Capital", "100000.00"],
+                ["Cash Balance", "100000.00"],
+                ["Total Portfolio Value", "100000.00"],
+                ["Capital Risk %", "1.5%"],
+                ["Risk Per Trade", "1500.00"],
+                ["Max Open Positions", "4"],
+                ["Max Positions Per Sector", "2"],
+                ["Max Capital Allocation %", "25.0%"],
+                ["STT Buy Rate %", "0.00%"],
+                ["STT Sell Rate %", "0.001%"],
+                ["DP Charges Flat", "0.00"],
+                ["STCG Tax Rate %", "20.0%"],
+                ["Realized PnL", "0.00"],
+                ["Total Realized Charges", "0.00"],
+                ["Net Realized PnL", "0.00"],
+                ["Estimated STCG Tax (20%)", "0.00"],
+                ["Net Take-Home PnL", "0.00"],
+                ["Net Realized Return %", "+0.00%"]
+            ]
+            ws_acc.update(range_name="A1:B19", values=init_account_data)
+
+        # 2. Holdings worksheet
+        if "Holdings" not in existing_titles:
+            ws_hold = sh.add_worksheet(title="Holdings", rows=200, cols=19)
+        else:
+            ws_hold = sh.worksheet("Holdings")
+        if len(ws_hold.get_all_values()) == 0:
+            holdings_headers = [
+                ["Ticker", "Company Name", "Entry Date", "Entry Price", "Quantity", "Entry Value", 
+                 "Initial SL", "Current SL", "Target", "Status", "Exit Date", "Exit Price", 
+                 "Exit Value", "Gross PnL", "Exit Reason", "Total Charges", "Net PnL", 
+                 "Est. Tax (20%)", "Net Return %"]
+            ]
+            ws_hold.update(range_name="A1:S1", values=holdings_headers)
+
+        # 3. TelegramChats worksheet
+        if "TelegramChats" not in existing_titles:
+            ws_chats = sh.add_worksheet(title="TelegramChats", rows=20, cols=1)
+        else:
+            ws_chats = sh.worksheet("TelegramChats")
+        if len(ws_chats.get_all_values()) == 0:
+            ws_chats.update(range_name="A1:A2", values=[["ChatID"], ["6493910665"]])
+
+        # 4. Schedules worksheet
+        if "Schedules" not in existing_titles:
+            ws_sched = sh.add_worksheet(title="Schedules", rows=50, cols=6)
+        else:
+            ws_sched = sh.worksheet("Schedules")
+        if len(ws_sched.get_all_values()) == 0:
+            sched_data = [
+                ["Date", "Time", "Mode", "Status", "Last Run", "Notes"],
+                ["WEEKDAYS", "8:00", "PREVIEW", "ACTIVE", "", "Morning Pre-Market ETF Scan"],
+                ["WEEKDAYS", "8:30", "SENTIMENT", "ACTIVE", "", "Market Macro Regime Analysis"],
+                ["WEEKDAYS", "9:00", "SENTIMENT", "ACTIVE", "", "Pre-Market Portfolio Status"],
+                ["WEEKDAYS", "15:25", "EXECUTE", "ACTIVE", "", "ETF Market Close Scan & Trade Execution"],
+                ["WEEKDAYS", "18:00", "NEWS", "ACTIVE", "", "Evening Portfolio & Tax Sentinel Summary"]
+            ]
+            ws_sched.update(range_name="A1:F6", values=sched_data)
+
+        # 5. DebugLogs worksheet
+        if "DebugLogs" not in existing_titles:
+            ws_logs = sh.add_worksheet(title="DebugLogs", rows=500, cols=3)
+        else:
+            ws_logs = sh.worksheet("DebugLogs")
+        if len(ws_logs.get_all_values()) == 0:
+            ws_logs.update(range_name="A1:C1", values=[["Timestamp IST", "Source", "Message"]])
+
+        # Remove default 'Sheet1' if other sheets are set up
+        if "Sheet1" in existing_titles and len(sh.worksheets()) > 1:
+            try:
+                sh.del_worksheet(sh.worksheet("Sheet1"))
+            except Exception:
+                pass
+                
+        print("Portfolio sheet initialized with all 5 tabs successfully!")
+        return True
+    except Exception as e:
+        print(f"Error initializing portfolio sheet: {e}")
+        return False
 
 def get_or_create_portfolio_sheet(client: Optional[gspread.Client] = None, sheet_name: Optional[str] = None) -> Optional[gspread.Spreadsheet]:
     """
@@ -105,7 +220,9 @@ def get_or_create_portfolio_sheet(client: Optional[gspread.Client] = None, sheet
     if not client:
         return None
 
-    target_name = sheet_name or os.environ.get("SPREADSHEET_NAME", DEFAULT_SPREADSHEET_NAME)
+    target_name = sheet_name or os.environ.get("SPREADSHEET_NAME") or os.environ.get("SPREADSHEET_NAME", DEFAULT_SPREADSHEET_NAME)
+    if target_name in ("NSE_Swing_Trading_Portfolio_1", "NSE_Swing_Trading_Portfolio_2", "NSE_Swing_Trading_Portfolio"):
+        target_name = DEFAULT_SPREADSHEET_NAME
     try:
         sh = retry_gspread(client.open, target_name)
     except Exception:
@@ -345,15 +462,15 @@ def update_account_details(sh: gspread.Spreadsheet, updates: Dict[str, Any]):
 
 # ----------------- Dynamic Regulatory Fee & Tax Configuration -----------------
 DEFAULT_FEE_CONFIG: Dict[str, float] = {
-    "stt_buy_pct": 0.10,         # 0.10% on buy turnover
-    "stt_sell_pct": 0.10,        # 0.10% on sell turnover
+    "stt_buy_pct": 0.0,          # 0.0% STT on ETF purchases in India (Zero STT)
+    "stt_sell_pct": 0.001,       # 0.001% STT on ETF sale/redemption (100x lower than equities)
     "stamp_duty_pct": 0.015,     # 0.015% on buy turnover only
     "nse_fee_pct": 0.00297,      # 0.00297% on turnover
     "sebi_fee_per_cr": 10.0,     # ₹10 per crore (0.0001%)
     "gst_pct": 18.0,             # 18% on (Brokerage + NSE fee + SEBI fee)
-    "dp_charges": 14.75,         # ₹14.75 flat per scrip/day on sell
+    "dp_charges": 0.0,           # ₹0 DP charges on ETF trades
     "stcg_tax_pct": 20.0,        # 20% on positive net capital gains (Finance Act 2024)
-    "brokerage_flat": 0.0        # ₹0 for Dhan equity delivery
+    "brokerage_flat": 0.0        # ₹0 for Dhan ETF delivery
 }
 
 _fee_config_cache: Dict[str, Any] = {"config": None, "ts": 0.0}
@@ -682,26 +799,35 @@ def add_position(*args, **kwargs) -> Optional[Dict[str, Any]]:
     date_str = datetime.now().strftime("%d-%b-%Y")
     target_str = f"T1: {target_1:.1f} | T2: {target_2:.1f}"
 
-    # Standard 18-column row:
-    # Ticker, Entry Date, Entry Price, Quantity, Entry Value, Initial SL, Current SL, Target, Status, Exit Date, Exit Price, Exit Value, Gross PnL, Exit Reason, Total Charges, Net PnL, Est. Tax (20%), Net Return %
-    row_data = [
-        ticker, date_str, round(entry_price, 2), qty, round(entry_price * qty, 2),
-        round(initial_sl, 2), round(initial_sl, 2), target_str, "OPEN", "", "", "", "", "",
-        "", "", "", ""
-    ]
-
     holdings_name, _, _ = get_worksheet_names(sh)
     ws = sh.worksheet(holdings_name)
+    headers = ws.row_values(1)
+    has_comp = "Company Name" in headers
+    comp_name = get_company_name(ticker)
+
+    if has_comp:
+        row_data = [
+            ticker, comp_name, date_str, round(entry_price, 2), qty, round(entry_price * qty, 2),
+            round(initial_sl, 2), round(initial_sl, 2), target_str, "OPEN", "", "", "", "", "",
+            "", "", "", ""
+        ]
+    else:
+        row_data = [
+            ticker, date_str, round(entry_price, 2), qty, round(entry_price * qty, 2),
+            round(initial_sl, 2), round(initial_sl, 2), target_str, "OPEN", "", "", "", "", "",
+            "", "", "", ""
+        ]
+
     retry_gspread(ws.append_row, row_data)
 
     new_cash = round(cash - cost, 2)
     update_account_details(sh, {"Cash Balance": new_cash})
-    log_cloud_event(sh, "portfolio_manager.py", f"Added position {ticker} x {qty} @ ₹{entry_price:.2f} (Entry Value: ₹{round(entry_price * qty, 2)}, Buy Charges: ₹{buy_charges}, Cash Debited: ₹{cost})")
+    log_cloud_event(sh, "portfolio_manager.py", f"Added position {ticker} ({comp_name}) x {qty} @ ₹{entry_price:.2f} (Entry Value: ₹{round(entry_price * qty, 2)}, Buy Charges: ₹{buy_charges}, Cash Debited: ₹{cost})")
 
     # Keep local DB synchronized
     db = _load_local_db()
     new_item = {
-        "Ticker": ticker, "Entry Date": date_str, "Entry Price": entry_price,
+        "Ticker": ticker, "Company Name": comp_name, "Entry Date": date_str, "Entry Price": entry_price,
         "Quantity": qty, "Entry Value": cost, "Initial SL": initial_sl,
         "Current SL": initial_sl, "Target": target_str, "Status": "OPEN"
     }
@@ -709,20 +835,22 @@ def add_position(*args, **kwargs) -> Optional[Dict[str, Any]]:
     db["account"]["cash"] = new_cash
     _save_local_db(db)
 
-    print(f"[Strategy 3] Added {ticker} x {qty} @ ₹{entry_price:.2f}. T1: ₹{target_1}, T2: ₹{target_2}, SL: ₹{initial_sl}")
+    print(f"[ETF Strategy 1] Added {ticker} ({comp_name}) x {qty} @ ₹{entry_price:.2f}. T1: ₹{target_1}, T2: ₹{target_2}, SL: ₹{initial_sl}")
     return new_item
 
 def close_position(sh: gspread.Spreadsheet, row_idx: int, exit_price: float, exit_reason: str) -> str:
-    """Closes a position in the standard 18-column Holdings worksheet, calculates charges & STCG tax, and credits net proceeds."""
+    """Closes a position in the standard Holdings worksheet, calculates charges & STCG tax, and credits net proceeds."""
     holdings_name, _, _ = get_worksheet_names(sh)
     ws = sh.worksheet(holdings_name)
     account = get_account_details(sh)
+    headers = ws.row_values(1)
+    has_comp = "Company Name" in headers
     
     row_values = ws.row_values(row_idx)
     ticker = row_values[0]
-    entry_price = _parse_num(row_values[2])
-    qty = int(_parse_num(row_values[3]))
-    entry_val = _parse_num(row_values[4])
+    entry_price = _parse_num(row_values[3 if has_comp else 2])
+    qty = int(_parse_num(row_values[4 if has_comp else 3]))
+    entry_val = _parse_num(row_values[5 if has_comp else 4])
     
     exit_val = round(exit_price * qty, 2)
     cfg = get_fee_and_tax_config(account)
@@ -734,17 +862,20 @@ def close_position(sh: gspread.Spreadsheet, row_idx: int, exit_price: float, exi
     net_return_pct = charges["net_return_pct"]
     date_str = datetime.now().strftime("%d-%b-%Y")
     
+    col_start = "J" if has_comp else "I"
+    col_idx_start = ord(col_start)
+
     update_data = [
-        {"range": f"I{row_idx}", "values": [["CLOSED"]]},
-        {"range": f"J{row_idx}", "values": [[date_str]]},
-        {"range": f"K{row_idx}", "values": [[round(exit_price, 2)]]},
-        {"range": f"L{row_idx}", "values": [[round(exit_val, 2)]]},
-        {"range": f"M{row_idx}", "values": [[round(gross_pnl, 2)]]},
-        {"range": f"N{row_idx}", "values": [[exit_reason]]},
-        {"range": f"O{row_idx}", "values": [[round(total_charges, 2)]]},
-        {"range": f"P{row_idx}", "values": [[round(net_pnl, 2)]]},
-        {"range": f"Q{row_idx}", "values": [[round(est_tax, 2)]]},
-        {"range": f"R{row_idx}", "values": [[round(net_return_pct / 100.0, 4)]]}
+        {"range": f"{chr(col_idx_start)}{row_idx}", "values": [["CLOSED"]]},
+        {"range": f"{chr(col_idx_start+1)}{row_idx}", "values": [[date_str]]},
+        {"range": f"{chr(col_idx_start+2)}{row_idx}", "values": [[round(exit_price, 2)]]},
+        {"range": f"{chr(col_idx_start+3)}{row_idx}", "values": [[round(exit_val, 2)]]},
+        {"range": f"{chr(col_idx_start+4)}{row_idx}", "values": [[round(gross_pnl, 2)]]},
+        {"range": f"{chr(col_idx_start+5)}{row_idx}", "values": [[exit_reason]]},
+        {"range": f"{chr(col_idx_start+6)}{row_idx}", "values": [[round(total_charges, 2)]]},
+        {"range": f"{chr(col_idx_start+7)}{row_idx}", "values": [[round(net_pnl, 2)]]},
+        {"range": f"{chr(col_idx_start+8)}{row_idx}", "values": [[round(est_tax, 2)]]},
+        {"range": f"{chr(col_idx_start+9)}{row_idx}", "values": [[round(net_return_pct / 100.0, 4)]]}
     ]
     retry_gspread(ws.batch_update, update_data)
     
@@ -777,19 +908,21 @@ def close_position(sh: gspread.Spreadsheet, row_idx: int, exit_price: float, exi
 def execute_partial_exit(sh: gspread.Spreadsheet, row_idx: int, exit_price: float, current_qty: int, exit_qty: int, target_2_price: float) -> str:
     """
     Strategy 3 Milestone: Target 1 Hit (50% Partial Lock)
-    1. Updates row `row_idx` to reflect closed 50% tranche (cols D, E, I-R).
+    1. Updates row `row_idx` to reflect closed 50% tranche.
     2. Appends new row for remaining 50% runner (Quantity = remaining_qty, Status = OPEN, SL = True Cost Break-Even, Target = Target 2).
     3. Credits cash and updates realized PnL, charges, and tax metrics.
     """
     holdings_name, _, _ = get_worksheet_names(sh)
     ws = sh.worksheet(holdings_name)
     account = get_account_details(sh)
+    headers = ws.row_values(1)
+    has_comp = "Company Name" in headers
     
     row_values = ws.row_values(row_idx)
     ticker = row_values[0]
-    entry_date = row_values[1]
-    entry_price = _parse_num(row_values[2])
-    initial_sl = _parse_num(row_values[5])
+    entry_date = row_values[2 if has_comp else 1]
+    entry_price = _parse_num(row_values[3 if has_comp else 2])
+    initial_sl = _parse_num(row_values[6 if has_comp else 5])
     
     closed_val = round(exit_price * exit_qty, 2)
     closed_entry_val = round(entry_price * exit_qty, 2)
@@ -802,20 +935,25 @@ def execute_partial_exit(sh: gspread.Spreadsheet, row_idx: int, exit_price: floa
     net_return_pct = charges["net_return_pct"]
     date_str = datetime.now().strftime("%d-%b-%Y")
     
-    # 1. Update row_idx to closed 50% tranche (cols D, E, I-R)
+    # 1. Update row_idx to closed 50% tranche
+    col_start = "J" if has_comp else "I"
+    col_idx_start = ord(col_start)
+    qty_col = "E" if has_comp else "D"
+    val_col = "F" if has_comp else "E"
+
     update_data = [
-        {"range": f"D{row_idx}", "values": [[exit_qty]]},
-        {"range": f"E{row_idx}", "values": [[round(closed_entry_val, 2)]]},
-        {"range": f"I{row_idx}", "values": [["CLOSED"]]},
-        {"range": f"J{row_idx}", "values": [[date_str]]},
-        {"range": f"K{row_idx}", "values": [[round(exit_price, 2)]]},
-        {"range": f"L{row_idx}", "values": [[round(closed_val, 2)]]},
-        {"range": f"M{row_idx}", "values": [[round(gross_pnl, 2)]]},
-        {"range": f"N{row_idx}", "values": [["Target 1 Hit (50% Partial Lock)"]]},
-        {"range": f"O{row_idx}", "values": [[round(total_charges, 2)]]},
-        {"range": f"P{row_idx}", "values": [[round(net_pnl, 2)]]},
-        {"range": f"Q{row_idx}", "values": [[round(est_tax, 2)]]},
-        {"range": f"R{row_idx}", "values": [[round(net_return_pct / 100.0, 4)]]}
+        {"range": f"{qty_col}{row_idx}", "values": [[exit_qty]]},
+        {"range": f"{val_col}{row_idx}", "values": [[round(closed_entry_val, 2)]]},
+        {"range": f"{chr(col_idx_start)}{row_idx}", "values": [["CLOSED"]]},
+        {"range": f"{chr(col_idx_start+1)}{row_idx}", "values": [[date_str]]},
+        {"range": f"{chr(col_idx_start+2)}{row_idx}", "values": [[round(exit_price, 2)]]},
+        {"range": f"{chr(col_idx_start+3)}{row_idx}", "values": [[round(closed_val, 2)]]},
+        {"range": f"{chr(col_idx_start+4)}{row_idx}", "values": [[round(gross_pnl, 2)]]},
+        {"range": f"{chr(col_idx_start+5)}{row_idx}", "values": [["Target 1 Hit (50% Partial Lock)"]]},
+        {"range": f"{chr(col_idx_start+6)}{row_idx}", "values": [[round(total_charges, 2)]]},
+        {"range": f"{chr(col_idx_start+7)}{row_idx}", "values": [[round(net_pnl, 2)]]},
+        {"range": f"{chr(col_idx_start+8)}{row_idx}", "values": [[round(est_tax, 2)]]},
+        {"range": f"{chr(col_idx_start+9)}{row_idx}", "values": [[round(net_return_pct / 100.0, 4)]]}
     ]
     retry_gspread(ws.batch_update, update_data)
     
@@ -823,11 +961,20 @@ def execute_partial_exit(sh: gspread.Spreadsheet, row_idx: int, exit_price: floa
     remaining_qty = current_qty - exit_qty
     runner_entry_val = round(entry_price * remaining_qty, 2)
     true_break_even_sl = calculate_true_break_even_price(entry_price, remaining_qty, config=cfg)
-    runner_row = [
-        ticker, entry_date, round(entry_price, 2), remaining_qty, runner_entry_val,
-        round(initial_sl, 2), round(true_break_even_sl, 2), f"T2: {target_2_price:.1f}", "OPEN", "", "", "", "", "",
-        "", "", "", ""
-    ]
+    comp_name = get_company_name(ticker)
+
+    if has_comp:
+        runner_row = [
+            ticker, comp_name, entry_date, round(entry_price, 2), remaining_qty, runner_entry_val,
+            round(initial_sl, 2), round(true_break_even_sl, 2), f"T2: {target_2_price:.1f}", "OPEN", "", "", "", "", "",
+            "", "", "", ""
+        ]
+    else:
+        runner_row = [
+            ticker, entry_date, round(entry_price, 2), remaining_qty, runner_entry_val,
+            round(initial_sl, 2), round(true_break_even_sl, 2), f"T2: {target_2_price:.1f}", "OPEN", "", "", "", "", "",
+            "", "", "", ""
+        ]
     retry_gspread(ws.append_row, runner_row)
     
     # 3. Credit cash and update account metrics
@@ -869,21 +1016,26 @@ def sync_portfolio(sh: Optional[gspread.Spreadsheet] = None, macro_data: Optiona
     holdings_name, _, _ = get_worksheet_names(sh)
     ws = sh.worksheet(holdings_name)
     all_rows = ws.get_all_values()
+    headers = all_rows[0] if all_rows else []
+    has_comp = "Company Name" in headers
+    status_col_idx = headers.index("Status") if "Status" in headers else (9 if has_comp else 8)
+    sl_col_idx = headers.index("Current SL") + 1 if "Current SL" in headers else (8 if has_comp else 7)
     
     open_positions = []
     for idx, r in enumerate(all_rows[1:], start=2):
-        if len(r) >= 9 and r[8].strip().upper() == "OPEN":
+        if len(r) > status_col_idx and r[status_col_idx].strip().upper() == "OPEN":
             try:
                 open_positions.append({
                     "row_idx": idx,
                     "Ticker": r[0].strip(),
-                    "Entry Date": r[1].strip(),
-                    "Entry Price": _parse_num(r[2]),
-                    "Quantity": int(_parse_num(r[3])),
-                    "Entry Value": _parse_num(r[4]),
-                    "Initial SL": _parse_num(r[5]),
-                    "Current SL": _parse_num(r[6]),
-                    "Target": r[7].strip()
+                    "Company Name": r[1].strip() if has_comp and len(r) > 1 else get_company_name(r[0]),
+                    "Entry Date": r[2 if has_comp else 1].strip() if len(r) > (2 if has_comp else 1) else "",
+                    "Entry Price": _parse_num(r[3 if has_comp else 2]),
+                    "Quantity": int(_parse_num(r[4 if has_comp else 3])),
+                    "Entry Value": _parse_num(r[5 if has_comp else 4]),
+                    "Initial SL": _parse_num(r[6 if has_comp else 5]),
+                    "Current SL": _parse_num(r[7 if has_comp else 6]),
+                    "Target": r[8 if has_comp else 7].strip() if len(r) > (8 if has_comp else 7) else ""
                 })
             except Exception as e:
                 print(f"Notice parsing open position row {idx}: {e}")
@@ -980,7 +1132,7 @@ def sync_portfolio(sh: Optional[gspread.Spreadsheet] = None, macro_data: Optiona
             # Trailing Stop: 20 EMA
             if ema_20 > cur_sl:
                 new_sl = round(ema_20, 2)
-                retry_gspread(ws.update_cell, row_idx, 7, str(new_sl))
+                retry_gspread(ws.update_cell, row_idx, sl_col_idx, str(new_sl))
                 logs.append(f"Updated Trailing Stop for {t} from ₹{cur_sl:.2f} to 20 EMA (₹{new_sl:.2f})")
                 cur_sl = new_sl
 
