@@ -720,7 +720,7 @@ def get_closed_trades() -> List[Dict[str, Any]]:
 
 def calculate_position_size(entry_price: float, atr: float, portfolio_value: float, available_cash: float) -> int:
     """
-    Position sizing for Strategy 3:
+    Position sizing for ETF Strategy 1:
     Dynamically reads 'Risk Percent' from the Google Sheet 'Account' tab (default 6.0% = 0.06).
     Allocates ~6% of portfolio capital per trade, enforcing even share quantities (>= 2)
     to support seamless dual-tranche 50% partial profit locking on Target 1.
@@ -928,7 +928,7 @@ def close_position(sh: gspread.Spreadsheet, row_idx: int, exit_price: float, exi
 
 def execute_partial_exit(sh: gspread.Spreadsheet, row_idx: int, exit_price: float, current_qty: int, exit_qty: int, target_2_price: float) -> str:
     """
-    Strategy 3 Milestone: Target 1 Hit (50% Partial Lock)
+    ETF Strategy 1 Milestone: Target 1 Hit (50% Partial Lock)
     1. Updates row `row_idx` to reflect closed 50% tranche.
     2. Appends new row for remaining 50% runner (Quantity = remaining_qty, Status = OPEN, SL = True Cost Break-Even, Target = Target 2).
     3. Credits cash and updates realized PnL, charges, and tax metrics.
@@ -1025,7 +1025,7 @@ def execute_partial_exit(sh: gspread.Spreadsheet, row_idx: int, exit_price: floa
 
 def sync_portfolio(sh: Optional[gspread.Spreadsheet] = None, macro_data: Optional[Dict[str, Any]] = None) -> List[str]:
     """
-    Syncs live prices for open positions, checks Strategy 3 exit conditions (T1 50% partial lock, T2 runner, 20 EMA trailing SL),
+    Syncs live prices for open positions, checks ETF Strategy 1 exit conditions (T1 50% partial lock, T2 runner, 20 EMA trailing SL),
     and updates Total Portfolio Value.
     """
     if sh is None:

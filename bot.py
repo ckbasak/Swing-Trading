@@ -121,18 +121,19 @@ def is_market_hours() -> bool:
 def get_main_keyboard() -> InlineKeyboardMarkup:
     keyboard = [
         [
-            InlineKeyboardButton("🔍 Run Market Scan", callback_data="cmd_scan"),
-            InlineKeyboardButton("🌐 Market Sentiment", callback_data="cmd_news")
+            InlineKeyboardButton("📊 System & Status", callback_data="cmd_status"),
+            InlineKeyboardButton("🔍 Run ETF Scan", callback_data="cmd_scan")
         ],
         [
-            InlineKeyboardButton("📈 Open Positions", callback_data="cmd_positions"),
+            InlineKeyboardButton("📈 Open Holdings", callback_data="cmd_positions"),
             InlineKeyboardButton("🏦 Portfolio Summary", callback_data="cmd_summary")
         ],
         [
-            InlineKeyboardButton("🤝 Trade History", callback_data="cmd_history"),
+            InlineKeyboardButton("🌐 Market Sentiment", callback_data="cmd_news"),
             InlineKeyboardButton("📅 Scan Schedules", callback_data="cmd_schedules")
         ],
         [
+            InlineKeyboardButton("🤝 Trade History", callback_data="cmd_history"),
             InlineKeyboardButton("🏆 Curated Pool", callback_data="cmd_pool")
         ]
     ]
@@ -145,20 +146,21 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     register_chat(chat_id)
     
     welcome_text = (
-        "🤖 **Welcome to AI Swing Trade Bot (System #3 - Hybrid Optimal)!** 🤖\n\n"
-        "You are registered for automated daily market breakout scans (**3:25 PM IST**) and intraday exit alerts.\n\n"
+        "🤖 **Welcome to AI Swing Trade Bot (ETF Strategy 1)!** 🤖\n\n"
+        "You are registered for automated daily ETF market breakout scans (**3:25 PM IST**) and intraday exit alerts.\n\n"
         "⚡ **ETF Strategy 1 Key Rules:**\n"
-        "• **Universe**: Curated High-Performing Indian Equities\n"
-        "• **Volume Conviction**: > 2.25x 20-day Vol SMA\n"
-        "• **Target 1 (50% Lock)**: +2.0x ATR (~+6-7% gain)\n"
+        "• **Universe**: Curated High-Performing Liquid NSE ETFs (20 Scrips)\n"
+        "• **Volume Conviction**: > 1.15x 20-day Volume SMA\n"
+        "• **Target 1 (50% Lock)**: +2.0x ATR (~+5-7% gain)\n"
         "• **Break-Even Guard**: Stop moves to Entry Price after T1!\n"
         "• **Target 2 (Runner)**: 20 EMA Trailing up to +4.5x ATR\n"
-        "• **Sector Limit**: Max 3 positions per industry\n\n"
+        "• **Max Allocation**: 4 to 10 positions (max 2 per thematic bucket)\n\n"
         "**Available Commands:**\n"
-        "• `/scan` - Run breakout scan in preview mode\n"
+        "• `/status` - Portfolio valuation, cash & active ETF holdings\n"
+        "• `/scan` - Run ETF breakout scan in preview mode\n"
         "• `/news` - Comprehensive Market Sentiment & Macro Guardrails\n"
-        "• `/news <TICKER>` - Stock News & Market Sentiment (e.g. `/news RELIANCE`)\n"
-        "• `/positions` - View active Strategy #3 holdings & trailing stops\n"
+        "• `/news <TICKER>` - Stock News & Market Sentiment (e.g. `/news NIFTYBEES`)\n"
+        "• `/positions` - View active ETF holdings & trailing stops\n"
         "• `/summary` - View account balance & risk allocation\n"
         "• `/history` - View closed trades & partial exits\n"
         "• `/schedules` - View Google Sheets scan schedules\n\n"
@@ -172,7 +174,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def menu_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "🎛️ **Main Control Menu (Strategy #3):**", 
+        "🎛️ **Main Control Menu (ETF Strategy 1):**", 
         reply_markup=get_main_keyboard(), 
         parse_mode="Markdown"
     )
@@ -182,7 +184,7 @@ async def scan_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
     mode_text = "Live Market Scan" if in_market else "After-Market (AMO) Scan"
     await context.bot.send_message(
         chat_id=chat_id, 
-        text=f"🔍 **Executing {mode_text} (Strategy #3)...** Scanning Curated universe (Preview Mode)."
+        text=f"🔍 **Executing {mode_text} (ETF Strategy 1)...** Scanning Curated universe (Preview Mode)."
     )
     
     loop = asyncio.get_event_loop()
@@ -251,7 +253,7 @@ async def positions_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
             except Exception as e:
                 logger.error(f"Dhan positions quote error: {e}")
 
-        msg = f"📊 **Current Open Positions ({len(open_pos)}) — Strategy #3:**\n"
+        msg = f"📊 **Current Open Positions ({len(open_pos)}) — ETF Strategy 1:**\n"
         msg += f"📡 *Price Feed: {quote_source}*\n\n"
         
         for idx, p in enumerate(open_pos, 1):
@@ -291,6 +293,108 @@ async def positions_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
 
 async def positions_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await positions_action(update.effective_chat.id, context)
+
+async def status_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
+    tz = pytz.timezone("Asia/Kolkata")
+    now = datetime.datetime.now(tz)
+    loop = asyncio.get_event_loop()
+    
+    try:
+        client = await loop.run_in_executor(None, portfolio_manager.get_gspread_client)
+        sh = await loop.run_in_executor(None, lambda: portfolio_manager.get_or_create_portfolio_sheet(client))
+        acc = await loop.run_in_executor(None, lambda: portfolio_manager.get_account_summary(sh))
+        open_pos = await loop.run_in_executor(None, lambda: portfolio_manager.get_open_positions(sh))
+    except Exception as e:
+        logger.error(f"Error fetching status data: {e}")
+        acc = portfolio_manager.get_account_summary()
+        open_pos = portfolio_manager.get_open_positions()
+
+    in_market = is_market_hours()
+    market_str = "🟢 Live Market Open" if in_market else "🌙 Market Closed (AMO Mode)"
+
+    lines = [
+        "📊 **ETF Strategy 1 — System & Portfolio Status**",
+        f"⏱️ *As of:* `{now.strftime('%Y-%m-%d %H:%M:%S IST')}`",
+        f"🏛️ *Market Session:* {market_str}",
+        "══════════════════════════════════════",
+        "💼 **Capital & Valuation:**",
+        f"• *Initial Capital*: `₹{acc.get('initial_capital', 100000.0):,.2f}`",
+        f"• *Portfolio Value*: `₹{acc.get('portfolio_value', 100000.0):,.2f}`",
+        f"• *Available Cash*: `₹{acc.get('cash', 100000.0):,.2f}`",
+        f"• *Realized PnL*: `₹{acc.get('realized_pnl', 0.0):+,.2f}`",
+        f"• *Net Take-Home*: `₹{acc.get('net_take_home_pnl', 0.0):+,.2f}`",
+        f"• *Total Return*: `{acc.get('net_return_pct', 0.0):+.2f}%`",
+        "──────────────────────────────",
+        f"📈 **Active ETF Holdings ({len(open_pos)}/10):**"
+    ]
+
+    if not open_pos:
+        lines.append("• *No active ETF positions currently open.*")
+        lines.append("• 🛡️ *100% capital is in cash/liquid safety, waiting for high-conviction breakout signals.*")
+    else:
+        dhan_quotes = {}
+        if dhan_client.is_dhan_configured():
+            try:
+                tickers = [p["Ticker"] for p in open_pos]
+                dhan_quotes = await loop.run_in_executor(None, dhan_client.get_dhan_ltp, tickers)
+            except Exception:
+                pass
+                
+        for idx, p in enumerate(open_pos, 1):
+            t = p.get("Ticker")
+            comp_name = screener.get_company_name(t)
+            qty = p.get("Quantity")
+            entry = float(p.get("Entry Price", 0))
+            sl = float(p.get("Current SL", 0))
+            t1 = p.get("Target", "N/A")
+            t2 = p.get("Target 2", "N/A")
+            current_p = dhan_quotes.get(t, entry)
+            unreal_pnl = (current_p - entry) * int(qty)
+            unreal_pct = ((current_p - entry) / entry) * 100.0 if entry > 0 else 0.0
+            pnl_emoji = "🟢" if unreal_pnl >= 0 else "🔴"
+            is_runner = sl >= entry
+            badge = "🛡️ FREE RUNNER" if is_runner else "🎯 Aiming for T1"
+
+            lines.append(f"{idx}. *{t.replace('.NS', '')}* ({comp_name})")
+            lines.append(f"   • Qty: `{qty}` | Entry: `₹{entry:.2f}` | LTP: `₹{current_p:.2f}`")
+            lines.append(f"   • SL: `₹{sl:.2f}` | T1: `{t1}` | T2: `{t2}`")
+            lines.append(f"   • PnL: {pnl_emoji} `₹{unreal_pnl:+,.2f}` (`{unreal_pct:+.2f}%`) | {badge}")
+
+    lines.extend([
+        "──────────────────────────────",
+        "🤖 **Autonomous Automation:**",
+        "• `08:00 AM IST`: Morning ETF Breakout Scan",
+        "• `08:15 AM & 16:15 IST`: Regulatory Sentinel",
+        "• `15:25 PM IST`: Market Close Execution Scan",
+        "• `Every 60s`: Dynamic Google Sheets Scheduler",
+        "══════════════════════════════════════"
+    ])
+
+    keyboard = [
+        [
+            InlineKeyboardButton("🔍 Scan ETFs Now", callback_data="cmd_scan"),
+            InlineKeyboardButton("📈 Open Holdings", callback_data="cmd_positions")
+        ],
+        [
+            InlineKeyboardButton("🏦 Full Account Summary", callback_data="cmd_summary"),
+            InlineKeyboardButton("🌐 Macro Sentiment", callback_data="cmd_news")
+        ],
+        [
+            InlineKeyboardButton("🎛️ Main Menu", callback_data="cmd_menu")
+        ]
+    ]
+
+    await context.bot.send_message(
+        chat_id=chat_id,
+        text="\n".join(lines),
+        reply_markup=InlineKeyboardMarkup(keyboard),
+        parse_mode="Markdown"
+    )
+
+async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+    register_chat(chat_id)
+    await status_action(chat_id, context)
 
 async def history_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
     loop = asyncio.get_event_loop()
@@ -354,7 +458,7 @@ async def schedules_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
     
     await context.bot.send_message(
         chat_id=chat_id,
-        text=f"⏳ *Checking Strategy #3 Google Sheets scan schedules as of {now.strftime('%H:%M:%S IST')}...*",
+        text=f"⏳ *Checking ETF Strategy 1 Google Sheets scan schedules as of {now.strftime('%H:%M:%S IST')}...*",
         parse_mode="Markdown"
     )
     
@@ -368,7 +472,7 @@ async def schedules_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
             await context.bot.send_message(
                 chat_id=chat_id,
                 text="ℹ️ No pending schedules found in Google Sheets (`Schedules` worksheet).",
-                reply_markup=get_main_menu_keyboard()
+                reply_markup=get_main_keyboard()
             )
             return
             
@@ -387,7 +491,7 @@ async def schedules_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(
             chat_id=chat_id,
             text=msg,
-            reply_markup=get_main_menu_keyboard(),
+            reply_markup=get_main_keyboard(),
             parse_mode="Markdown"
         )
     except Exception as e:
@@ -413,13 +517,13 @@ async def checkrates_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
         sh = await loop.run_in_executor(None, lambda: portfolio_manager.get_or_create_portfolio_sheet(client))
         report = await loop.run_in_executor(None, lambda: tax_sentinel.run_sentinel_cycle(sh))
         cfg = await loop.run_in_executor(None, lambda: portfolio_manager.get_fee_and_tax_config(sh, force_refresh=True))
-        text = tax_sentinel.format_sentinel_status_message(report, cfg, strategy_num=3)
+        text = tax_sentinel.format_sentinel_status_message(report, cfg, strategy_num=1)
         
-        kb = get_main_keyboard() if "get_main_keyboard" in globals() else get_main_menu_keyboard()
+        kb = get_main_keyboard()
         await status_msg.edit_text(text=text, reply_markup=kb, parse_mode="Markdown")
     except Exception as e:
         logger.error(f"Error in checkrates_action: {e}")
-        kb = get_main_keyboard() if "get_main_keyboard" in globals() else get_main_menu_keyboard()
+        kb = get_main_keyboard()
         await status_msg.edit_text(text=f"❌ Error scanning regulatory news: {e}", reply_markup=kb)
 
 async def checkrates_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -430,7 +534,7 @@ async def rates_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
     try:
         cfg = await loop.run_in_executor(None, lambda: portfolio_manager.get_fee_and_tax_config(force_refresh=True))
         lines = [
-            f"🏛️ **Active Regulatory Charges & Tax Schedule (Strategy #3)**",
+            f"🏛️ **Active Regulatory Charges & Tax Schedule (ETF Strategy 1)**",
             "────────────────────────────",
             f"• **STT (Buy Turnover)**: `{cfg['stt_buy_pct']:.3f}%`",
             f"• **STT (Sell Turnover)**: `{cfg['stt_sell_pct']:.3f}%`",
@@ -465,7 +569,7 @@ async def summary_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
     acc = portfolio_manager.get_account_summary()
     holdings = portfolio_manager.get_open_positions()
     lines = [
-        "💼 *ACCOUNT & PERFORMANCE SUMMARY (Strategy #3)*",
+        "💼 *ACCOUNT & PERFORMANCE SUMMARY (ETF Strategy 1)*",
         "══════════════════════════════════════",
         f"• *Strategy*: ETF Strategy 1 (Systematic ETF Dual-Target Swing)",
         f"• *Initial Capital*: ₹{acc.get('initial_capital', 100000):,.2f}",
@@ -498,16 +602,16 @@ async def summary_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def pool_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id if hasattr(update, 'effective_chat') and update.effective_chat else update.callback_query.message.chat_id
-    pool_setting = os.environ.get("ACTIVE_STOCK_POOL", "curated_pool_top_50.csv")
-    tickers = screener.get_curated_tickers("top_50" if "50" in pool_setting else "top_101")
+    pool_setting = os.environ.get("ACTIVE_STOCK_POOL", "curated_etf_pool.csv")
+    tickers = screener.get_etf_tickers()
     lines = [
-        f"🏆 *CURATED STOCK UNIVERSE (Strategy #3)*",
+        f"🏆 *CURATED ETF UNIVERSE (ETF Strategy 1)*",
         "══════════════════════════════════════",
-        f"Active Pool: *{'Liquid ETF Universe' if '50' in pool_setting else 'Liquid ETF Universe'}*",
-        f"Total Constituents: *{len(tickers)} stocks*",
+        f"Active Pool: *Liquid NSE ETF Universe*",
+        f"Total Constituents: *{len(tickers)} ETFs*",
         "Top Constituents Sample: " + ", ".join(tickers[:12]) + "...",
-        "\n*Why Curated Pools?*",
-        "Outperformed benchmark NIFTY 50 by over +300% in backtests!"
+        "\n*Why Curated ETFs?*",
+        "Broad-market and thematic ETFs eliminate single-stock bankruptcy risk while capturing explosive trend moves with minimal expense ratios!"
     ]
     await context.bot.send_message(chat_id=chat_id, text="\n".join(lines), reply_markup=get_main_keyboard(), parse_mode="Markdown")
 
@@ -552,7 +656,9 @@ async def menu_button_callback(update: Update, context: ContextTypes.DEFAULT_TYP
     chat_id = update.effective_chat.id
     action = query.data
     
-    if action == "cmd_scan":
+    if action == "cmd_status":
+        await status_action(chat_id, context)
+    elif action == "cmd_scan":
         await scan_action(chat_id, context)
     elif action == "cmd_positions":
         await positions_action(chat_id, context)
@@ -627,7 +733,7 @@ async def menu_button_callback(update: Update, context: ContextTypes.DEFAULT_TYP
     elif action == "cmd_menu":
         await context.bot.send_message(
             chat_id=chat_id,
-            text="🎛️ **Main Control Menu (Strategy #3):**",
+            text="🎛️ **Main Control Menu (ETF Strategy 1):**",
             reply_markup=get_main_keyboard()
         )
 
@@ -695,7 +801,7 @@ async def check_google_sheets_schedules_job(context: ContextTypes.DEFAULT_TYPE):
                         )
                         macro_rep = sentiment_analyzer.format_macro_sentiment_report(macro_data)
                         header = (
-                            f"🌐 *Dynamic Scheduled Market Sentiment Briefing (Google Sheets Trigger) — Strategy #3*\n"
+                            f"🌐 *Dynamic Scheduled Market Sentiment Briefing (Google Sheets Trigger) — ETF Strategy 1*\n"
                             f"📅 Schedule: `{date_val}` at `{time_val} IST` | Mode: `{mode}`\n\n"
                         )
                         full_report = header + macro_rep
@@ -717,7 +823,7 @@ async def check_google_sheets_schedules_job(context: ContextTypes.DEFAULT_TYPE):
                             lambda: trading_graph.run_trading_system(execute_trades=execute_trades)
                         )
                         header = (
-                            f"⏰ *Dynamic Scheduled Scan Report (Google Sheets Trigger) — Strategy #3*\n"
+                            f"⏰ *Dynamic Scheduled Scan Report (Google Sheets Trigger) — ETF Strategy 1*\n"
                             f"📅 Schedule: `{date_val}` at `{time_val} IST` | Mode: `{mode}`\n"
                         )
                         in_market = is_market_hours()
@@ -800,7 +906,7 @@ async def market_hours_sync_job(context: ContextTypes.DEFAULT_TYPE):
                     for log in exit_logs:
                         await context.bot.send_message(
                             chat_id=cid, 
-                            text=f"🔔 **Intraday Exit Alert (Strategy #3):**\n{log}", 
+                            text=f"🔔 **Intraday Exit Alert (ETF Strategy 1):**\n{log}", 
                             reply_markup=get_main_keyboard(), 
                             parse_mode="Markdown"
                         )
@@ -813,7 +919,7 @@ async def regulatory_sentinel_job(context: ContextTypes.DEFAULT_TYPE):
     If an official statutory revision is enacted, updates Google Sheets, recalculates taxes,
     and broadcasts an urgent alert to all registered Telegram chats.
     """
-    logger.info(f"Starting scheduled Regulatory & Tax Sentinel news check (Strategy #3)...")
+    logger.info(f"Starting scheduled Regulatory & Tax Sentinel news check (ETF Strategy 1)...")
     loop = asyncio.get_event_loop()
     try:
         client = await loop.run_in_executor(None, portfolio_manager.get_gspread_client)
@@ -822,9 +928,9 @@ async def regulatory_sentinel_job(context: ContextTypes.DEFAULT_TYPE):
         
         if report.get("has_official_change") and report.get("changes_detected"):
             cfg = await loop.run_in_executor(None, lambda: portfolio_manager.get_fee_and_tax_config(sh, force_refresh=True))
-            alert_text = tax_sentinel.format_sentinel_status_message(report, cfg, strategy_num=3)
+            alert_text = tax_sentinel.format_sentinel_status_message(report, cfg, strategy_num=1)
             chat_ids = await loop.run_in_executor(None, get_registered_chats)
-            kb = get_main_keyboard() if "get_main_keyboard" in globals() else get_main_menu_keyboard()
+            kb = get_main_keyboard()
             for cid in chat_ids:
                 try:
                     await context.bot.send_message(
@@ -841,7 +947,7 @@ async def regulatory_sentinel_job(context: ContextTypes.DEFAULT_TYPE):
         logger.error(f"Error in regulatory_sentinel_job: {e}")
 
 async def render_keep_alive_job(context: ContextTypes.DEFAULT_TYPE):
-    render_url = os.environ.get("RENDER_EXTERNAL_URL") or os.environ.get("RENDER_SERVICE_URL") or "https://ai-swing-trade-3.onrender.com"
+    render_url = os.environ.get("RENDER_EXTERNAL_URL") or os.environ.get("RENDER_SERVICE_URL") or "https://etf-swing-trade-1.onrender.com"
     target = f"{render_url.rstrip('/')}/_stcore/health"
     loop = asyncio.get_running_loop()
     try:
@@ -854,14 +960,16 @@ async def render_keep_alive_job(context: ContextTypes.DEFAULT_TYPE):
 
 async def post_init_setup(application: Application):
     commands = [
+        BotCommand("status", "📊 System & Portfolio Status"),
         BotCommand("menu", "🎛️ Show Interactive Button Menu"),
-        BotCommand("scan", "🔍 Run Strategy #3 Scan (Preview)"),
+        BotCommand("scan", "🔍 Run ETF Breakout Scan (Preview)"),
+        BotCommand("positions", "📈 Active ETF Holdings"),
+        BotCommand("summary", "🏦 Account Balance & Performance"),
         BotCommand("news", "🌐 Market Sentiment & Macro Guardrails"),
-        BotCommand("positions", "📈 Strategy #3 Open Holdings"),
-        BotCommand("history", "🤝 Strategy #3 Closed Trades"),
+        BotCommand("history", "🤝 Closed Trades & Exits"),
         BotCommand("schedules", "📅 View Scan Schedules"),
-        BotCommand("summary", "🏦 Strategy #3 Summary"),
         BotCommand("rates", "🏛️ Statutory Fee & Tax Rates"),
+        BotCommand("pool", "🏆 Curated ETF Universe"),
         BotCommand("start", "🚀 Start & Register Chat")
     ]
     try:
@@ -882,6 +990,7 @@ def main():
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CommandHandler("help", start_command))
     app.add_handler(CommandHandler("menu", menu_command))
+    app.add_handler(CommandHandler(["status", "portfolio", "balance"], status_command))
     app.add_handler(CommandHandler("scan", scan_command))
     app.add_handler(CommandHandler(["news", "sentiment"], news_command))
     app.add_handler(CommandHandler(["positions", "position"], positions_command))
@@ -899,57 +1008,57 @@ def main():
         # 1. Morning Scan Job at 8:00 AM IST daily
         morning_time = datetime.time(hour=8, minute=0, second=0, tzinfo=tz)
         app.job_queue.run_daily(
-        daily_scan_job,
-        time=morning_time,
-        days=(0, 1, 2, 3, 4, 5, 6),
-        name="morning_scan_8am",
-        job_kwargs={"misfire_grace_time": 180}
-    )
-    logger.info("Morning scan job scheduled for 08:00 IST daily.")
+            daily_scan_job,
+            time=morning_time,
+            days=(0, 1, 2, 3, 4, 5, 6),
+            name="morning_scan_8am",
+            job_kwargs={"misfire_grace_time": 180}
+        )
+        logger.info("Morning scan job scheduled for 08:00 IST daily.")
 
-    # Autonomous Regulatory Sentinel Jobs (8:15 AM & 4:15 PM IST)
-    app.job_queue.run_daily(
-        regulatory_sentinel_job,
-        time=datetime.time(hour=8, minute=15, second=0, tzinfo=tz),
-        days=(0, 1, 2, 3, 4, 5, 6),
-        name="sentinel_morning_check",
-        job_kwargs={"misfire_grace_time": 180}
-    )
-    app.job_queue.run_daily(
-        regulatory_sentinel_job,
-        time=datetime.time(hour=16, minute=15, second=0, tzinfo=tz),
-        days=(0, 1, 2, 3, 4),
-        name="sentinel_evening_check",
-        job_kwargs={"misfire_grace_time": 180}
-    )
-    logger.info("Autonomous Regulatory Sentinel scheduled (08:15 & 16:15 IST).")
+        # Autonomous Regulatory Sentinel Jobs (8:15 AM & 4:15 PM IST)
+        app.job_queue.run_daily(
+            regulatory_sentinel_job,
+            time=datetime.time(hour=8, minute=15, second=0, tzinfo=tz),
+            days=(0, 1, 2, 3, 4, 5, 6),
+            name="sentinel_morning_check",
+            job_kwargs={"misfire_grace_time": 180}
+        )
+        app.job_queue.run_daily(
+            regulatory_sentinel_job,
+            time=datetime.time(hour=16, minute=15, second=0, tzinfo=tz),
+            days=(0, 1, 2, 3, 4),
+            name="sentinel_evening_check",
+            job_kwargs={"misfire_grace_time": 180}
+        )
+        logger.info("Autonomous Regulatory Sentinel scheduled (08:15 & 16:15 IST).")
 
-    # 2. Dynamic Google Sheets Scan Scheduler (polls every 60s)
-    app.job_queue.run_repeating(
-        check_google_sheets_schedules_job,
-        interval=60,
-        first=15,
-        name="dynamic_sheets_scheduler",
-        job_kwargs={"misfire_grace_time": 45}
-    )
-    logger.info("Dynamic Google Sheets Scan Scheduler active (polling every 60s).")
+        # 2. Dynamic Google Sheets Scan Scheduler (polls every 60s)
+        app.job_queue.run_repeating(
+            check_google_sheets_schedules_job,
+            interval=60,
+            first=15,
+            name="dynamic_sheets_scheduler",
+            job_kwargs={"misfire_grace_time": 45}
+        )
+        logger.info("Dynamic Google Sheets Scan Scheduler active (polling every 60s).")
 
-    # 3. Market Close Scan Job at 3:25 PM IST (Mon-Fri)
-    time_to_run = datetime.time(hour=15, minute=25, second=0, tzinfo=tz)
-    app.job_queue.run_daily(
-        daily_scan_job, 
-        time=time_to_run,
-        days=(0, 1, 2, 3, 4),
-        name="closing_scan_325pm",
-        job_kwargs={"misfire_grace_time": 120}
-    )
-    logger.info("Market close scan job scheduled for 15:25 IST (Mon-Fri).")
-    
-    # 4. Repeating Intraday Sync every 5 minutes during market hours
-    app.job_queue.run_repeating(market_hours_sync_job, interval=300, first=10, job_kwargs={"misfire_grace_time": 60})
-    logger.info("Intraday market hours sync job scheduled (every 5 minutes).")
+        # 3. Market Close Scan Job at 3:25 PM IST (Mon-Fri)
+        time_to_run = datetime.time(hour=15, minute=25, second=0, tzinfo=tz)
+        app.job_queue.run_daily(
+            daily_scan_job, 
+            time=time_to_run,
+            days=(0, 1, 2, 3, 4),
+            name="closing_scan_325pm",
+            job_kwargs={"misfire_grace_time": 120}
+        )
+        logger.info("Market close scan job scheduled for 15:25 IST (Mon-Fri).")
+        
+        # 4. Repeating Intraday Sync every 5 minutes during market hours
+        app.job_queue.run_repeating(market_hours_sync_job, interval=300, first=10, job_kwargs={"misfire_grace_time": 60})
+        logger.info("Intraday market hours sync job scheduled (every 5 minutes).")
 
-    # 5. Render Keep-Alive every 9 minutes
+        # 5. Render Keep-Alive every 9 minutes
         app.job_queue.run_repeating(render_keep_alive_job, interval=540, first=30, job_kwargs={"misfire_grace_time": 60})
         logger.info("Render keep-alive job scheduled (every 9 minutes).")
     else:

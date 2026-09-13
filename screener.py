@@ -54,7 +54,7 @@ def get_etf_tickers() -> List[str]:
     ]
 
 def get_curated_tickers(pool_type: str = "etf") -> List[str]:
-    """Compatibility alias for Strategy 3 runner."""
+    """Compatibility alias for ETF Strategy 1 runner."""
     return get_etf_tickers()
 
 def get_stock_sector(ticker: str) -> str:

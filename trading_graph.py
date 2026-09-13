@@ -22,7 +22,7 @@ class TradingState(TypedDict, total=False):
 
 def run_trading_system(execute_trades: bool = False, pool_type: str = "etf") -> Dict[str, Any]:
     """
-    Executes Strategy 3: Systematic ETF Dual-Target Swing Trading Pipeline
+    Executes ETF Strategy 1: Systematic ETF Dual-Target Swing Trading Pipeline
     1. Evaluates Global & Indian macro sentiment & guardrails.
     2. Syncs active open holdings & checks trailing stop updates.
     3. Scans high-conviction curated stock pool.
@@ -111,7 +111,7 @@ def run_trading_system(execute_trades: bool = False, pool_type: str = "etf") -> 
     # Node 4: Execute if enabled
     executed = []
     if execute_trades and trades_to_execute:
-        logs.append(f"Auto-executing {len(trades_to_execute)} new Strategy 3 trade(s)...")
+        logs.append(f"Auto-executing {len(trades_to_execute)} new ETF Strategy 1 trade(s)...")
         for trade in trades_to_execute:
             res = portfolio_manager.add_position(
                 ticker=trade["ticker"],
@@ -155,12 +155,12 @@ def format_scan_report(state: Dict[str, Any], is_scheduled: bool = False, is_amo
         
     report = []
     if is_scheduled:
-        report.append("⏰ **Scheduled Daily Scan Report (Auto-Execution) — Strategy #3**")
+        report.append("⏰ **Scheduled Daily Scan Report (Auto-Execution) — ETF Strategy 1**")
     else:
         if is_amo:
-            report.append("🌙 **Manual Market Scan Report (After-Market / AMO Mode) — Strategy #3**")
+            report.append("🌙 **Manual Market Scan Report (After-Market / AMO Mode) — ETF Strategy 1**")
         else:
-            report.append("🔍 **Manual Market Scan Report (Live Market Hours Preview) — Strategy #3**")
+            report.append("🔍 **Manual Market Scan Report (Live Market Hours Preview) — ETF Strategy 1**")
             
     report.append(f"📅 *Date: {date_str} | Time: {time_str}*")
     report.append(f"📡 *Data Engine: {source_badge}*")
