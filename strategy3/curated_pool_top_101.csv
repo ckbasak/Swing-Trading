@@ -1,0 +1,102 @@
+Rank,ticker,Company Name,source_index,sector,trades,wins,losses,win_rate,total_pnl,profit_factor,avg_pnl_pct
+1,GLAXO.NS,GlaxoSmithKline Pharmaceuticals Limited,NIFTY LargeMidcap 250,Healthcare,2,2,0,100.0,36517.8,99.0,17.56
+2,UNIONBANK.NS,Union Bank of India,NIFTY Next 50,Financial Services,4,4,0,100.0,28207.0,99.0,6.0
+3,FEDERALBNK.NS,The Federal Bank  Limited,NIFTY Bank,Financial Services,3,3,0,100.0,27546.06,99.0,7.38
+4,PNB.NS,Punjab National Bank,NIFTY Next 50,Financial Services,3,3,0,100.0,25728.77,99.0,6.0
+5,ADANIENSOL.NS,Adani Energy Solutions Limited,NIFTY Next 50,Power,3,3,0,100.0,22488.43,99.0,8.19
+6,CGPOWER.NS,CG Power and Industrial Solutions Limited,NIFTY Next 50,Capital Goods,2,2,0,100.0,22357.12,99.0,7.58
+7,TRENT.NS,Trent Limited,NIFTY LargeMidcap 250,Consumer Services,1,1,0,100.0,20364.9,99.0,15.96
+8,ENDURANCE.NS,Endurance Technologies Limited,NIFTY LargeMidcap 250,Automobile and Auto Components,1,1,0,100.0,19275.04,99.0,15.75
+9,BLS.NS,BLS International Services Limited,NIFTY Smallcap 250,Consumer Services,3,3,0,100.0,19055.44,99.0,4.08
+10,CUB.NS,City Union Bank Limited,NIFTY Smallcap 250,Financial Services,2,2,0,100.0,18948.44,99.0,6.0
+11,PGEL.NS,PG Electroplast Limited,NIFTY Smallcap 250,Consumer Durables,2,2,0,100.0,18252.28,99.0,6.0
+12,TMPV.NS,Tata Motors Passenger Vehicles Limited,NIFTY LargeMidcap 250,Automobile and Auto Components,1,1,0,100.0,16773.84,99.0,12.07
+13,NATCOPHARM.NS,Natco Pharma Limited,NIFTY Smallcap 250,Healthcare,3,2,1,66.7,15752.94,8.29,3.54
+14,GALLANTT.NS,Gallantt Ispat Limited,NIFTY Smallcap 250,Capital Goods,2,2,0,100.0,14827.21,99.0,6.0
+15,FIRSTCRY.NS,Brainbees Solutions Limited,NIFTY Smallcap 250,Consumer Services,2,2,0,100.0,14580.01,99.0,6.0
+16,JWL.NS,Jupiter Wagons Limited,NIFTY Smallcap 250,Capital Goods,4,2,2,50.0,13132.41,4.68,2.21
+17,ATUL.NS,Atul Limited,NIFTY Smallcap 250,Chemicals,1,1,0,100.0,13071.3,99.0,6.0
+18,TMCV.NS,Tata Motors Limited,NIFTY Next 50,Capital Goods,1,1,0,100.0,12981.2,99.0,7.6
+19,TEGA.NS,Tega Industries Limited,NIFTY Smallcap 250,Capital Goods,1,1,0,100.0,12821.16,99.0,6.0
+20,USHAMART.NS,Usha Martin Limited,NIFTY Smallcap 250,Capital Goods,2,2,0,100.0,12813.69,99.0,6.0
+21,SAGILITY.NS,SAGILITY LIMITED,NIFTY Smallcap 250,Information Technology,1,1,0,100.0,12613.76,99.0,6.0
+22,JSWCEMENT.NS,JSW Cement Limited,NIFTY Smallcap 250,Construction Materials,1,1,0,100.0,12533.8,99.0,6.0
+23,PVRINOX.NS,PVR INOX Limited,NIFTY Smallcap 250,Media Entertainment & Publication,1,1,0,100.0,12451.46,99.0,6.0
+24,ABLBL.NS,Aditya Birla Lifestyle Brands Limited,NIFTY Smallcap 250,Consumer Services,1,1,0,100.0,11895.47,99.0,6.0
+25,BANKBARODA.NS,Bank of Baroda,NIFTY Next 50,Financial Services,2,2,0,100.0,11808.88,99.0,6.0
+26,SONACOMS.NS,Sona BLW Precision Forgings Limited,NIFTY Smallcap 250,Automobile and Auto Components,3,1,2,33.3,11670.72,3.13,2.68
+27,DMART.NS,Avenue Supermarts Limited,NIFTY Next 50,Consumer Services,6,4,2,66.7,11495.72,2.48,3.16
+28,HINDUNILVR.NS,Hindustan Unilever Limited,NIFTY LargeMidcap 250,Fast Moving Consumer Goods,1,1,0,100.0,11285.85,99.0,7.01
+29,CANBK.NS,Canara Bank,NIFTY Next 50,Financial Services,3,2,1,66.7,10585.24,5.14,3.17
+30,JAINREC.NS,Jain Resource Recycling Limited,NIFTY Smallcap 250,Metals & Mining,1,1,0,100.0,10578.9,99.0,6.0
+31,PIRAMALFIN.NS,Piramal Finance Limited,NIFTY Smallcap 250,Financial Services,1,1,0,100.0,9981.59,99.0,6.0
+32,MAZDOCK.NS,Mazagon Dock Shipbuilders Limited,NIFTY Next 50,Capital Goods,2,2,0,100.0,9914.45,99.0,3.3
+33,COFORGE.NS,Coforge Limited,NIFTY LargeMidcap 250,Information Technology,2,1,1,50.0,9864.48,5.14,5.8
+34,ZYDUSWELL.NS,Zydus Wellness Limited,NIFTY Smallcap 250,Fast Moving Consumer Goods,1,1,0,100.0,9537.42,99.0,6.0
+35,CHOLAFIN.NS,Cholamandalam Investment and Finance Company Limited,NIFTY Next 50,Financial Services,1,1,0,100.0,9310.86,99.0,6.0
+36,OFSS.NS,Oracle Financial Services Software Limited,NIFTY LargeMidcap 250,Information Technology,2,1,1,50.0,9242.9,2.34,3.36
+37,EIHOTEL.NS,EIH Limited,NIFTY Smallcap 250,Consumer Services,1,1,0,100.0,9191.16,99.0,6.0
+38,MINDACORP.NS,Minda Corporation Limited,NIFTY Smallcap 250,Automobile and Auto Components,1,1,0,100.0,9154.94,99.0,6.0
+39,ENRIN.NS,Siemens Energy India Limited,NIFTY Next 50,Capital Goods,1,1,0,100.0,9133.34,99.0,6.0
+40,SBFC.NS,SBFC Finance Limited,NIFTY Smallcap 250,Financial Services,1,1,0,100.0,9125.69,99.0,6.0
+41,KPIL.NS,Kalpataru Projects International Limited,NIFTY Smallcap 250,Construction,1,1,0,100.0,8886.01,99.0,7.72
+42,LTFOODS.NS,LT Foods Limited,NIFTY Smallcap 250,Fast Moving Consumer Goods,1,1,0,100.0,8676.78,99.0,6.0
+43,ARE&M.NS,Amara Raja Energy & Mobility Limited,NIFTY Smallcap 250,Automobile and Auto Components,3,1,2,33.3,8549.97,3.46,0.0
+44,AXISBANK.NS,Axis Bank Limited,NIFTY Bank,Financial Services,1,1,0,100.0,8364.74,99.0,6.63
+45,ANANTRAJ.NS,Anant Raj Limited,NIFTY Smallcap 250,Realty,1,1,0,100.0,8226.99,99.0,6.0
+46,MUTHOOTFIN.NS,Muthoot Finance Limited,NIFTY Next 50,Financial Services,6,3,3,50.0,8121.54,2.37,1.25
+47,BELRISE.NS,Belrise Industries Limited,NIFTY Smallcap 250,Automobile and Auto Components,2,2,0,100.0,8118.5,99.0,6.0
+48,DIVISLAB.NS,Divi's Laboratories Limited,NIFTY Next 50,Healthcare,3,2,1,66.7,7683.01,7.67,1.65
+49,CREDITACC.NS,CREDITACCESS GRAMEEN LIMITED,NIFTY Smallcap 250,Financial Services,1,1,0,100.0,7643.33,99.0,6.0
+50,SAMMAANCAP.NS,Sammaan Capital Limited,NIFTY Smallcap 250,Financial Services,1,1,0,100.0,7363.22,99.0,6.0
+51,MOTHERSON.NS,Samvardhana Motherson International Limited,NIFTY Next 50,Automobile and Auto Components,2,2,0,100.0,7304.02,99.0,6.0
+52,GRAVITA.NS,Gravita India Limited,NIFTY Smallcap 250,Metals & Mining,1,1,0,100.0,7287.86,99.0,6.0
+53,JINDALSAW.NS,Jindal Saw Limited,NIFTY Smallcap 250,Capital Goods,1,1,0,100.0,7258.91,99.0,6.0
+54,ABB.NS,ABB India Limited,NIFTY Next 50,Capital Goods,2,1,1,50.0,7216.92,4.31,2.33
+55,JSWDULUX.NS,JSW Dulux Limited,NIFTY Smallcap 250,Consumer Durables,1,1,0,100.0,7097.61,99.0,6.0
+56,ERIS.NS,Eris Lifesciences Limited,NIFTY Smallcap 250,Healthcare,1,1,0,100.0,6929.87,99.0,6.0
+57,GABRIEL.NS,Gabriel India Limited,NIFTY Smallcap 250,Automobile and Auto Components,4,2,2,50.0,6741.29,1.96,1.5
+58,CASTROLIND.NS,Castrol India Limited,NIFTY Smallcap 250,Oil Gas & Consumable Fuels,1,1,0,100.0,6606.22,99.0,6.0
+59,JUBLINGREA.NS,Jubilant Ingrevia Limited,NIFTY Smallcap 250,Chemicals,1,1,0,100.0,6405.36,99.0,6.0
+60,ADANIPOWER.NS,Adani Power Limited,NIFTY Next 50,Power,4,2,2,50.0,6385.49,1.8,1.85
+61,GRAPHITE.NS,Graphite India Limited,NIFTY Smallcap 250,Capital Goods,1,1,0,100.0,6360.31,99.0,6.0
+62,POLYMED.NS,Poly Medicure Limited,NIFTY Smallcap 250,Healthcare,1,1,0,100.0,6136.39,99.0,6.0
+63,CLEAN.NS,Clean Science and Technology Limited,NIFTY Smallcap 250,Chemicals,1,1,0,100.0,6051.76,99.0,6.0
+64,J&KBANK.NS,The Jammu & Kashmir Bank Limited,NIFTY Smallcap 250,Financial Services,1,1,0,100.0,5901.75,99.0,6.0
+65,JYOTICNC.NS,Jyoti CNC Automation Limited,NIFTY Smallcap 250,Capital Goods,1,1,0,100.0,5818.73,99.0,6.0
+66,HINDZINC.NS,Hindustan Zinc Limited,NIFTY Next 50,Metals & Mining,4,1,3,25.0,5532.89,3.0,-0.9
+67,LICHSGFIN.NS,LIC Housing Finance Limited,NIFTY LargeMidcap 250,Financial Services,1,1,0,100.0,5512.05,99.0,4.45
+68,AUBANK.NS,AU Small Finance Bank Limited,NIFTY Bank,Financial Services,4,2,2,50.0,5245.97,2.25,0.75
+69,KALYANKJIL.NS,Kalyan Jewellers India Limited,NIFTY LargeMidcap 250,Consumer Durables,2,1,1,50.0,4578.24,7.65,5.61
+70,MMTC.NS,MMTC Limited,NIFTY Smallcap 250,Services,3,1,2,33.3,4366.8,1.5,0.42
+71,ITI.NS,ITI Limited,NIFTY Smallcap 250,Telecommunication,5,2,3,40.0,4316.4,1.32,0.58
+72,IPCALAB.NS,IPCA Laboratories Limited,NIFTY LargeMidcap 250,Healthcare,2,2,0,100.0,3959.4,99.0,6.38
+73,SUMICHEM.NS,Sumitomo Chemical India Limited,NIFTY Smallcap 250,Chemicals,3,1,2,33.3,3811.64,1.52,0.0
+74,FIVESTAR.NS,Five-Star Business Finance Limited,NIFTY Smallcap 250,Financial Services,2,1,1,50.0,3386.11,2.11,1.5
+75,KPRMILL.NS,K.P.R. Mill Limited,NIFTY LargeMidcap 250,Textiles,1,1,0,100.0,3252.37,99.0,1.87
+76,HEG.NS,HEG Limited,NIFTY Smallcap 250,Capital Goods,2,1,1,50.0,3135.22,1.61,1.5
+77,IGL.NS,Indraprastha Gas Limited,NIFTY Smallcap 250,Oil Gas & Consumable Fuels,2,1,1,50.0,3083.13,2.05,1.74
+78,VIJAYA.NS,Vijaya Diagnostic Centre Limited,NIFTY Smallcap 250,Healthcare,4,1,3,25.0,2908.82,1.47,-0.75
+79,DOMS.NS,DOMS Industries Limited,NIFTY Smallcap 250,Fast Moving Consumer Goods,2,1,1,50.0,2486.3,1.78,1.88
+80,ASAHIINDIA.NS,Asahi India Glass Limited,NIFTY Smallcap 250,Automobile and Auto Components,2,1,1,50.0,2229.52,1.53,1.5
+81,HOMEFIRST.NS,Home First Finance Company India Limited,NIFTY Smallcap 250,Financial Services,2,1,1,50.0,2159.79,1.64,1.5
+82,WELSPUNLIV.NS,Welspun Living Limited,NIFTY Smallcap 250,Textiles,3,1,2,33.3,1699.36,1.38,0.0
+83,LTF.NS,L&T Finance Limited,NIFTY LargeMidcap 250,Financial Services,1,1,0,100.0,1593.08,99.0,1.14
+84,MOTILALOFS.NS,Motilal Oswal Financial Services Limited,NIFTY LargeMidcap 250,Financial Services,1,1,0,100.0,1473.55,99.0,5.03
+85,MFSL.NS,Max Financial Services Limited,NIFTY LargeMidcap 250,Financial Services,1,1,0,100.0,1407.97,99.0,1.29
+86,NYKAA.NS,FSN E-Commerce Ventures Limited,NIFTY LargeMidcap 250,Consumer Services,1,1,0,100.0,1276.85,99.0,0.86
+87,LAURUSLABS.NS,Laurus Labs Limited,NIFTY LargeMidcap 250,Healthcare,1,1,0,100.0,1208.97,99.0,1.57
+88,WOCKPHARMA.NS,Wockhardt Limited,NIFTY Smallcap 250,Healthcare,3,1,2,33.3,1119.19,1.23,0.0
+89,SOBHA.NS,Sobha Limited,NIFTY Smallcap 250,Realty,1,1,0,100.0,825.76,99.0,0.84
+90,JKCEMENT.NS,JK Cement Limited,NIFTY LargeMidcap 250,Construction Materials,1,1,0,100.0,722.56,99.0,13.95
+91,JSWINFRA.NS,JSW Infrastructure Limited,NIFTY LargeMidcap 250,Services,1,1,0,100.0,562.48,99.0,5.67
+92,JSL.NS,Jindal Stainless Limited,NIFTY LargeMidcap 250,Metals & Mining,1,1,0,100.0,558.25,99.0,0.52
+93,FLUOROCHEM.NS,Gujarat Fluorochemicals Limited,NIFTY LargeMidcap 250,Chemicals,1,1,0,100.0,522.47,99.0,1.63
+94,TATACOMM.NS,Tata Communications Limited,NIFTY LargeMidcap 250,Telecommunication,1,1,0,100.0,249.43,99.0,1.32
+95,ETERNAL.NS,ETERNAL LIMITED,NIFTY LargeMidcap 250,Consumer Services,1,1,0,100.0,168.3,99.0,2.08
+96,ACE.NS,Action Construction Equipment Limited,NIFTY Smallcap 250,Capital Goods,1,1,0,100.0,124.5,99.0,6.0
+97,ECLERX.NS,eClerx Services Limited,NIFTY Smallcap 250,Services,1,1,0,100.0,104.35,99.0,6.0
+98,GICRE.NS,General Insurance Corporation of India,NIFTY LargeMidcap 250,Financial Services,1,1,0,100.0,80.55,99.0,0.05
+99,INDIANB.NS,Indian Bank,NIFTY LargeMidcap 250,Financial Services,1,1,0,100.0,48.18,99.0,1.79
+100,VOLTAS.NS,Voltas Limited,NIFTY LargeMidcap 250,Consumer Durables,1,1,0,100.0,32.74,99.0,2.43
+101,BANKINDIA.NS,Bank of India,NIFTY LargeMidcap 250,Financial Services,2,2,0,100.0,16.31,99.0,0.13

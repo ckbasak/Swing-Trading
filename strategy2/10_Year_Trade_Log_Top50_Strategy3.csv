@@ -1,0 +1,911 @@
+ticker,company_name,sector,entry_date,exit_date,entry_price,exit_price,quantity,buy_val,sell_val,gross_pnl,charges,net_pnl,return_pct,hold_days,exit_reason
+BANKBARODA.NS,Bank of Baroda,Banking & Financial Services,2016-11-10,2016-11-16,140.67405700683594,151.72,21,2954.16,3186.12,231.96,21.55,210.41,7.12,6,Target 1 Hit (50% Partial Lock)
+UNIONBANK.NS,Union Bank of India,Banking & Financial Services,2016-11-10,2016-11-18,120.00239562988281,131.24,25,3000.06,3281.0,280.94,21.71,259.23,8.64,8,Target 1 Hit (50% Partial Lock)
+BANKBARODA.NS,Bank of Baroda,Banking & Financial Services,2016-11-10,2016-11-21,140.67405700683594,141.74,21,2954.16,2976.54,22.38,21.34,1.04,0.04,11,True Break-Even Stop (Runner)
+UNIONBANK.NS,Union Bank of India,Banking & Financial Services,2016-11-10,2016-12-01,120.00239562988281,123.79582072841634,25,3000.06,3094.9,94.84,21.51,73.33,2.44,21,True Break-Even Stop (Runner)
+BLS.NS,BLS International Services Limited,Consumer Goods & Retail,2016-12-06,2016-12-13,40.68356704711914,46.8041925350081,74,3010.58,3463.51,452.93,21.9,431.03,14.32,7,Target 1 Hit (50% Partial Lock)
+PGEL.NS,PG Electroplast Limited,Consumer Goods & Retail,2016-12-01,2016-12-14,14.783660888671875,14.607541082305824,408,6031.73,5959.88,-71.85,28.08,-99.93,-1.66,13,Trailing Stop Hit
+MINDACORP.NS,Minda Corporation Limited,Automobile & Auto Components,2016-12-08,2016-12-15,96.07701873779297,92.38358937274172,64,6148.93,5912.55,-236.38,28.17,-264.55,-4.3,7,Trailing Stop Hit
+TRENT.NS,Trent Limited,Consumer Goods & Retail,2016-12-05,2016-12-16,196.93630981445312,192.28044068951866,30,5908.09,5768.41,-139.68,27.75,-167.43,-2.83,11,Trailing Stop Hit
+KPIL.NS,Kalpataru Projects International Limited,"Construction, Materials & Infra",2016-12-15,2016-12-19,215.0303955078125,212.29824944695858,28,6020.85,5944.35,-76.5,28.05,-104.55,-1.74,4,Trailing Stop Hit
+PGEL.NS,PG Electroplast Limited,Consumer Goods & Retail,2017-01-04,2017-01-06,14.823629379272461,16.25,204,3024.02,3315.0,290.98,21.76,269.22,8.9,2,Target 1 Hit (50% Partial Lock)
+ZYDUSWELL.NS,Zydus Wellness Limited,Consumer Goods & Retail,2016-12-28,2017-01-09,167.80014038085938,165.7979862465588,36,6040.81,5968.73,-72.08,28.11,-100.19,-1.66,12,Trailing Stop Hit
+PGEL.NS,PG Electroplast Limited,Consumer Goods & Retail,2017-01-04,2017-01-09,14.823629379272461,18.04,204,3024.02,3680.16,656.14,22.14,634.0,20.97,5,Target 2 Hit (Runner Extension)
+BLS.NS,BLS International Services Limited,Consumer Goods & Retail,2016-12-06,2017-01-10,40.68356704711914,44.77185587162231,74,3010.58,3313.12,302.54,21.75,280.79,9.33,35,True Break-Even Stop (Runner)
+COFORGE.NS,Coforge Limited,Information Technology,2017-01-18,2017-01-24,76.65055847167969,76.10604472283529,80,6132.04,6088.48,-43.56,28.33,-71.89,-1.17,6,Trailing Stop Hit
+ANANTRAJ.NS,Anant Raj Limited,"Construction, Materials & Infra",2017-02-01,2017-02-06,18.456071853637695,19.754389857656967,165,3045.25,3259.47,214.22,21.75,192.47,6.32,5,Target 1 Hit (50% Partial Lock)
+GLAXO.NS,GlaxoSmithKline Pharmaceuticals Limited,Healthcare & Pharmaceuticals,2017-02-06,2017-02-08,1094.3629150390625,1089.8264423041683,6,6566.18,6538.96,-27.22,29.33,-56.55,-0.86,2,Trailing Stop Hit
+PGEL.NS,PG Electroplast Limited,Consumer Goods & Retail,2017-02-03,2017-02-10,18.520793914794922,20.76,165,3055.93,3425.4,369.47,21.93,347.54,11.37,7,Target 1 Hit (50% Partial Lock)
+USHAMART.NS,Usha Martin Limited,Information Technology,2017-02-09,2017-02-13,19.130887985229492,18.102113125776764,320,6121.88,5792.68,-329.2,28.01,-357.21,-5.83,4,Trailing Stop Hit
+ANANTRAJ.NS,Anant Raj Limited,"Construction, Materials & Infra",2017-02-01,2017-02-14,18.456071853637695,18.64,165,3045.25,3075.6,30.35,21.56,8.79,0.29,13,True Break-Even Stop (Runner)
+JWL.NS,Jupiter Wagons Limited,Information Technology,2017-02-08,2017-02-14,14.494853019714355,14.048093878058552,422,6116.83,5928.3,-188.53,28.16,-216.69,-3.54,6,Trailing Stop Hit
+MINDACORP.NS,Minda Corporation Limited,Automobile & Auto Components,2017-02-09,2017-02-14,92.57545471191406,89.08639318534813,66,6109.98,5879.7,-230.28,28.09,-258.37,-4.23,5,Trailing Stop Hit
+PGEL.NS,PG Electroplast Limited,Consumer Goods & Retail,2017-02-03,2017-02-16,18.520793914794922,18.7,165,3055.93,3085.5,29.57,21.58,7.99,0.26,13,True Break-Even Stop (Runner)
+ADANIENSOL.NS,Adani Energy Solutions Limited,"Energy, Power & Utilities",2017-03-15,2017-03-17,66.05000305175781,63.50323843514769,92,6076.6,5842.3,-234.3,28.01,-262.31,-4.32,2,Trailing Stop Hit
+ARE&M.NS,Amara Raja Energy & Mobility Limited,Automobile & Auto Components,2017-03-15,2017-03-21,781.1473999023438,774.7101028064293,8,6249.18,6197.68,-51.5,28.6,-80.1,-1.28,6,Trailing Stop Hit
+PGEL.NS,PG Electroplast Limited,Consumer Goods & Retail,2017-03-14,2017-03-24,20.219491958618164,18.97271982860966,300,6065.85,5691.82,-374.03,27.85,-401.88,-6.63,10,Trailing Stop Hit
+LTFOODS.NS,LT Foods Limited,Consumer Goods & Retail,2017-03-17,2017-03-28,51.17794418334961,55.95,59,3019.5,3301.05,281.55,21.75,259.8,8.6,11,Target 1 Hit (50% Partial Lock)
+KPIL.NS,Kalpataru Projects International Limited,"Construction, Materials & Infra",2017-03-28,2017-03-29,259.14715576171875,274.27,12,3109.77,3291.24,181.47,21.85,159.62,5.13,1,Target 1 Hit (50% Partial Lock)
+KPIL.NS,Kalpataru Projects International Limited,"Construction, Materials & Infra",2017-03-28,2017-03-29,259.14715576171875,261.0,12,3109.77,3132.0,22.23,21.68,0.55,0.02,1,True Break-Even Stop (Runner)
+PGEL.NS,PG Electroplast Limited,Consumer Goods & Retail,2017-03-28,2017-03-30,19.200271606445312,18.49081632697168,316,6067.29,5843.1,-224.19,28.0,-252.19,-4.16,2,Trailing Stop Hit
+LTFOODS.NS,LT Foods Limited,Consumer Goods & Retail,2017-03-17,2017-03-31,51.17794418334961,61.93,59,3019.5,3653.87,634.37,22.11,612.26,20.28,14,Target 2 Hit (Runner Extension)
+GALLANTT.NS,Gallantt Ispat Limited,Information Technology,2017-03-31,2017-04-03,41.40263366699219,44.95,73,3022.39,3281.35,258.96,21.73,237.23,7.85,3,Target 1 Hit (50% Partial Lock)
+GALLANTT.NS,Gallantt Ispat Limited,Information Technology,2017-03-31,2017-04-03,41.40263366699219,41.75,73,3022.39,3047.75,25.36,21.49,3.87,0.13,3,True Break-Even Stop (Runner)
+CANBK.NS,Canara Bank,Banking & Financial Services,2017-03-24,2017-04-05,49.499900817871094,52.07,61,3019.49,3176.27,156.78,21.62,135.16,4.48,12,Target 1 Hit (50% Partial Lock)
+MINDACORP.NS,Minda Corporation Limited,Automobile & Auto Components,2017-03-29,2017-04-05,90.9417953491211,95.34,33,3001.08,3146.22,145.14,21.57,123.57,4.12,7,Target 1 Hit (50% Partial Lock)
+MINDACORP.NS,Minda Corporation Limited,Automobile & Auto Components,2017-03-29,2017-04-06,90.9417953491211,100.83,33,3001.08,3327.39,326.31,21.76,304.55,10.15,8,Target 2 Hit (Runner Extension)
+BANKBARODA.NS,Bank of Baroda,Banking & Financial Services,2017-03-24,2017-04-07,144.12696838378906,144.54606729085492,42,6053.33,6070.93,17.6,28.22,-10.62,-0.18,14,Trailing Stop Hit
+PNB.NS,Punjab National Bank,Banking & Financial Services,2017-03-27,2017-04-11,132.76573181152344,140.56,23,3053.61,3232.88,179.27,21.72,157.55,5.16,15,Target 1 Hit (50% Partial Lock)
+PNB.NS,Punjab National Bank,Banking & Financial Services,2017-03-27,2017-04-19,132.76573181152344,136.38665602483013,23,3053.61,3136.89,83.28,21.62,61.66,2.02,23,True Break-Even Stop (Runner)
+CANBK.NS,Canara Bank,Banking & Financial Services,2017-03-24,2017-04-24,49.499900817871094,55.27,61,3019.49,3371.47,351.98,21.82,330.16,10.93,31,Target 2 Hit (Runner Extension)
+ZYDUSWELL.NS,Zydus Wellness Limited,Consumer Goods & Retail,2017-05-02,2017-05-04,168.55670166015625,168.06139026022805,36,6068.04,6050.21,-17.83,28.22,-46.05,-0.76,2,Trailing Stop Hit
+CGPOWER.NS,CG Power and Industrial Solutions Limited,Information Technology,2017-05-09,2017-05-10,82.38612365722656,87.29,37,3048.29,3229.73,181.44,21.72,159.72,5.24,1,Target 1 Hit (50% Partial Lock)
+CGPOWER.NS,CG Power and Industrial Solutions Limited,Information Technology,2017-05-09,2017-05-15,82.38612365722656,93.42,37,3048.29,3456.54,408.25,21.95,386.3,12.67,6,Target 2 Hit (Runner Extension)
+ATUL.NS,Atul Limited,Chemicals & Fertilisers,2017-05-09,2017-05-19,2382.988525390625,2388.6440858927044,2,4765.98,4777.29,11.31,25.35,-14.04,-0.29,10,Trailing Stop Hit
+ENDURANCE.NS,Endurance Technologies Limited,Automobile & Auto Components,2017-05-24,2017-05-26,798.1016845703125,775.4330799789188,8,6384.81,6203.46,-181.35,28.75,-210.1,-3.29,2,Trailing Stop Hit
+PGEL.NS,PG Electroplast Limited,Consumer Goods & Retail,2017-05-29,2017-05-30,18.28097915649414,19.69,168,3071.2,3307.92,236.72,21.82,214.9,7.0,1,Target 1 Hit (50% Partial Lock)
+PGEL.NS,PG Electroplast Limited,Consumer Goods & Retail,2017-05-29,2017-05-30,18.28097915649414,18.445850825255235,168,3071.2,3098.9,27.7,21.6,6.1,0.2,1,True Break-Even Stop (Runner)
+NATCOPHARM.NS,Natco Pharma Limited,Healthcare & Pharmaceuticals,2017-05-30,2017-06-08,874.6553344726562,936.8,4,3498.62,3747.2,248.58,22.77,225.81,6.45,9,Target 1 Hit (50% Partial Lock)
+TRENT.NS,Trent Limited,Consumer Goods & Retail,2017-06-05,2017-06-08,248.61358642578125,245.71898718266812,24,5966.73,5897.26,-69.47,27.96,-97.43,-1.63,3,Trailing Stop Hit
+NATCOPHARM.NS,Natco Pharma Limited,Healthcare & Pharmaceuticals,2017-05-30,2017-06-15,874.6553344726562,898.9037557346738,4,3498.62,3595.62,97.0,22.62,74.38,2.13,16,True Break-Even Stop (Runner)
+BLS.NS,BLS International Services Limited,Consumer Goods & Retail,2017-06-21,2017-06-23,46.038082122802734,44.53024790664631,134,6169.1,5967.05,-202.05,28.26,-230.31,-3.73,2,Trailing Stop Hit
+GALLANTT.NS,Gallantt Ispat Limited,Information Technology,2017-06-30,2017-07-04,39.829139709472656,42.52,77,3066.84,3274.04,207.2,21.78,185.42,6.05,4,Target 1 Hit (50% Partial Lock)
+GALLANTT.NS,Gallantt Ispat Limited,Information Technology,2017-06-30,2017-07-07,39.829139709472656,40.31364929891069,77,3066.84,3104.15,37.31,21.6,15.71,0.51,7,True Break-Even Stop (Runner)
+TRENT.NS,Trent Limited,Consumer Goods & Retail,2017-07-06,2017-07-07,241.65415954589844,254.59,13,3141.5,3309.67,168.17,21.9,146.27,4.66,1,Target 1 Hit (50% Partial Lock)
+TRENT.NS,Trent Limited,Consumer Goods & Retail,2017-07-06,2017-07-07,241.65415954589844,242.34518889263327,13,3141.5,3150.49,8.99,21.73,-12.74,-0.41,1,True Break-Even Stop (Runner)
+JWL.NS,Jupiter Wagons Limited,Information Technology,2017-07-05,2017-07-11,13.104933738708496,11.95,472,6185.53,5640.4,-545.13,27.94,-573.07,-9.26,6,Stop Loss Hit
+KPIL.NS,Kalpataru Projects International Limited,"Construction, Materials & Infra",2017-07-07,2017-07-11,302.9057312011719,318.5,10,3029.06,3185.0,155.94,21.64,134.3,4.43,4,Target 1 Hit (50% Partial Lock)
+KPIL.NS,Kalpataru Projects International Limited,"Construction, Materials & Infra",2017-07-07,2017-07-11,302.9057312011719,299.4122133046556,10,3029.06,2994.12,-34.94,21.44,-56.38,-1.86,4,True Break-Even Stop (Runner)
+COFORGE.NS,Coforge Limited,Information Technology,2017-07-11,2017-07-14,104.00871276855469,99.90521701094245,60,6240.52,5994.31,-246.21,28.38,-274.59,-4.4,3,Trailing Stop Hit
+ENDURANCE.NS,Endurance Technologies Limited,Automobile & Auto Components,2017-07-12,2017-07-14,866.4186401367188,844.199333115563,8,6931.35,6753.59,-177.76,29.98,-207.74,-3.0,2,Trailing Stop Hit
+LTFOODS.NS,LT Foods Limited,Consumer Goods & Retail,2017-07-12,2017-07-14,63.73276138305664,62.297918785752316,96,6118.35,5980.6,-137.75,28.21,-165.96,-2.71,2,Trailing Stop Hit
+KPIL.NS,Kalpataru Projects International Limited,"Construction, Materials & Infra",2017-07-11,2017-07-18,314.5955810546875,306.27856503529233,20,6291.91,6125.57,-166.34,28.57,-194.91,-3.1,7,Trailing Stop Hit
+ATUL.NS,Atul Limited,Chemicals & Fertilisers,2017-07-13,2017-07-18,2386.2353515625,2368.5209162067026,2,4772.47,4737.04,-35.43,25.32,-60.75,-1.27,5,Trailing Stop Hit
+EIHOTEL.NS,EIH Limited,Consumer Goods & Retail,2017-07-19,2017-07-21,132.36715698242188,130.31216437688394,46,6088.89,5994.36,-94.53,28.18,-122.71,-2.02,2,Trailing Stop Hit
+CUB.NS,City Union Bank Limited,Banking & Financial Services,2017-07-27,2017-07-31,108.49398803710938,115.09,28,3037.83,3222.52,184.69,21.7,162.99,5.37,4,Target 1 Hit (50% Partial Lock)
+CUB.NS,City Union Bank Limited,Banking & Financial Services,2017-07-27,2017-07-31,108.49398803710938,109.31,28,3037.83,3060.68,22.85,21.53,1.32,0.04,4,True Break-Even Stop (Runner)
+EIHOTEL.NS,EIH Limited,Consumer Goods & Retail,2017-07-27,2017-07-31,132.32101440429688,130.70102402397234,46,6086.77,6012.25,-74.52,28.2,-102.72,-1.69,4,Trailing Stop Hit
+BLS.NS,BLS International Services Limited,Consumer Goods & Retail,2017-07-31,2017-08-02,47.97115707397461,46.644636446166714,128,6140.31,5970.51,-169.8,28.22,-198.02,-3.22,2,Trailing Stop Hit
+TRENT.NS,Trent Limited,Consumer Goods & Retail,2017-08-22,2017-08-28,277.2291564941406,299.53,11,3049.52,3294.83,245.31,21.78,223.53,7.33,6,Target 1 Hit (50% Partial Lock)
+BLS.NS,BLS International Services Limited,Consumer Goods & Retail,2017-08-23,2017-09-01,49.96352005004883,54.79,61,3047.77,3342.19,294.42,21.83,272.59,8.94,9,Target 1 Hit (50% Partial Lock)
+KPIL.NS,Kalpataru Projects International Limited,"Construction, Materials & Infra",2017-08-30,2017-09-01,339.4440612792969,319.22257171540804,18,6109.99,5746.01,-363.98,27.96,-391.94,-6.41,2,Trailing Stop Hit
+USHAMART.NS,Usha Martin Limited,Information Technology,2017-08-31,2017-09-04,19.60796546936035,18.987939272088333,312,6117.69,5924.24,-193.45,28.15,-221.6,-3.62,4,Trailing Stop Hit
+TRENT.NS,Trent Limited,Consumer Goods & Retail,2017-08-22,2017-09-15,277.2291564941406,286.1012385317641,11,3049.52,3147.11,97.59,21.63,75.96,2.49,24,True Break-Even Stop (Runner)
+BLS.NS,BLS International Services Limited,Consumer Goods & Retail,2017-08-23,2017-09-15,49.96352005004883,60.82,61,3047.77,3710.02,662.25,22.21,640.04,21.0,23,Target 2 Hit (Runner Extension)
+GLAXO.NS,GlaxoSmithKline Pharmaceuticals Limited,Healthcare & Pharmaceuticals,2017-09-15,2017-09-19,982.4884643554688,976.3034925171083,6,5894.93,5857.82,-37.11,27.81,-64.92,-1.1,4,Trailing Stop Hit
+AXISBANK.NS,Axis Bank Limited,Banking & Financial Services,2017-09-14,2017-09-21,516.5485229492188,504.8105158713361,12,6198.58,6057.73,-140.85,28.38,-169.23,-2.73,7,Trailing Stop Hit
+TRENT.NS,Trent Limited,Consumer Goods & Retail,2017-09-19,2017-09-25,307.8124694824219,290.6500582032316,20,6156.25,5813.0,-343.25,28.07,-371.32,-6.03,6,Trailing Stop Hit
+JWL.NS,Jupiter Wagons Limited,Information Technology,2017-09-22,2017-09-27,10.722219467163086,11.913576853362617,284,3045.11,3383.46,338.35,21.87,316.48,10.39,5,Target 1 Hit (50% Partial Lock)
+JWL.NS,Jupiter Wagons Limited,Information Technology,2017-09-22,2017-09-28,10.722219467163086,10.85,284,3045.11,3081.4,36.29,21.56,14.73,0.48,6,True Break-Even Stop (Runner)
+DMART.NS,Avenue Supermarts Limited,Consumer Goods & Retail,2017-09-26,2017-09-28,1116.050048828125,1057.9453602710514,6,6696.3,6347.67,-348.63,29.29,-377.92,-5.64,2,Trailing Stop Hit
+CHOLAFIN.NS,Cholamandalam Investment and Finance Company Limited,Banking & Financial Services,2017-10-12,2017-10-16,223.89794921875,218.62997152200285,28,6269.14,6121.64,-147.5,28.54,-176.04,-2.81,4,Trailing Stop Hit
+PNB.NS,Punjab National Bank,Banking & Financial Services,2017-10-24,2017-10-25,124.60595703125,137.04851962561176,24,2990.54,3289.16,298.62,21.71,276.91,9.26,1,Target 1 Hit (50% Partial Lock)
+PNB.NS,Punjab National Bank,Banking & Financial Services,2017-10-24,2017-10-25,124.60595703125,142.32,24,2990.54,3415.68,425.14,21.84,403.3,13.49,1,Target 2 Hit (Runner Extension)
+BLS.NS,BLS International Services Limited,Consumer Goods & Retail,2017-10-12,2017-10-30,62.39067459106445,60.45899031775998,98,6114.29,5924.98,-189.31,28.14,-217.45,-3.56,18,Trailing Stop Hit
+GLAXO.NS,GlaxoSmithKline Pharmaceuticals Limited,Healthcare & Pharmaceuticals,2017-10-26,2017-11-01,1014.3844604492188,1065.14,3,3043.15,3195.42,152.27,21.67,130.6,4.29,6,Target 1 Hit (50% Partial Lock)
+JWL.NS,Jupiter Wagons Limited,Information Technology,2017-11-02,2017-11-03,12.211416244506836,13.26,251,3065.07,3328.26,263.19,21.84,241.35,7.87,1,Target 1 Hit (50% Partial Lock)
+JWL.NS,Jupiter Wagons Limited,Information Technology,2017-11-02,2017-11-03,12.211416244506836,12.35,251,3065.07,3099.85,34.78,21.6,13.18,0.43,1,True Break-Even Stop (Runner)
+USHAMART.NS,Usha Martin Limited,Information Technology,2017-11-03,2017-11-07,25.523752212524414,24.092515188448704,242,6176.75,5830.39,-346.36,28.12,-374.48,-6.06,4,Trailing Stop Hit
+AXISBANK.NS,Axis Bank Limited,Banking & Financial Services,2017-10-31,2017-11-09,519.9276733398438,551.58,6,3119.57,3309.48,189.91,21.88,168.03,5.39,9,Target 1 Hit (50% Partial Lock)
+OFSS.NS,Oracle Financial Services Software Limited,Information Technology,2017-11-07,2017-11-10,2478.10205078125,2427.595599309477,2,4956.2,4855.19,-101.01,25.66,-126.67,-2.56,3,Trailing Stop Hit
+ARE&M.NS,Amara Raja Energy & Mobility Limited,Automobile & Auto Components,2017-11-09,2017-11-13,666.0176391601562,700.24,5,3330.09,3501.2,171.11,22.32,148.79,4.47,4,Target 1 Hit (50% Partial Lock)
+GLAXO.NS,GlaxoSmithKline Pharmaceuticals Limited,Healthcare & Pharmaceuticals,2017-10-26,2017-11-15,1014.3844604492188,1042.600642446447,3,3043.15,3127.8,84.65,21.6,63.05,2.07,20,True Break-Even Stop (Runner)
+ARE&M.NS,Amara Raja Energy & Mobility Limited,Automobile & Auto Components,2017-11-09,2017-11-15,666.0176391601562,743.01,5,3330.09,3715.05,384.96,22.55,362.41,10.88,6,Target 2 Hit (Runner Extension)
+PGEL.NS,PG Electroplast Limited,Consumer Goods & Retail,2017-11-23,2017-11-28,41.932838439941406,40.22469077940259,146,6122.19,5872.8,-249.39,28.09,-277.48,-4.53,5,Trailing Stop Hit
+AXISBANK.NS,Axis Bank Limited,Banking & Financial Services,2017-10-31,2017-11-30,519.9276733398438,536.7023716405051,6,3119.57,3220.21,100.64,21.79,78.85,2.53,30,True Break-Even Stop (Runner)
+DMART.NS,Avenue Supermarts Limited,Consumer Goods & Retail,2017-12-07,2017-12-11,1142.4000244140625,1130.522659112811,6,6854.4,6783.14,-71.26,29.91,-101.17,-1.48,4,Trailing Stop Hit
+PGEL.NS,PG Electroplast Limited,Consumer Goods & Retail,2017-12-19,2017-12-21,40.708778381347656,39.6392859025465,150,6106.32,5945.89,-160.43,28.17,-188.6,-3.09,2,Trailing Stop Hit
+TRENT.NS,Trent Limited,Consumer Goods & Retail,2017-12-29,2018-01-03,333.6944274902344,326.3616276367055,18,6006.5,5874.51,-131.99,27.96,-159.95,-2.66,5,Trailing Stop Hit
+PGEL.NS,PG Electroplast Limited,Consumer Goods & Retail,2017-12-28,2018-01-04,40.05427551269531,43.58,76,3044.12,3312.08,267.96,21.79,246.17,8.09,7,Target 1 Hit (50% Partial Lock)
+PGEL.NS,PG Electroplast Limited,Consumer Goods & Retail,2017-12-28,2018-01-12,40.05427551269531,41.42378457795448,76,3044.12,3148.21,104.09,21.62,82.47,2.71,15,True Break-Even Stop (Runner)
+PGEL.NS,PG Electroplast Limited,Consumer Goods & Retail,2018-01-18,2018-01-22,44.281036376953125,41.22837590301433,138,6110.78,5689.52,-421.26,27.9,-449.16,-7.35,4,Trailing Stop Hit
+KPIL.NS,Kalpataru Projects International Limited,"Construction, Materials & Infra",2018-01-23,2018-01-25,456.1504821777344,438.7575573743211,14,6386.11,6142.61,-243.5,28.7,-272.2,-4.26,2,Trailing Stop Hit
+ARE&M.NS,Amara Raja Energy & Mobility Limited,Automobile & Auto Components,2018-01-24,2018-01-29,796.3329467773438,764.1774805686138,8,6370.66,6113.42,-257.24,28.65,-285.89,-4.49,5,Trailing Stop Hit
+PVRINOX.NS,PVR INOX Limited,Diversified & Others,2018-01-31,2018-02-02,1427.061279296875,1379.5771366071194,4,5708.25,5518.31,-189.94,27.25,-217.19,-3.8,2,Trailing Stop Hit
+BANKBARODA.NS,Bank of Baroda,Banking & Financial Services,2018-02-12,2018-02-15,144.8266143798828,138.2679123476686,42,6082.72,5807.25,-275.47,27.98,-303.45,-4.99,3,Trailing Stop Hit
+ARE&M.NS,Amara Raja Energy & Mobility Limited,Automobile & Auto Components,2018-02-12,2018-02-16,771.7315063476562,743.5100631863238,8,6173.85,5948.08,-225.77,28.24,-254.01,-4.11,4,Trailing Stop Hit
+CUB.NS,City Union Bank Limited,Banking & Financial Services,2018-02-15,2018-02-19,109.25394439697266,106.86057304941593,56,6118.22,5984.19,-134.03,28.21,-162.24,-2.65,4,Trailing Stop Hit
+ZYDUSWELL.NS,Zydus Wellness Limited,Consumer Goods & Retail,2018-02-08,2018-02-20,222.7675323486328,245.41,14,3118.75,3435.74,316.99,22.01,294.98,9.46,12,Target 1 Hit (50% Partial Lock)
+TRENT.NS,Trent Limited,Consumer Goods & Retail,2018-03-08,2018-03-12,329.6365051269531,316.194567391843,18,5933.46,5691.5,-241.96,27.69,-269.65,-4.54,4,Trailing Stop Hit
+ZYDUSWELL.NS,Zydus Wellness Limited,Consumer Goods & Retail,2018-02-08,2018-03-15,222.7675323486328,237.57632610115513,14,3118.75,3326.07,207.32,21.9,185.42,5.95,35,True Break-Even Stop (Runner)
+JWL.NS,Jupiter Wagons Limited,Information Technology,2018-03-14,2018-03-19,16.82792854309082,16.280610968131327,358,6024.4,5828.46,-195.94,27.93,-223.87,-3.72,5,Trailing Stop Hit
+EIHOTEL.NS,EIH Limited,Consumer Goods & Retail,2018-04-05,2018-04-09,158.9282989501953,157.34336281854888,38,6039.28,5979.05,-60.23,28.12,-88.35,-1.46,4,Trailing Stop Hit
+PVRINOX.NS,PVR INOX Limited,Diversified & Others,2018-04-09,2018-04-11,1268.2926025390625,1243.1538635757274,4,5073.17,4972.62,-100.55,25.92,-126.47,-2.49,2,Trailing Stop Hit
+MINDACORP.NS,Minda Corporation Limited,Automobile & Auto Components,2018-04-23,2018-04-30,194.23089599609375,179.86550752679997,30,5826.93,5395.97,-430.96,27.26,-458.22,-7.86,7,Trailing Stop Hit
+AXISBANK.NS,Axis Bank Limited,Banking & Financial Services,2018-04-27,2018-05-02,535.8787231445312,514.2017349103618,12,6430.54,6170.42,-260.12,28.77,-288.89,-4.49,5,Trailing Stop Hit
+GALLANTT.NS,Gallantt Ispat Limited,Information Technology,2018-04-30,2018-05-03,40.370025634765625,39.82913832971335,148,5974.76,5894.71,-80.05,27.95,-108.0,-1.81,3,Trailing Stop Hit
+JWL.NS,Jupiter Wagons Limited,Information Technology,2018-05-07,2018-05-09,16.728649139404297,15.289086903195319,356,5955.4,5442.91,-512.49,27.46,-539.95,-9.07,2,Trailing Stop Hit
+DMART.NS,Avenue Supermarts Limited,Consumer Goods & Retail,2018-05-15,2018-05-18,1485.449951171875,1466.6346858068887,4,5941.8,5866.54,-75.26,27.88,-103.14,-1.74,3,Trailing Stop Hit
+ENDURANCE.NS,Endurance Technologies Limited,Automobile & Auto Components,2018-05-18,2018-05-22,1218.569091796875,1180.511080069082,4,4874.28,4722.04,-152.24,25.41,-177.65,-3.64,4,Trailing Stop Hit
+PGEL.NS,PG Electroplast Limited,Consumer Goods & Retail,2018-05-28,2018-05-29,26.349790573120117,29.89,112,2951.18,3347.68,396.5,21.72,374.78,12.7,1,Target 1 Hit (50% Partial Lock)
+PGEL.NS,PG Electroplast Limited,Consumer Goods & Retail,2018-05-28,2018-05-29,26.349790573120117,26.59,112,2951.18,2978.08,26.9,21.34,5.56,0.19,1,True Break-Even Stop (Runner)
+USHAMART.NS,Usha Martin Limited,Information Technology,2018-05-22,2018-05-30,24.3310546875,22.59560275546016,242,5888.12,5468.14,-419.98,27.4,-447.38,-7.6,8,Trailing Stop Hit
+MINDACORP.NS,Minda Corporation Limited,Automobile & Auto Components,2018-05-24,2018-05-30,175.35806274414062,175.71578138121836,34,5962.17,5974.34,12.17,28.01,-15.84,-0.27,6,Trailing Stop Hit
+DMART.NS,Avenue Supermarts Limited,Consumer Goods & Retail,2018-05-25,2018-05-31,1497.550048828125,1609.81,2,2995.1,3219.62,224.52,21.65,202.87,6.77,6,Target 1 Hit (50% Partial Lock)
+DMART.NS,Avenue Supermarts Limited,Consumer Goods & Retail,2018-05-25,2018-05-31,1497.550048828125,1508.31,2,2995.1,3016.62,21.52,21.44,0.08,0.0,6,True Break-Even Stop (Runner)
+CUB.NS,City Union Bank Limited,Banking & Financial Services,2018-05-31,2018-06-05,127.0101318359375,120.79457286526404,46,5842.47,5556.55,-285.92,27.45,-313.37,-5.36,5,Trailing Stop Hit
+ANANTRAJ.NS,Anant Raj Limited,"Construction, Materials & Infra",2018-06-04,2018-06-06,17.662914276123047,16.674918504653146,334,5899.41,5569.42,-329.99,27.53,-357.52,-6.06,2,Trailing Stop Hit
+USHAMART.NS,Usha Martin Limited,Information Technology,2018-06-07,2018-06-08,23.042940139770508,26.58,127,2926.45,3375.66,449.21,21.73,427.48,14.61,1,Target 1 Hit (50% Partial Lock)
+USHAMART.NS,Usha Martin Limited,Information Technology,2018-06-07,2018-06-12,23.042940139770508,31.0,127,2926.45,3937.0,1010.55,22.31,988.24,33.77,5,Target 2 Hit (Runner Extension)
+EIHOTEL.NS,EIH Limited,Consumer Goods & Retail,2018-06-08,2018-06-15,166.2238311767578,166.64200457262143,36,5984.06,5999.11,15.05,28.07,-13.02,-0.22,7,Trailing Stop Hit
+PVRINOX.NS,PVR INOX Limited,Diversified & Others,2018-06-08,2018-06-18,1375.6201171875,1341.6017237480253,4,5502.48,5366.41,-136.07,26.85,-162.92,-2.96,10,Trailing Stop Hit
+SAMMAANCAP.NS,Sammaan Capital Limited,Banking & Financial Services,2018-07-18,2018-07-24,894.9132080078125,945.45,3,2684.74,2836.35,151.61,20.85,130.76,4.87,6,Target 1 Hit (50% Partial Lock)
+SAMMAANCAP.NS,Sammaan Capital Limited,Banking & Financial Services,2018-07-18,2018-07-24,894.9132080078125,893.1228830762087,3,2684.74,2679.37,-5.37,20.69,-26.06,-0.97,6,True Break-Even Stop (Runner)
+ENDURANCE.NS,Endurance Technologies Limited,Automobile & Auto Components,2018-07-20,2018-07-25,1207.49560546875,1291.31,2,2414.99,2582.62,167.63,20.27,147.36,6.1,5,Target 1 Hit (50% Partial Lock)
+JWL.NS,Jupiter Wagons Limited,Information Technology,2018-07-24,2018-07-26,13.650973320007324,13.209465074123784,436,5951.82,5759.33,-192.49,27.78,-220.27,-3.7,2,Trailing Stop Hit
+CHOLAFIN.NS,Cholamandalam Investment and Finance Company Limited,Banking & Financial Services,2018-07-26,2018-07-30,301.47894287109375,286.5651094129295,20,6029.58,5731.3,-298.28,27.84,-326.12,-5.41,4,Trailing Stop Hit
+MUTHOOTFIN.NS,Muthoot Finance Limited,Banking & Financial Services,2018-07-26,2018-08-01,357.2056884765625,350.67218755774627,16,5715.29,5610.76,-104.53,27.36,-131.89,-2.31,6,Trailing Stop Hit
+ENDURANCE.NS,Endurance Technologies Limited,Automobile & Auto Components,2018-07-20,2018-08-03,1207.49560546875,1396.07,2,2414.99,2792.14,377.15,20.48,356.67,14.77,14,Target 2 Hit (Runner Extension)
+PGEL.NS,PG Electroplast Limited,Consumer Goods & Retail,2018-08-03,2018-08-08,19.115337371826172,18.35517705125085,310,5925.75,5690.1,-235.65,27.69,-263.34,-4.44,5,Trailing Stop Hit
+NATCOPHARM.NS,Natco Pharma Limited,Healthcare & Pharmaceuticals,2018-08-03,2018-08-08,751.041259765625,743.9242130633221,8,6008.33,5951.39,-56.94,28.05,-84.99,-1.41,5,Trailing Stop Hit
+ZYDUSWELL.NS,Zydus Wellness Limited,Consumer Goods & Retail,2018-08-03,2018-08-10,295.06268310546875,282.8102353983808,20,5901.25,5656.2,-245.05,27.63,-272.68,-4.62,7,Trailing Stop Hit
+FEDERALBNK.NS,The Federal Bank  Limited,Banking & Financial Services,2018-07-17,2018-08-17,82.0697021484375,82.08088685620172,72,5909.02,5909.82,0.8,27.9,-27.1,-0.46,31,Trailing Stop Hit
+ADANIENSOL.NS,Adani Energy Solutions Limited,"Energy, Power & Utilities",2018-08-21,2018-08-24,169.89999389648438,166.81571028822546,34,5776.6,5671.73,-104.87,27.49,-132.36,-2.29,3,Trailing Stop Hit
+ZYDUSWELL.NS,Zydus Wellness Limited,Consumer Goods & Retail,2018-08-24,2018-08-27,288.5486755371094,308.27,10,2885.49,3082.7,197.21,21.37,175.84,6.09,3,Target 1 Hit (50% Partial Lock)
+ZYDUSWELL.NS,Zydus Wellness Limited,Consumer Goods & Retail,2018-08-24,2018-08-27,288.5486755371094,290.72,10,2885.49,2907.2,21.71,21.2,0.51,0.02,3,True Break-Even Stop (Runner)
+USHAMART.NS,Usha Martin Limited,Information Technology,2018-08-27,2018-08-29,26.954992294311523,30.02,109,2938.09,3272.18,334.09,21.63,312.46,10.63,2,Target 1 Hit (50% Partial Lock)
+MUTHOOTFIN.NS,Muthoot Finance Limited,Banking & Financial Services,2018-09-05,2018-09-07,382.23284912109375,406.65,8,3057.86,3253.2,195.34,21.75,173.59,5.68,2,Target 1 Hit (50% Partial Lock)
+USHAMART.NS,Usha Martin Limited,Information Technology,2018-08-27,2018-09-10,26.954992294311523,33.86,109,2938.09,3690.74,752.65,22.06,730.59,24.87,14,Target 2 Hit (Runner Extension)
+MUTHOOTFIN.NS,Muthoot Finance Limited,Banking & Financial Services,2018-09-05,2018-09-11,382.23284912109375,384.98,8,3057.86,3079.84,21.98,21.57,0.41,0.01,6,True Break-Even Stop (Runner)
+JWL.NS,Jupiter Wagons Limited,Information Technology,2018-09-17,2018-09-18,14.643771171569824,16.29,204,2987.33,3323.16,335.83,21.74,314.09,10.51,1,Target 1 Hit (50% Partial Lock)
+JWL.NS,Jupiter Wagons Limited,Information Technology,2018-09-17,2018-09-19,14.643771171569824,14.8,204,2987.33,3019.2,31.87,21.43,10.44,0.35,2,True Break-Even Stop (Runner)
+USHAMART.NS,Usha Martin Limited,Information Technology,2018-09-14,2018-09-21,31.773494720458984,29.51152891532578,188,5973.42,5548.17,-425.25,27.59,-452.84,-7.58,7,Trailing Stop Hit
+PGEL.NS,PG Electroplast Limited,Consumer Goods & Retail,2018-09-19,2018-09-21,16.75714683532715,18.58,178,2982.77,3307.24,324.47,21.72,302.75,10.15,2,Target 1 Hit (50% Partial Lock)
+PGEL.NS,PG Electroplast Limited,Consumer Goods & Retail,2018-09-19,2018-09-21,16.75714683532715,16.192580054328666,178,2982.77,2882.28,-100.49,21.28,-121.77,-4.08,2,True Break-Even Stop (Runner)
+COFORGE.NS,Coforge Limited,Information Technology,2018-10-17,2018-10-25,218.38983154296875,218.2021192076696,28,6114.92,6109.66,-5.26,28.33,-33.59,-0.55,8,Trailing Stop Hit
+USHAMART.NS,Usha Martin Limited,Information Technology,2018-10-30,2018-11-01,30.43766975402832,34.52,98,2982.89,3382.96,400.07,21.79,378.28,12.68,2,Target 1 Hit (50% Partial Lock)
+NATCOPHARM.NS,Natco Pharma Limited,Healthcare & Pharmaceuticals,2018-10-29,2018-11-05,686.519775390625,748.36,4,2746.08,2993.44,247.36,21.1,226.26,8.24,7,Target 1 Hit (50% Partial Lock)
+USHAMART.NS,Usha Martin Limited,Information Technology,2018-10-30,2018-11-05,30.43766975402832,39.62,98,2982.89,3882.76,899.87,22.31,877.56,29.42,6,Target 2 Hit (Runner Extension)
+DIVISLAB.NS,Divi's Laboratories Limited,Healthcare & Pharmaceuticals,2018-10-29,2018-11-09,1366.4639892578125,1479.38,2,2732.93,2958.76,225.83,21.05,204.78,7.49,11,Target 1 Hit (50% Partial Lock)
+NATCOPHARM.NS,Natco Pharma Limited,Healthcare & Pharmaceuticals,2018-10-29,2018-11-13,686.519775390625,695.9933629044419,4,2746.08,2783.97,37.89,20.87,17.02,0.62,15,True Break-Even Stop (Runner)
+LTFOODS.NS,LT Foods Limited,Consumer Goods & Retail,2018-11-05,2018-11-15,39.83953857421875,38.73799343851173,152,6055.61,5888.18,-167.43,28.04,-195.47,-3.23,10,Trailing Stop Hit
+DIVISLAB.NS,Divi's Laboratories Limited,Healthcare & Pharmaceuticals,2018-10-29,2018-11-28,1366.4639892578125,1412.9763292510088,2,2732.93,2825.95,93.02,20.9,72.12,2.64,30,True Break-Even Stop (Runner)
+JWL.NS,Jupiter Wagons Limited,Information Technology,2018-11-29,2018-11-30,16.232250213623047,18.63,187,3035.43,3483.81,448.38,21.96,426.42,14.05,1,Target 1 Hit (50% Partial Lock)
+JWL.NS,Jupiter Wagons Limited,Information Technology,2018-11-29,2018-12-03,16.232250213623047,21.63,187,3035.43,4044.81,1009.38,22.54,986.84,32.51,4,Target 2 Hit (Runner Extension)
+ANANTRAJ.NS,Anant Raj Limited,"Construction, Materials & Infra",2018-12-03,2018-12-05,15.053722381591797,14.371430712474721,410,6172.03,5892.29,-279.74,28.18,-307.92,-4.99,2,Trailing Stop Hit
+OFSS.NS,Oracle Financial Services Software Limited,Information Technology,2018-12-04,2018-12-10,2504.39697265625,2474.7993952165857,2,5008.79,4949.6,-59.19,25.83,-85.02,-1.7,6,Trailing Stop Hit
+ZYDUSWELL.NS,Zydus Wellness Limited,Consumer Goods & Retail,2018-11-27,2018-12-12,238.1557159423828,258.82,13,3096.02,3364.66,268.64,21.9,246.74,7.97,15,Target 1 Hit (50% Partial Lock)
+CHOLAFIN.NS,Cholamandalam Investment and Finance Company Limited,Banking & Financial Services,2018-12-19,2018-12-21,250.17831420898438,244.70510795962267,24,6004.28,5872.92,-131.36,27.95,-159.31,-2.65,2,Trailing Stop Hit
+PGEL.NS,PG Electroplast Limited,Consumer Goods & Retail,2018-12-14,2018-12-26,11.381270408630371,10.493046623238053,542,6168.65,5687.23,-481.42,27.97,-509.39,-8.26,12,Trailing Stop Hit
+MUTHOOTFIN.NS,Muthoot Finance Limited,Banking & Financial Services,2018-12-07,2018-12-31,412.42291259765625,452.34,7,2886.96,3166.38,279.42,21.46,257.96,8.94,24,Target 1 Hit (50% Partial Lock)
+ZYDUSWELL.NS,Zydus Wellness Limited,Consumer Goods & Retail,2018-11-27,2019-01-04,238.1557159423828,261.2948776953773,13,3096.02,3396.83,300.81,21.94,278.87,9.01,38,True Break-Even Stop (Runner)
+LTFOODS.NS,LT Foods Limited,Consumer Goods & Retail,2019-01-02,2019-01-04,40.43622589111328,38.69209498240056,152,6146.31,5881.2,-265.11,28.13,-293.24,-4.77,2,Trailing Stop Hit
+PGEL.NS,PG Electroplast Limited,Consumer Goods & Retail,2019-01-03,2019-01-11,11.646066665649414,11.010624259942059,526,6125.83,5791.59,-334.24,28.02,-362.26,-5.91,8,Trailing Stop Hit
+COFORGE.NS,Coforge Limited,Information Technology,2019-01-09,2019-01-11,213.0196075439453,208.25693991216264,28,5964.55,5831.19,-133.36,27.86,-161.22,-2.7,2,Trailing Stop Hit
+ENDURANCE.NS,Endurance Technologies Limited,Automobile & Auto Components,2019-01-10,2019-01-14,1164.82275390625,1154.4925877039934,6,6988.94,6926.96,-61.98,30.24,-92.22,-1.32,4,Trailing Stop Hit
+KPIL.NS,Kalpataru Projects International Limited,"Construction, Materials & Infra",2019-01-21,2019-01-23,344.97723388671875,340.17074368902934,18,6209.59,6123.07,-86.52,28.45,-114.97,-1.85,2,Trailing Stop Hit
+MUTHOOTFIN.NS,Muthoot Finance Limited,Banking & Financial Services,2018-12-07,2019-01-28,412.42291259765625,459.4600118946,7,2886.96,3216.22,329.26,21.52,307.74,10.66,52,True Break-Even Stop (Runner)
+NATCOPHARM.NS,Natco Pharma Limited,Healthcare & Pharmaceuticals,2019-01-31,2019-02-04,650.2240600585938,643.5739678918371,10,6502.24,6435.74,-66.5,29.15,-95.65,-1.47,4,Trailing Stop Hit
+TRENT.NS,Trent Limited,Consumer Goods & Retail,2019-02-05,2019-02-07,356.8558349609375,351.1391046398649,18,6423.41,6320.5,-102.91,28.93,-131.84,-2.05,2,Trailing Stop Hit
+ANANTRAJ.NS,Anant Raj Limited,"Construction, Materials & Infra",2019-02-22,2019-02-26,13.136308670043945,12.90752493994876,464,6095.25,5989.09,-106.16,28.19,-134.35,-2.2,4,Trailing Stop Hit
+USHAMART.NS,Usha Martin Limited,Information Technology,2019-02-20,2019-02-28,31.391834259033203,30.604562633591648,194,6090.02,5937.29,-152.73,28.13,-180.86,-2.97,8,Trailing Stop Hit
+KPIL.NS,Kalpataru Projects International Limited,"Construction, Materials & Infra",2019-02-25,2019-02-28,339.0372009277344,365.54,9,3051.33,3289.86,238.53,21.78,216.75,7.1,3,Target 1 Hit (50% Partial Lock)
+MINDACORP.NS,Minda Corporation Limited,Automobile & Auto Components,2019-02-27,2019-02-28,133.45590209960938,144.63,23,3069.49,3326.49,257.0,21.84,235.16,7.66,1,Target 1 Hit (50% Partial Lock)
+MINDACORP.NS,Minda Corporation Limited,Automobile & Auto Components,2019-02-27,2019-02-28,133.45590209960938,133.50439938596438,23,3069.49,3070.6,1.11,21.57,-20.46,-0.67,1,True Break-Even Stop (Runner)
+BANKBARODA.NS,Bank of Baroda,Banking & Financial Services,2019-03-01,2019-03-07,92.82986450195312,98.77,33,3063.39,3259.41,196.02,21.76,174.26,5.69,6,Target 1 Hit (50% Partial Lock)
+ATUL.NS,Atul Limited,Chemicals & Fertilisers,2019-03-05,2019-03-07,3313.087890625,3292.540674953867,2,6626.18,6585.08,-41.1,29.46,-70.56,-1.06,2,Trailing Stop Hit
+EIHOTEL.NS,EIH Limited,Consumer Goods & Retail,2019-03-05,2019-03-08,181.0785675048828,192.55,17,3078.34,3273.35,195.01,21.79,173.22,5.63,3,Target 1 Hit (50% Partial Lock)
+EIHOTEL.NS,EIH Limited,Consumer Goods & Retail,2019-03-05,2019-03-08,181.0785675048828,181.27035738214408,17,3078.34,3081.6,3.26,21.59,-18.33,-0.6,3,True Break-Even Stop (Runner)
+KPIL.NS,Kalpataru Projects International Limited,"Construction, Materials & Infra",2019-02-25,2019-03-13,339.0372009277344,398.66,9,3051.33,3587.94,536.61,22.09,514.52,16.86,16,Target 2 Hit (Runner Extension)
+CUB.NS,City Union Bank Limited,Banking & Financial Services,2019-02-28,2019-03-18,130.74404907226562,136.97,23,3007.11,3150.31,143.2,21.58,121.62,4.04,18,Target 1 Hit (50% Partial Lock)
+BANKBARODA.NS,Bank of Baroda,Banking & Financial Services,2019-03-01,2019-03-19,92.82986450195312,106.19,33,3063.39,3504.27,440.88,22.0,418.88,13.67,18,Target 2 Hit (Runner Extension)
+ADANIENSOL.NS,Adani Energy Solutions Limited,"Energy, Power & Utilities",2019-03-15,2019-03-25,235.1999969482422,216.14863565234077,26,6115.2,5619.86,-495.34,27.84,-523.18,-8.56,10,Trailing Stop Hit
+CUB.NS,City Union Bank Limited,Banking & Financial Services,2019-02-28,2019-03-27,130.74404907226562,144.74,23,3007.11,3329.02,321.91,21.77,300.14,9.98,27,Target 2 Hit (Runner Extension)
+TMPV.NS,Tata Motors Passenger Vehicles Limited,Automobile & Auto Components,2019-04-01,2019-04-02,182.5223388671875,195.84,17,3102.88,3329.28,226.4,21.88,204.52,6.59,1,Target 1 Hit (50% Partial Lock)
+TMPV.NS,Tata Motors Passenger Vehicles Limited,Automobile & Auto Components,2019-04-01,2019-04-02,182.5223388671875,183.20430346683682,17,3102.88,3114.47,11.59,21.65,-10.06,-0.32,1,True Break-Even Stop (Runner)
+CUB.NS,City Union Bank Limited,Banking & Financial Services,2019-04-23,2019-04-25,145.71067810058594,142.25561058389067,42,6119.85,5974.74,-145.11,28.2,-173.31,-2.83,2,Trailing Stop Hit
+TRENT.NS,Trent Limited,Consumer Goods & Retail,2019-04-30,2019-05-03,352.8384094238281,373.49,9,3175.55,3361.41,185.86,22.0,163.86,5.16,3,Target 1 Hit (50% Partial Lock)
+CGPOWER.NS,CG Power and Industrial Solutions Limited,Information Technology,2019-05-08,2019-05-10,38.723453521728516,36.550200289527844,160,6195.75,5848.03,-347.72,28.16,-375.88,-6.07,2,Trailing Stop Hit
+TRENT.NS,Trent Limited,Consumer Goods & Retail,2019-04-30,2019-05-13,352.8384094238281,361.84854712119704,9,3175.55,3256.64,81.09,21.9,59.19,1.86,13,True Break-Even Stop (Runner)
+ZYDUSWELL.NS,Zydus Wellness Limited,Consumer Goods & Retail,2019-05-14,2019-05-16,254.48458862304688,254.39889046314624,24,6107.63,6105.57,-2.06,28.33,-30.39,-0.5,2,Trailing Stop Hit
+ENDURANCE.NS,Endurance Technologies Limited,Automobile & Auto Components,2019-05-15,2019-05-17,1129.2470703125,1116.9546219638041,6,6775.48,6701.73,-73.75,29.75,-103.5,-1.53,2,Trailing Stop Hit
+ADANIENSOL.NS,Adani Energy Solutions Limited,"Energy, Power & Utilities",2019-05-20,2019-05-23,224.0,240.92,14,3136.0,3372.88,236.88,21.96,214.92,6.85,3,Target 1 Hit (50% Partial Lock)
+ADANIENSOL.NS,Adani Energy Solutions Limited,"Energy, Power & Utilities",2019-05-20,2019-05-23,224.0,225.6,14,3136.0,3158.4,22.4,21.74,0.66,0.02,3,True Break-Even Stop (Runner)
+BLS.NS,BLS International Services Limited,Consumer Goods & Retail,2019-05-21,2019-05-24,29.61106300354004,29.14381212750997,208,6159.1,6061.91,-97.19,28.33,-125.52,-2.04,3,Trailing Stop Hit
+MUTHOOTFIN.NS,Muthoot Finance Limited,Banking & Financial Services,2019-06-25,2019-07-01,570.793701171875,562.0269484535312,10,5707.94,5620.27,-87.67,27.36,-115.03,-2.02,6,Trailing Stop Hit
+USHAMART.NS,Usha Martin Limited,Information Technology,2019-06-28,2019-07-02,29.05414390563965,28.159041809515053,212,6159.48,5969.72,-189.76,28.24,-218.0,-3.54,4,Trailing Stop Hit
+ANANTRAJ.NS,Anant Raj Limited,"Construction, Materials & Infra",2019-07-01,2019-07-05,13.115911483764648,12.503898668031589,468,6138.25,5851.82,-286.43,28.09,-314.52,-5.12,4,Trailing Stop Hit
+ADANIENSOL.NS,Adani Energy Solutions Limited,"Energy, Power & Utilities",2019-07-02,2019-07-05,236.1999969482422,226.08937885570944,26,6141.2,5878.32,-262.88,28.12,-291.0,-4.74,3,Trailing Stop Hit
+DMART.NS,Avenue Supermarts Limited,Consumer Goods & Retail,2019-07-08,2019-07-10,1393.0,1370.0,4,5572.0,5480.0,-92.0,27.05,-119.05,-2.14,2,Trailing Stop Hit
+NATCOPHARM.NS,Natco Pharma Limited,Healthcare & Pharmaceuticals,2019-07-09,2019-07-11,505.8467102050781,504.5980622992855,12,6070.16,6055.18,-14.98,28.23,-43.21,-0.71,2,Trailing Stop Hit
+ZYDUSWELL.NS,Zydus Wellness Limited,Consumer Goods & Retail,2019-07-10,2019-07-19,264.92449951171875,265.27235193048205,22,5828.34,5835.99,7.65,27.71,-20.06,-0.34,9,Trailing Stop Hit
+CREDITACC.NS,CREDITACCESS GRAMEEN LIMITED,Banking & Financial Services,2019-07-15,2019-07-19,515.01611328125,514.1369646074315,12,6180.19,6169.64,-10.55,28.47,-39.02,-0.63,4,Trailing Stop Hit
+DMART.NS,Avenue Supermarts Limited,Consumer Goods & Retail,2019-07-15,2019-07-19,1425.25,1395.8035487481616,4,5701.0,5583.21,-117.79,27.31,-145.1,-2.55,4,Trailing Stop Hit
+COFORGE.NS,Coforge Limited,Information Technology,2019-07-12,2019-07-24,246.96348571777344,243.72861340382707,24,5927.12,5849.49,-77.63,27.85,-105.48,-1.78,12,Trailing Stop Hit
+JWL.NS,Jupiter Wagons Limited,Information Technology,2019-07-23,2019-07-25,16.8775691986084,16.331530407849467,360,6075.92,5879.35,-196.57,28.05,-224.62,-3.7,2,Trailing Stop Hit
+USHAMART.NS,Usha Martin Limited,Information Technology,2019-07-26,2019-07-31,27.956857681274414,27.51878475058888,216,6038.68,5944.06,-94.62,28.08,-122.7,-2.03,5,Trailing Stop Hit
+KPIL.NS,Kalpataru Projects International Limited,"Construction, Materials & Infra",2019-08-13,2019-08-16,445.2597351074219,439.4881385072439,14,6233.64,6152.83,-80.81,28.53,-109.34,-1.75,3,Trailing Stop Hit
+LTFOODS.NS,LT Foods Limited,Consumer Goods & Retail,2019-08-09,2019-08-21,20.241060256958008,19.228051673818715,298,6031.84,5729.96,-301.88,27.84,-329.72,-5.47,12,Trailing Stop Hit
+DMART.NS,Avenue Supermarts Limited,Consumer Goods & Retail,2019-08-09,2019-08-23,1450.800048828125,1464.3244136557132,4,5803.2,5857.3,54.1,27.7,26.4,0.45,14,Trailing Stop Hit
+ANANTRAJ.NS,Anant Raj Limited,"Construction, Materials & Infra",2019-08-28,2019-08-29,11.218896865844727,12.33,267,2995.45,3292.11,296.66,21.72,274.94,9.18,1,Target 1 Hit (50% Partial Lock)
+ANANTRAJ.NS,Anant Raj Limited,"Construction, Materials & Infra",2019-08-28,2019-08-29,11.218896865844727,11.055712602918817,267,2995.45,2951.88,-43.57,21.37,-64.94,-2.17,1,True Break-Even Stop (Runner)
+MINDACORP.NS,Minda Corporation Limited,Automobile & Auto Components,2019-08-27,2019-09-04,90.79655456542969,84.93800510828,66,5992.57,5605.91,-386.66,27.68,-414.34,-6.91,8,Trailing Stop Hit
+TRENT.NS,Trent Limited,Consumer Goods & Retail,2019-09-04,2019-09-06,464.4349365234375,456.6157612405793,12,5573.22,5479.39,-93.83,27.05,-120.88,-2.17,2,Trailing Stop Hit
+BLS.NS,BLS International Services Limited,Consumer Goods & Retail,2019-09-09,2019-09-13,20.773006439208984,22.631138126823007,144,2991.31,3258.88,267.57,21.68,245.89,8.22,4,Target 1 Hit (50% Partial Lock)
+KPIL.NS,Kalpataru Projects International Limited,"Construction, Materials & Infra",2019-09-11,2019-09-13,425.8748474121094,420.4217178508373,14,5962.25,5885.9,-76.35,27.92,-104.27,-1.75,2,Trailing Stop Hit
+BLS.NS,BLS International Services Limited,Consumer Goods & Retail,2019-09-09,2019-09-16,20.773006439208984,20.97,144,2991.31,3019.68,28.37,21.43,6.94,0.23,7,True Break-Even Stop (Runner)
+AXISBANK.NS,Axis Bank Limited,Banking & Financial Services,2019-09-20,2019-09-23,676.9989624023438,721.55,4,2708.0,2886.2,178.2,20.96,157.24,5.81,3,Target 1 Hit (50% Partial Lock)
+OFSS.NS,Oracle Financial Services Software Limited,Information Technology,2019-09-20,2019-09-24,2227.040771484375,2116.3656263523403,2,4454.08,4232.73,-221.35,24.4,-245.75,-5.52,4,Trailing Stop Hit
+AXISBANK.NS,Axis Bank Limited,Banking & Financial Services,2019-09-20,2019-09-25,676.9989624023438,682.25,4,2708.0,2729.0,21.0,20.78,0.22,0.01,5,True Break-Even Stop (Runner)
+BANKBARODA.NS,Bank of Baroda,Banking & Financial Services,2019-09-20,2019-09-25,86.1316909790039,84.09535702897692,70,6029.22,5886.67,-142.55,28.0,-170.55,-2.83,5,Trailing Stop Hit
+CHOLAFIN.NS,Cholamandalam Investment and Finance Company Limited,Banking & Financial Services,2019-09-20,2019-09-27,284.845458984375,308.89,11,3133.3,3397.79,264.49,21.98,242.51,7.74,7,Target 1 Hit (50% Partial Lock)
+CHOLAFIN.NS,Cholamandalam Investment and Finance Company Limited,Banking & Financial Services,2019-09-20,2019-10-01,284.845458984375,286.87,11,3133.3,3155.57,22.27,21.73,0.54,0.02,11,True Break-Even Stop (Runner)
+ADANIENSOL.NS,Adani Energy Solutions Limited,"Energy, Power & Utilities",2019-10-15,2019-10-23,239.14999389648438,259.19,13,3108.95,3369.47,260.52,21.93,238.59,7.67,8,Target 1 Hit (50% Partial Lock)
+MINDACORP.NS,Minda Corporation Limited,Automobile & Auto Components,2019-10-29,2019-10-30,87.04228973388672,96.54,35,3046.48,3378.9,332.42,21.87,310.55,10.19,1,Target 1 Hit (50% Partial Lock)
+MINDACORP.NS,Minda Corporation Limited,Automobile & Auto Components,2019-10-29,2019-10-30,87.04228973388672,87.57807773136092,35,3046.48,3065.23,18.75,21.55,-2.8,-0.09,1,True Break-Even Stop (Runner)
+ADANIENSOL.NS,Adani Energy Solutions Limited,"Energy, Power & Utilities",2019-10-15,2019-11-01,239.14999389648438,284.24,13,3108.95,3695.12,586.17,22.27,563.9,18.14,17,Target 2 Hit (Runner Extension)
+LTFOODS.NS,LT Foods Limited,Consumer Goods & Retail,2019-10-31,2019-11-11,23.91185188293457,22.737570433497783,254,6073.61,5775.34,-298.27,27.94,-326.21,-5.37,11,Trailing Stop Hit
+KPIL.NS,Kalpataru Projects International Limited,"Construction, Materials & Infra",2019-11-08,2019-11-13,410.50372314453125,406.24735622490573,14,5747.05,5687.46,-59.59,27.47,-87.06,-1.51,5,Trailing Stop Hit
+JWL.NS,Jupiter Wagons Limited,Information Technology,2019-11-15,2019-11-19,15.28908920288086,17.26,198,3027.24,3417.48,390.24,21.88,368.36,12.17,4,Target 1 Hit (50% Partial Lock)
+JWL.NS,Jupiter Wagons Limited,Information Technology,2019-11-15,2019-11-19,15.28908920288086,15.45,198,3027.24,3059.1,31.86,21.51,10.35,0.34,4,True Break-Even Stop (Runner)
+MUTHOOTFIN.NS,Muthoot Finance Limited,Banking & Financial Services,2019-11-14,2019-11-21,635.1077880859375,614.970660160949,10,6351.08,6149.71,-201.37,28.66,-230.03,-3.62,7,Trailing Stop Hit
+DIVISLAB.NS,Divi's Laboratories Limited,Healthcare & Pharmaceuticals,2019-11-15,2019-11-22,1675.86767578125,1650.0903773710038,4,6703.47,6600.36,-103.11,29.56,-132.67,-1.98,7,Trailing Stop Hit
+ARE&M.NS,Amara Raja Energy & Mobility Limited,Automobile & Auto Components,2019-11-11,2019-11-26,661.1409912109375,705.93,5,3305.7,3529.65,223.95,22.33,201.62,6.1,15,Target 1 Hit (50% Partial Lock)
+UNIONBANK.NS,Union Bank of India,Banking & Financial Services,2019-11-19,2019-11-28,49.45222091674805,54.16,61,3016.59,3303.76,287.17,21.75,265.42,8.8,9,Target 1 Hit (50% Partial Lock)
+UNIONBANK.NS,Union Bank of India,Banking & Financial Services,2019-11-19,2019-11-28,49.45222091674805,49.536115328421836,61,3016.59,3021.7,5.11,21.46,-16.35,-0.54,9,True Break-Even Stop (Runner)
+ARE&M.NS,Amara Raja Energy & Mobility Limited,Automobile & Auto Components,2019-11-11,2019-12-06,661.1409912109375,681.139117701072,5,3305.7,3405.7,100.0,22.21,77.79,2.35,25,True Break-Even Stop (Runner)
+TMPV.NS,Tata Motors Passenger Vehicles Limited,Automobile & Auto Components,2019-12-04,2019-12-06,165.0348663330078,159.11642005975622,36,5941.26,5728.19,-213.07,27.74,-240.81,-4.05,2,Trailing Stop Hit
+MINDACORP.NS,Minda Corporation Limited,Automobile & Auto Components,2019-12-26,2019-12-27,94.00762176513672,102.3,32,3008.24,3273.6,265.36,21.71,243.65,8.1,1,Target 1 Hit (50% Partial Lock)
+MINDACORP.NS,Minda Corporation Limited,Automobile & Auto Components,2019-12-26,2019-12-27,94.00762176513672,94.00761071576567,32,3008.24,3008.24,0.0,21.44,-21.44,-0.71,1,True Break-Even Stop (Runner)
+TMPV.NS,Tata Motors Passenger Vehicles Limited,Automobile & Auto Components,2019-12-12,2019-12-31,168.8831024169922,182.63,18,3039.9,3287.34,247.44,21.77,225.67,7.42,19,Target 1 Hit (50% Partial Lock)
+DMART.NS,Avenue Supermarts Limited,Consumer Goods & Retail,2019-12-17,2019-12-31,1883.949951171875,1870.9666211371707,4,7535.8,7483.87,-51.93,31.44,-83.37,-1.11,14,Trailing Stop Hit
+CANBK.NS,Canara Bank,Banking & Financial Services,2019-12-27,2019-12-31,37.95111846923828,37.5194683564074,160,6072.18,6003.11,-69.07,28.17,-97.24,-1.6,4,Trailing Stop Hit
+COFORGE.NS,Coforge Limited,Information Technology,2019-12-17,2020-01-08,296.0579528808594,314.7,10,2960.58,3147.0,186.42,21.52,164.9,5.57,22,Target 1 Hit (50% Partial Lock)
+JWL.NS,Jupiter Wagons Limited,Information Technology,2020-01-09,2020-01-14,14.792691230773926,16.5,207,3062.09,3415.5,353.41,21.92,331.49,10.83,5,Target 1 Hit (50% Partial Lock)
+CREDITACC.NS,CREDITACCESS GRAMEEN LIMITED,Banking & Financial Services,2020-01-10,2020-01-14,765.8273315429688,752.3838913032301,8,6126.62,6019.07,-107.55,28.26,-135.81,-2.22,4,Trailing Stop Hit
+ARE&M.NS,Amara Raja Energy & Mobility Limited,Automobile & Auto Components,2020-01-09,2020-01-15,685.4490356445312,719.48,4,2741.8,2877.92,136.12,20.98,115.14,4.2,6,Target 1 Hit (50% Partial Lock)
+DMART.NS,Avenue Supermarts Limited,Consumer Goods & Retail,2020-01-09,2020-01-17,1880.550048828125,1979.56,2,3761.1,3959.12,198.02,23.3,174.72,4.65,8,Target 1 Hit (50% Partial Lock)
+CREDITACC.NS,CREDITACCESS GRAMEEN LIMITED,Banking & Financial Services,2020-01-16,2020-01-21,773.2186889648438,761.7218199766643,8,6185.75,6093.77,-91.98,28.4,-120.38,-1.95,5,Trailing Stop Hit
+TMPV.NS,Tata Motors Passenger Vehicles Limited,Automobile & Auto Components,2019-12-12,2020-01-22,168.8831024169922,184.30411059791658,18,3039.9,3317.47,277.57,21.8,255.77,8.41,41,True Break-Even Stop (Runner)
+COFORGE.NS,Coforge Limited,Information Technology,2019-12-17,2020-01-22,296.0579528808594,338.0,10,2960.58,3380.0,419.42,21.76,397.66,13.43,36,Target 2 Hit (Runner Extension)
+JWL.NS,Jupiter Wagons Limited,Information Technology,2020-01-09,2020-01-27,14.792691230773926,15.315952245889756,207,3062.09,3170.4,108.31,21.66,86.65,2.83,18,True Break-Even Stop (Runner)
+ZYDUSWELL.NS,Zydus Wellness Limited,Consumer Goods & Retail,2020-01-14,2020-01-27,287.4387512207031,301.81,11,3161.83,3319.91,158.08,21.93,136.15,4.31,13,Target 1 Hit (50% Partial Lock)
+ZYDUSWELL.NS,Zydus Wellness Limited,Consumer Goods & Retail,2020-01-14,2020-01-30,287.4387512207031,293.1767027786134,11,3161.83,3224.94,63.11,21.83,41.28,1.31,16,True Break-Even Stop (Runner)
+ARE&M.NS,Amara Raja Energy & Mobility Limited,Automobile & Auto Components,2020-01-09,2020-01-31,685.4490356445312,716.6377827314795,4,2741.8,2866.55,124.75,20.97,103.78,3.79,22,True Break-Even Stop (Runner)
+DMART.NS,Avenue Supermarts Limited,Consumer Goods & Retail,2020-01-09,2020-01-31,1880.550048828125,2103.32,2,3761.1,4206.64,445.54,23.55,421.99,11.22,22,Target 2 Hit (Runner Extension)
+ADANIENSOL.NS,Adani Energy Solutions Limited,"Energy, Power & Utilities",2020-01-31,2020-02-04,332.1000061035156,330.7734919820515,18,5977.8,5953.92,-23.88,28.02,-51.9,-0.87,4,Trailing Stop Hit
+NATCOPHARM.NS,Natco Pharma Limited,Healthcare & Pharmaceuticals,2020-02-05,2020-02-07,613.4888305664062,648.15,5,3067.44,3240.75,173.31,21.75,151.56,4.94,2,Target 1 Hit (50% Partial Lock)
+NATCOPHARM.NS,Natco Pharma Limited,Healthcare & Pharmaceuticals,2020-02-05,2020-02-07,613.4888305664062,612.3952389005885,5,3067.44,3061.98,-5.46,21.56,-27.02,-0.88,2,True Break-Even Stop (Runner)
+SAMMAANCAP.NS,Sammaan Capital Limited,Banking & Financial Services,2020-02-06,2020-02-11,263.0323486328125,297.69,12,3156.39,3572.28,415.89,22.19,393.7,12.47,5,Target 1 Hit (50% Partial Lock)
+SAMMAANCAP.NS,Sammaan Capital Limited,Banking & Financial Services,2020-02-06,2020-02-17,263.0323486328125,264.9,12,3156.39,3178.8,22.41,21.78,0.63,0.02,11,True Break-Even Stop (Runner)
+MINDACORP.NS,Minda Corporation Limited,Automobile & Auto Components,2020-02-07,2020-02-18,107.79215240478516,105.28652655454306,58,6251.94,6106.62,-145.32,28.51,-173.83,-2.78,11,Trailing Stop Hit
+USHAMART.NS,Usha Martin Limited,Information Technology,2020-02-26,2020-02-28,25.42833709716797,23.376893923187353,244,6204.51,5703.96,-500.55,28.01,-528.56,-8.52,2,Trailing Stop Hit
+FEDERALBNK.NS,The Federal Bank  Limited,Banking & Financial Services,2020-02-27,2020-03-02,84.63985443115234,83.7393755180388,74,6263.35,6196.71,-66.64,28.61,-95.25,-1.52,4,Trailing Stop Hit
+COFORGE.NS,Coforge Limited,Information Technology,2020-03-03,2020-03-05,352.65460205078125,339.35848832917407,18,6347.78,6108.45,-239.33,28.62,-267.95,-4.22,2,Trailing Stop Hit
+ZYDUSWELL.NS,Zydus Wellness Limited,Consumer Goods & Retail,2020-04-07,2020-04-08,259.230224609375,291.02,12,3110.76,3492.24,381.48,22.05,359.43,11.55,1,Target 1 Hit (50% Partial Lock)
+ZYDUSWELL.NS,Zydus Wellness Limited,Consumer Goods & Retail,2020-04-07,2020-04-16,259.230224609375,262.7153513482193,12,3110.76,3152.58,41.82,21.7,20.12,0.65,9,True Break-Even Stop (Runner)
+NATCOPHARM.NS,Natco Pharma Limited,Healthcare & Pharmaceuticals,2020-04-07,2020-04-27,541.7980346679688,626.39,6,3250.79,3758.34,507.55,22.5,485.05,14.92,20,Target 1 Hit (50% Partial Lock)
+NATCOPHARM.NS,Natco Pharma Limited,Healthcare & Pharmaceuticals,2020-04-07,2020-05-05,541.7980346679688,571.3718288074357,6,3250.79,3428.23,177.44,22.16,155.28,4.78,28,True Break-Even Stop (Runner)
+PNB.NS,Punjab National Bank,Banking & Financial Services,2020-06-01,2020-06-04,26.327741622924805,29.06,118,3106.67,3429.08,322.41,21.99,300.42,9.67,3,Target 1 Hit (50% Partial Lock)
+USHAMART.NS,Usha Martin Limited,Information Technology,2020-06-01,2020-06-05,14.121553421020508,15.63,220,3106.74,3438.6,331.86,22.0,309.86,9.97,4,Target 1 Hit (50% Partial Lock)
+USHAMART.NS,Usha Martin Limited,Information Technology,2020-06-01,2020-06-09,14.121553421020508,14.27,220,3106.74,3139.4,32.66,21.69,10.97,0.35,8,True Break-Even Stop (Runner)
+ADANIENSOL.NS,Adani Energy Solutions Limited,"Energy, Power & Utilities",2020-06-09,2020-06-11,188.4499969482422,207.33,17,3203.65,3524.61,320.96,22.19,298.77,9.33,2,Target 1 Hit (50% Partial Lock)
+NATCOPHARM.NS,Natco Pharma Limited,Healthcare & Pharmaceuticals,2020-06-08,2020-06-12,601.9766235351562,564.0721846632676,10,6019.77,5640.72,-379.05,27.74,-406.79,-6.76,4,Trailing Stop Hit
+ADANIENSOL.NS,Adani Energy Solutions Limited,"Energy, Power & Utilities",2020-06-09,2020-06-22,188.4499969482422,230.93,17,3203.65,3925.81,722.16,22.62,699.54,21.84,13,Target 2 Hit (Runner Extension)
+PNB.NS,Punjab National Bank,Banking & Financial Services,2020-06-01,2020-06-23,26.327741622924805,32.49,118,3106.67,3833.82,727.15,22.4,704.75,22.69,22,Target 2 Hit (Runner Extension)
+COFORGE.NS,Coforge Limited,Information Technology,2020-06-26,2020-07-01,273.17755126953125,259.7444066815468,24,6556.26,6233.87,-322.39,29.0,-351.39,-5.36,5,Trailing Stop Hit
+EIHOTEL.NS,EIH Limited,Consumer Goods & Retail,2020-07-07,2020-07-09,65.41255187988281,64.63485290993947,96,6279.6,6204.95,-74.65,28.63,-103.28,-1.64,2,Trailing Stop Hit
+EIHOTEL.NS,EIH Limited,Consumer Goods & Retail,2020-07-30,2020-08-10,63.19354248046875,68.49,50,3159.68,3424.5,264.82,22.03,242.79,7.68,11,Target 1 Hit (50% Partial Lock)
+GLAXO.NS,GlaxoSmithKline Pharmaceuticals Limited,Healthcare & Pharmaceuticals,2020-08-03,2020-08-10,1263.59375,1255.8265524381004,4,5054.38,5023.31,-31.07,25.96,-57.03,-1.13,7,Trailing Stop Hit
+TMPV.NS,Tata Motors Passenger Vehicles Limited,Automobile & Auto Components,2020-08-03,2020-08-10,110.13691711425781,119.41,29,3193.97,3462.89,268.92,22.11,246.81,7.73,7,Target 1 Hit (50% Partial Lock)
+ADANIENSOL.NS,Adani Energy Solutions Limited,"Energy, Power & Utilities",2020-08-07,2020-08-13,249.6999969482422,241.3471567621794,26,6492.2,6275.03,-217.17,28.97,-246.14,-3.79,6,Trailing Stop Hit
+EIHOTEL.NS,EIH Limited,Consumer Goods & Retail,2020-07-30,2020-08-14,63.19354248046875,75.25338329921459,50,3159.68,3762.67,602.99,22.38,580.61,18.38,15,Target 2 Hit (Runner Extension)
+UNIONBANK.NS,Union Bank of India,Banking & Financial Services,2020-08-11,2020-08-14,25.753746032714844,25.23907604529542,246,6335.42,6208.81,-126.61,28.71,-155.32,-2.45,3,Trailing Stop Hit
+BANKBARODA.NS,Bank of Baroda,Banking & Financial Services,2020-08-12,2020-08-14,41.73479461669922,41.08015518424592,152,6343.69,6244.18,-99.51,28.76,-128.27,-2.02,2,Trailing Stop Hit
+PNB.NS,Punjab National Bank,Banking & Financial Services,2020-08-12,2020-08-14,30.475257873535156,29.935432485940062,208,6338.85,6226.57,-112.28,28.73,-141.01,-2.22,2,Trailing Stop Hit
+TRENT.NS,Trent Limited,Consumer Goods & Retail,2020-08-13,2020-08-17,572.2210083007812,563.1666934374291,12,6866.65,6758.0,-108.65,29.91,-138.56,-2.02,4,Trailing Stop Hit
+GLAXO.NS,GlaxoSmithKline Pharmaceuticals Limited,Healthcare & Pharmaceuticals,2020-08-13,2020-08-20,1303.05029296875,1270.5740152397286,4,5212.2,5082.3,-129.9,26.2,-156.1,-2.99,7,Trailing Stop Hit
+TRENT.NS,Trent Limited,Consumer Goods & Retail,2020-08-18,2020-08-24,586.4991455078125,636.06,5,2932.5,3180.3,247.8,21.52,226.28,7.72,6,Target 1 Hit (50% Partial Lock)
+TMPV.NS,Tata Motors Passenger Vehicles Limited,Automobile & Auto Components,2020-08-03,2020-08-26,110.13691711425781,131.0,29,3193.97,3799.0,605.03,22.46,582.57,18.24,23,Target 2 Hit (Runner Extension)
+OFSS.NS,Oracle Financial Services Software Limited,Information Technology,2020-08-12,2020-08-31,2292.772705078125,2284.5997817143607,2,4585.55,4569.2,-16.35,24.94,-41.29,-0.9,19,Trailing Stop Hit
+TRENT.NS,Trent Limited,Consumer Goods & Retail,2020-08-18,2020-09-11,586.4991455078125,698.01,5,2932.5,3490.05,557.55,21.84,535.71,18.27,24,Target 2 Hit (Runner Extension)
+GALLANTT.NS,Gallantt Ispat Limited,Information Technology,2020-09-09,2020-09-11,33.952762603759766,32.16703089194021,188,6383.12,6047.4,-335.72,28.6,-364.32,-5.71,2,Trailing Stop Hit
+COFORGE.NS,Coforge Limited,Information Technology,2020-09-11,2020-09-17,390.7128601074219,417.85,8,3125.7,3342.8,217.1,21.92,195.18,6.24,6,Target 1 Hit (50% Partial Lock)
+KPIL.NS,Kalpataru Projects International Limited,"Construction, Materials & Infra",2020-09-14,2020-09-17,253.5144805908203,239.14606281682222,26,6591.38,6217.8,-373.58,29.02,-402.6,-6.11,3,Trailing Stop Hit
+COFORGE.NS,Coforge Limited,Information Technology,2020-09-11,2020-09-21,390.7128601074219,393.48,8,3125.7,3147.84,22.14,21.72,0.42,0.01,10,True Break-Even Stop (Runner)
+DIVISLAB.NS,Divi's Laboratories Limited,Healthcare & Pharmaceuticals,2020-09-18,2020-09-21,3230.868896484375,3040.1,2,6461.74,6080.2,-381.54,28.72,-410.26,-6.35,3,Stop Loss Hit
+OFSS.NS,Oracle Financial Services Software Limited,Information Technology,2020-09-21,2020-09-24,2301.461669921875,2267.9848575196233,2,4602.92,4535.97,-66.95,24.9,-91.85,-2.0,3,Trailing Stop Hit
+NATCOPHARM.NS,Natco Pharma Limited,Healthcare & Pharmaceuticals,2020-09-18,2020-09-28,854.193603515625,930.57,4,3416.77,3722.28,305.51,22.65,282.86,8.28,10,Target 1 Hit (50% Partial Lock)
+NATCOPHARM.NS,Natco Pharma Limited,Healthcare & Pharmaceuticals,2020-09-18,2020-09-28,854.193603515625,857.0701583118698,4,3416.77,3428.28,11.51,22.35,-10.84,-0.32,10,True Break-Even Stop (Runner)
+JWL.NS,Jupiter Wagons Limited,Information Technology,2020-09-28,2020-09-30,17.373966217041016,15.809879829563826,366,6358.87,5786.42,-572.45,28.3,-600.75,-9.45,2,Trailing Stop Hit
+ANANTRAJ.NS,Anant Raj Limited,"Construction, Materials & Infra",2020-09-25,2020-10-05,12.46057415008545,14.32,253,3152.53,3622.96,470.43,22.23,448.2,14.22,10,Target 1 Hit (50% Partial Lock)
+ANANTRAJ.NS,Anant Raj Limited,"Construction, Materials & Infra",2020-09-25,2020-10-06,12.46057415008545,19.122005824800922,253,3152.53,4837.87,1685.34,23.49,1661.85,52.71,11,Target 2 Hit (Runner Extension)
+TMPV.NS,Tata Motors Passenger Vehicles Limited,Automobile & Auto Components,2020-10-06,2020-10-12,141.0200653076172,133.89767758003043,46,6486.92,6159.29,-327.63,28.83,-356.46,-5.5,6,Trailing Stop Hit
+PVRINOX.NS,PVR INOX Limited,Diversified & Others,2020-10-01,2020-10-13,1300.5,1239.065161789253,4,5202.0,4956.26,-245.74,26.06,-271.8,-5.22,12,Trailing Stop Hit
+DMART.NS,Avenue Supermarts Limited,Consumer Goods & Retail,2020-10-19,2020-10-21,2094.300048828125,2077.386008821844,4,8377.2,8309.54,-67.66,33.32,-100.98,-1.21,2,Trailing Stop Hit
+TRENT.NS,Trent Limited,Consumer Goods & Retail,2020-10-27,2020-10-30,678.8345947265625,658.4299943803996,10,6788.35,6584.3,-204.05,29.64,-233.69,-3.44,3,Trailing Stop Hit
+GALLANTT.NS,Gallantt Ispat Limited,Information Technology,2020-11-04,2020-11-06,33.15621566772461,32.49776807701905,192,6365.99,6239.57,-126.42,28.79,-155.21,-2.44,2,Trailing Stop Hit
+MINDACORP.NS,Minda Corporation Limited,Automobile & Auto Components,2020-11-05,2020-11-09,68.70044708251953,67.10291679563487,92,6320.44,6173.47,-146.97,28.65,-175.62,-2.78,4,Trailing Stop Hit
+MUTHOOTFIN.NS,Muthoot Finance Limited,Banking & Financial Services,2020-11-05,2020-11-10,1115.2376708984375,1103.2510713265958,6,6691.43,6619.51,-71.92,29.56,-101.48,-1.52,5,Trailing Stop Hit
+GALLANTT.NS,Gallantt Ispat Limited,Information Technology,2020-11-17,2020-11-19,34.30125045776367,32.536227639708684,186,6380.03,6051.74,-328.29,28.6,-356.89,-5.59,2,Trailing Stop Hit
+ANANTRAJ.NS,Anant Raj Limited,"Construction, Materials & Infra",2020-11-18,2020-11-19,19.713409423828125,21.63,161,3173.86,3482.43,308.57,22.11,286.46,9.03,1,Target 1 Hit (50% Partial Lock)
+ANANTRAJ.NS,Anant Raj Limited,"Construction, Materials & Infra",2020-11-18,2020-11-19,19.713409423828125,19.61483995939075,161,3173.86,3157.99,-15.87,21.78,-37.65,-1.19,1,True Break-Even Stop (Runner)
+PVRINOX.NS,PVR INOX Limited,Diversified & Others,2020-11-05,2020-11-20,1219.050048828125,1238.072256149738,6,7314.3,7428.43,114.13,31.13,83.0,1.13,15,Trailing Stop Hit
+GLAXO.NS,GlaxoSmithKline Pharmaceuticals Limited,Healthcare & Pharmaceuticals,2020-11-19,2020-11-27,1269.2794189453125,1334.15,3,3807.84,4002.45,194.61,23.4,171.21,4.5,8,Target 1 Hit (50% Partial Lock)
+LTFOODS.NS,LT Foods Limited,Consumer Goods & Retail,2020-11-26,2020-12-02,49.88157272338867,53.29,64,3192.42,3410.56,218.14,22.06,196.08,6.14,6,Target 1 Hit (50% Partial Lock)
+TRENT.NS,Trent Limited,Consumer Goods & Retail,2020-11-27,2020-12-02,716.6941528320312,710.4256625791139,8,5733.55,5683.41,-50.14,27.44,-77.58,-1.35,5,Trailing Stop Hit
+LTFOODS.NS,LT Foods Limited,Consumer Goods & Retail,2020-11-26,2020-12-16,49.88157272338867,57.55,64,3192.42,3683.2,490.78,22.34,468.44,14.67,20,Target 2 Hit (Runner Extension)
+KPIL.NS,Kalpataru Projects International Limited,"Construction, Materials & Infra",2020-12-11,2020-12-18,299.3520202636719,289.50471276968494,22,6585.74,6369.1,-216.64,29.19,-245.83,-3.73,7,Trailing Stop Hit
+GALLANTT.NS,Gallantt Ispat Limited,Information Technology,2020-12-16,2020-12-18,36.840240478515625,35.18000823173264,174,6410.2,6121.32,-288.88,28.7,-317.58,-4.95,2,Trailing Stop Hit
+GLAXO.NS,GlaxoSmithKline Pharmaceuticals Limited,Healthcare & Pharmaceuticals,2020-11-19,2020-12-21,1269.2794189453125,1320.7522218822203,3,3807.84,3962.26,154.42,23.36,131.06,3.44,32,True Break-Even Stop (Runner)
+OFSS.NS,Oracle Financial Services Software Limited,Information Technology,2020-12-08,2020-12-21,2355.93896484375,2345.431217516938,2,4711.88,4690.86,-21.02,25.2,-46.22,-0.98,13,Trailing Stop Hit
+GLAXO.NS,GlaxoSmithKline Pharmaceuticals Limited,Healthcare & Pharmaceuticals,2020-12-28,2021-01-08,1384.1866455078125,1349.2169361209574,4,5536.75,5396.87,-139.88,26.92,-166.8,-3.01,11,Trailing Stop Hit
+CUB.NS,City Union Bank Limited,Banking & Financial Services,2021-01-05,2021-01-12,130.9970245361328,129.80850487149357,48,6287.86,6230.81,-57.05,28.69,-85.74,-1.36,7,Trailing Stop Hit
+UNIONBANK.NS,Union Bank of India,Banking & Financial Services,2021-01-12,2021-01-18,27.68317985534668,26.705016930938175,230,6367.13,6142.15,-224.98,28.68,-253.66,-3.98,6,Trailing Stop Hit
+GALLANTT.NS,Gallantt Ispat Limited,Information Technology,2021-01-19,2021-01-25,44.50699234008789,41.52482477995965,142,6319.99,5896.53,-423.46,28.38,-451.84,-7.15,6,Trailing Stop Hit
+MINDACORP.NS,Minda Corporation Limited,Automobile & Auto Components,2021-01-22,2021-01-27,90.24871826171875,85.02046540604755,70,6317.41,5951.43,-365.98,28.43,-394.41,-6.24,5,Trailing Stop Hit
+AXISBANK.NS,Axis Bank Limited,Banking & Financial Services,2021-01-28,2021-02-01,667.3965454101562,651.9298261847574,10,6673.97,6519.3,-154.67,29.43,-184.1,-2.76,4,Trailing Stop Hit
+ADANIENSOL.NS,Adani Energy Solutions Limited,"Energy, Power & Utilities",2021-01-20,2021-02-02,455.20001220703125,495.06,7,3186.4,3465.42,279.02,22.12,256.9,8.06,13,Target 1 Hit (50% Partial Lock)
+ADANIENSOL.NS,Adani Energy Solutions Limited,"Energy, Power & Utilities",2021-01-20,2021-02-05,455.20001220703125,544.88,7,3186.4,3814.16,627.76,22.47,605.29,19.0,16,Target 2 Hit (Runner Extension)
+MUTHOOTFIN.NS,Muthoot Finance Limited,Banking & Financial Services,2021-02-09,2021-02-10,1085.2838134765625,1155.98,3,3255.85,3467.94,212.09,22.21,189.88,5.83,1,Target 1 Hit (50% Partial Lock)
+MUTHOOTFIN.NS,Muthoot Finance Limited,Banking & Financial Services,2021-02-09,2021-02-10,1085.2838134765625,1092.67,3,3255.85,3278.01,22.16,22.02,0.14,0.0,1,True Break-Even Stop (Runner)
+GALLANTT.NS,Gallantt Ispat Limited,Information Technology,2021-02-11,2021-02-23,44.20828628540039,49.66,72,3183.0,3575.52,392.52,22.23,370.29,11.63,12,Target 1 Hit (50% Partial Lock)
+BLS.NS,BLS International Services Limited,Consumer Goods & Retail,2021-02-26,2021-03-02,26.23501968383789,25.30181518201542,242,6348.87,6123.04,-225.83,28.63,-254.46,-4.01,4,Trailing Stop Hit
+GALLANTT.NS,Gallantt Ispat Limited,Information Technology,2021-02-11,2021-03-10,44.20828628540039,46.90556340861694,72,3183.0,3377.2,194.2,22.02,172.18,5.41,27,True Break-Even Stop (Runner)
+BLS.NS,BLS International Services Limited,Consumer Goods & Retail,2021-03-08,2021-03-10,26.186120986938477,29.829191582834618,121,3168.52,3609.33,440.81,22.25,418.56,13.21,2,Target 1 Hit (50% Partial Lock)
+USHAMART.NS,Usha Martin Limited,Information Technology,2021-03-05,2021-03-15,33.68181228637695,30.59018097355571,188,6332.18,5750.95,-581.23,28.23,-609.46,-9.62,10,Trailing Stop Hit
+BLS.NS,BLS International Services Limited,Consumer Goods & Retail,2021-03-08,2021-03-15,26.186120986938477,26.42,121,3168.52,3196.82,28.3,21.82,6.48,0.2,7,True Break-Even Stop (Runner)
+GALLANTT.NS,Gallantt Ispat Limited,Information Technology,2021-03-17,2021-03-19,48.191017150878906,45.70181304841198,132,6361.21,6032.64,-328.57,28.55,-357.12,-5.61,2,Trailing Stop Hit
+CGPOWER.NS,CG Power and Industrial Solutions Limited,Information Technology,2021-03-19,2021-03-24,58.233360290527344,67.27213030033454,54,3144.6,3632.7,488.1,22.23,465.87,14.81,5,Target 1 Hit (50% Partial Lock)
+OFSS.NS,Oracle Financial Services Software Limited,Information Technology,2021-03-30,2021-04-01,2536.296142578125,2414.0325531292906,2,5072.59,4828.07,-244.52,25.77,-270.29,-5.33,2,Trailing Stop Hit
+CGPOWER.NS,CG Power and Industrial Solutions Limited,Information Technology,2021-03-19,2021-04-08,58.233360290527344,73.94006962225698,54,3144.6,3992.76,848.16,22.6,825.56,26.25,20,Target 2 Hit (Runner Extension)
+KPIL.NS,Kalpataru Projects International Limited,"Construction, Materials & Infra",2021-04-08,2021-04-12,374.6824035644531,354.4152726418816,18,6744.28,6379.47,-364.81,29.37,-394.18,-5.84,4,Trailing Stop Hit
+GLAXO.NS,GlaxoSmithKline Pharmaceuticals Limited,Healthcare & Pharmaceuticals,2021-04-09,2021-04-19,1236.320556640625,1233.688241329005,6,7417.92,7402.13,-15.79,31.22,-47.01,-0.63,10,Trailing Stop Hit
+UNIONBANK.NS,Union Bank of India,Banking & Financial Services,2021-05-04,2021-05-07,29.864276885986328,29.17526828750386,212,6331.23,6185.16,-146.07,28.68,-174.75,-2.76,3,Trailing Stop Hit
+PNB.NS,Punjab National Bank,Banking & Financial Services,2021-05-04,2021-05-10,33.76622772216797,32.36028565742314,188,6348.05,6083.73,-264.32,28.59,-292.91,-4.61,6,Trailing Stop Hit
+BANKBARODA.NS,Bank of Baroda,Banking & Financial Services,2021-05-04,2021-05-12,60.455345153808594,66.6,53,3204.13,3529.8,325.67,22.2,303.47,9.47,8,Target 1 Hit (50% Partial Lock)
+MAZDOCK.NS,Mazagon Dock Shipbuilders Limited,Information Technology,2021-05-05,2021-05-14,97.35663604736328,95.64750258325454,66,6425.54,6312.74,-112.8,28.93,-141.73,-2.21,9,Trailing Stop Hit
+BLS.NS,BLS International Services Limited,Consumer Goods & Retail,2021-05-06,2021-05-14,23.36212921142578,22.5946685158708,272,6354.5,6145.75,-208.75,28.66,-237.41,-3.74,8,Trailing Stop Hit
+JWL.NS,Jupiter Wagons Limited,Information Technology,2021-05-12,2021-05-17,17.32432746887207,18.88,183,3170.35,3455.04,284.69,22.09,262.6,8.28,5,Target 1 Hit (50% Partial Lock)
+JWL.NS,Jupiter Wagons Limited,Information Technology,2021-05-12,2021-05-19,17.32432746887207,20.83,183,3170.35,3811.89,641.54,22.45,619.09,19.53,7,Target 2 Hit (Runner Extension)
+PNB.NS,Punjab National Bank,Banking & Financial Services,2021-05-12,2021-05-19,33.45065689086914,32.69960655961279,190,6355.62,6212.93,-142.69,28.73,-171.42,-2.7,7,Trailing Stop Hit
+ANANTRAJ.NS,Anant Raj Limited,"Construction, Materials & Infra",2021-05-19,2021-05-21,52.163753509521484,57.454288482666016,61,3181.99,3504.71,322.72,22.14,300.58,9.45,2,Target 1 Hit (50% Partial Lock)
+ANANTRAJ.NS,Anant Raj Limited,"Construction, Materials & Infra",2021-05-19,2021-05-25,52.163753509521484,63.33817215472812,61,3181.99,3863.63,681.64,22.51,659.13,20.71,6,Target 2 Hit (Runner Extension)
+COFORGE.NS,Coforge Limited,Information Technology,2021-05-06,2021-06-04,634.7073974609375,693.53,5,3173.54,3467.65,294.11,22.1,272.01,8.57,29,Target 1 Hit (50% Partial Lock)
+MAZDOCK.NS,Mazagon Dock Shipbuilders Limited,Information Technology,2021-06-03,2021-06-07,100.67139434814453,108.9467439860323,32,3221.48,3486.3,264.82,22.18,242.64,7.53,4,Target 1 Hit (50% Partial Lock)
+MAZDOCK.NS,Mazagon Dock Shipbuilders Limited,Information Technology,2021-06-03,2021-06-07,100.67139434814453,116.54,32,3221.48,3729.28,507.8,22.43,485.37,15.07,4,Target 2 Hit (Runner Extension)
+BANKBARODA.NS,Bank of Baroda,Banking & Financial Services,2021-05-04,2021-06-16,60.455345153808594,74.29,53,3204.13,3937.37,733.24,22.63,710.61,22.18,43,Target 2 Hit (Runner Extension)
+OFSS.NS,Oracle Financial Services Software Limited,Information Technology,2021-06-11,2021-06-17,2947.14892578125,2854.5014324355225,2,5894.3,5709.0,-185.3,27.66,-212.96,-3.61,6,Trailing Stop Hit
+USHAMART.NS,Usha Martin Limited,Information Technology,2021-06-15,2021-06-18,52.81270217895508,48.95214928061872,124,6548.78,6070.07,-478.71,28.81,-507.52,-7.75,3,Trailing Stop Hit
+COFORGE.NS,Coforge Limited,Information Technology,2021-05-06,2021-06-24,634.7073974609375,767.05,5,3173.54,3835.25,661.71,22.48,639.23,20.14,49,Target 2 Hit (Runner Extension)
+PVRINOX.NS,PVR INOX Limited,Diversified & Others,2021-07-06,2021-07-08,1417.0999755859375,1374.2966557045193,4,5668.4,5497.19,-171.21,27.18,-198.39,-3.5,2,Trailing Stop Hit
+MINDACORP.NS,Minda Corporation Limited,Automobile & Auto Components,2021-07-13,2021-07-15,134.66281127929688,144.7,24,3231.91,3472.8,240.89,22.17,218.72,6.77,2,Target 1 Hit (50% Partial Lock)
+MINDACORP.NS,Minda Corporation Limited,Automobile & Auto Components,2021-07-13,2021-07-15,134.66281127929688,133.5815686866558,24,3231.91,3205.96,-25.95,21.91,-47.86,-1.48,2,True Break-Even Stop (Runner)
+TRENT.NS,Trent Limited,Consumer Goods & Retail,2021-07-02,2021-07-16,895.2954711914062,884.7574115914709,8,7162.36,7078.06,-84.3,30.58,-114.88,-1.6,14,Trailing Stop Hit
+EIHOTEL.NS,EIH Limited,Consumer Goods & Retail,2021-07-06,2021-07-19,115.87425994873047,112.72657099663245,56,6488.96,6312.69,-176.27,29.0,-205.27,-3.16,13,Trailing Stop Hit
+GLAXO.NS,GlaxoSmithKline Pharmaceuticals Limited,Healthcare & Pharmaceuticals,2021-07-14,2021-07-19,1318.482666015625,1371.57,2,2636.97,2743.14,106.17,20.71,85.46,3.24,5,Target 1 Hit (50% Partial Lock)
+GLAXO.NS,GlaxoSmithKline Pharmaceuticals Limited,Healthcare & Pharmaceuticals,2021-07-14,2021-07-19,1318.482666015625,1437.92,2,2636.97,2875.84,238.87,20.87,218.0,8.27,5,Target 2 Hit (Runner Extension)
+LTFOODS.NS,LT Foods Limited,Consumer Goods & Retail,2021-07-05,2021-07-20,77.24644470214844,75.22623499762778,84,6488.7,6319.0,-169.7,29.01,-198.71,-3.06,15,Trailing Stop Hit
+MUTHOOTFIN.NS,Muthoot Finance Limited,Banking & Financial Services,2021-07-05,2021-07-20,1450.932861328125,1416.4337188088873,4,5803.73,5665.73,-138.0,27.51,-165.51,-2.85,15,Trailing Stop Hit
+TRENT.NS,Trent Limited,Consumer Goods & Retail,2021-07-22,2021-07-26,916.289794921875,883.6785271225676,8,7330.32,7069.43,-260.89,30.78,-291.67,-3.98,4,Trailing Stop Hit
+UNIONBANK.NS,Union Bank of India,Banking & Financial Services,2021-07-29,2021-08-02,31.751768112182617,30.92178269725704,204,6477.36,6308.04,-169.32,28.99,-198.31,-3.06,4,Trailing Stop Hit
+CHOLAFIN.NS,Cholamandalam Investment and Finance Company Limited,Banking & Financial Services,2021-08-02,2021-08-10,521.5604248046875,507.6231841692406,12,6258.73,6091.48,-167.25,28.5,-195.75,-3.13,8,Trailing Stop Hit
+PVRINOX.NS,PVR INOX Limited,Diversified & Others,2021-08-09,2021-08-11,1403.0,1369.8548314867526,4,5612.0,5479.42,-132.58,27.09,-159.67,-2.85,2,Trailing Stop Hit
+NATCOPHARM.NS,Natco Pharma Limited,Healthcare & Pharmaceuticals,2021-08-12,2021-08-16,1003.1819458007812,953.6224580960799,6,6019.09,5721.73,-297.36,27.82,-325.18,-5.4,4,Trailing Stop Hit
+BLS.NS,BLS International Services Limited,Consumer Goods & Retail,2021-08-23,2021-08-24,41.45524597167969,46.45,77,3192.05,3576.65,384.6,22.24,362.36,11.35,1,Target 1 Hit (50% Partial Lock)
+BLS.NS,BLS International Services Limited,Consumer Goods & Retail,2021-08-23,2021-08-24,41.45524597167969,41.07626576285249,77,3192.05,3162.87,-29.18,21.8,-50.98,-1.6,1,True Break-Even Stop (Runner)
+MINDACORP.NS,Minda Corporation Limited,Automobile & Auto Components,2021-09-02,2021-09-07,128.421142578125,124.5353450536362,50,6421.06,6226.77,-194.29,28.82,-223.11,-3.47,5,Trailing Stop Hit
+EIHOTEL.NS,EIH Limited,Consumer Goods & Retail,2021-09-02,2021-09-07,105.25080871582031,103.74141310460432,62,6525.55,6431.97,-93.58,29.17,-122.75,-1.88,5,Trailing Stop Hit
+PVRINOX.NS,PVR INOX Limited,Diversified & Others,2021-09-06,2021-09-08,1377.0,1350.0227545301022,4,5508.0,5400.09,-107.91,26.89,-134.8,-2.45,2,Trailing Stop Hit
+CREDITACC.NS,CREDITACCESS GRAMEEN LIMITED,Banking & Financial Services,2021-08-26,2021-09-14,653.1209716796875,664.5101313752693,10,6531.21,6645.1,113.89,29.4,84.49,1.29,19,Trailing Stop Hit
+LTFOODS.NS,LT Foods Limited,Consumer Goods & Retail,2021-09-15,2021-09-17,66.27283477783203,64.66599119515936,96,6362.19,6207.94,-154.25,28.73,-182.98,-2.88,2,Trailing Stop Hit
+GALLANTT.NS,Gallantt Ispat Limited,Information Technology,2021-09-21,2021-09-24,72.53544616699219,71.01454351613498,88,6383.12,6249.28,-133.84,28.82,-162.66,-2.55,3,Trailing Stop Hit
+ANANTRAJ.NS,Anant Raj Limited,"Construction, Materials & Infra",2021-09-21,2021-09-24,64.9203872680664,72.00171470263965,49,3181.1,3528.08,346.98,22.17,324.81,10.21,3,Target 1 Hit (50% Partial Lock)
+ANANTRAJ.NS,Anant Raj Limited,"Construction, Materials & Infra",2021-09-21,2021-09-29,64.9203872680664,80.33,49,3181.1,3936.17,755.07,22.6,732.47,23.03,8,Target 2 Hit (Runner Extension)
+DIVISLAB.NS,Divi's Laboratories Limited,Healthcare & Pharmaceuticals,2021-10-04,2021-10-08,5064.1494140625,4897.871021585789,2,10128.3,9795.74,-332.56,36.92,-369.48,-3.65,4,Trailing Stop Hit
+CUB.NS,City Union Bank Limited,Banking & Financial Services,2021-09-29,2021-10-11,114.67729187011719,121.1,28,3210.96,3390.8,179.84,22.07,157.77,4.91,12,Target 1 Hit (50% Partial Lock)
+UNIONBANK.NS,Union Bank of India,Banking & Financial Services,2021-09-29,2021-10-11,30.535383224487305,32.3,106,3236.75,3423.8,187.05,22.14,164.91,5.09,12,Target 1 Hit (50% Partial Lock)
+FEDERALBNK.NS,The Federal Bank  Limited,Banking & Financial Services,2021-09-30,2021-10-12,80.95608520507812,85.37,40,3238.24,3414.8,176.56,22.13,154.43,4.77,12,Target 1 Hit (50% Partial Lock)
+UNIONBANK.NS,Union Bank of India,Banking & Financial Services,2021-09-29,2021-10-13,30.535383224487305,34.5,106,3236.75,3657.0,420.25,22.39,397.86,12.29,14,Target 2 Hit (Runner Extension)
+FEDERALBNK.NS,The Federal Bank  Limited,Banking & Financial Services,2021-09-30,2021-10-14,80.95608520507812,90.94352896110844,40,3238.24,3637.74,399.5,22.37,377.13,11.65,14,Target 2 Hit (Runner Extension)
+CUB.NS,City Union Bank Limited,Banking & Financial Services,2021-09-29,2021-10-25,114.67729187011719,129.13,28,3210.96,3615.64,404.68,22.31,382.37,11.91,26,Target 2 Hit (Runner Extension)
+PVRINOX.NS,PVR INOX Limited,Diversified & Others,2021-10-25,2021-10-29,1727.4000244140625,1662.5,4,6909.6,6650.0,-259.6,29.86,-289.46,-4.19,4,Trailing Stop Hit
+MINDACORP.NS,Minda Corporation Limited,Automobile & Auto Components,2021-10-26,2021-10-29,136.77609252929688,149.30861680421788,24,3282.63,3583.41,300.78,22.35,278.43,8.48,3,Target 1 Hit (50% Partial Lock)
+MINDACORP.NS,Minda Corporation Limited,Automobile & Auto Components,2021-10-26,2021-11-01,136.77609252929688,163.27,24,3282.63,3918.48,635.85,22.7,613.15,18.68,6,Target 2 Hit (Runner Extension)
+SONACOMS.NS,Sona BLW Precision Forgings Limited,Automobile & Auto Components,2021-10-28,2021-11-03,651.3295288085938,621.8740420262942,10,6513.3,6218.74,-294.56,28.92,-323.48,-4.97,6,Trailing Stop Hit
+ANANTRAJ.NS,Anant Raj Limited,"Construction, Materials & Infra",2021-11-09,2021-11-15,70.86275482177734,68.8673371152623,92,6519.37,6335.8,-183.57,29.07,-212.64,-3.26,6,Trailing Stop Hit
+TRENT.NS,Trent Limited,Consumer Goods & Retail,2021-11-03,2021-11-16,1087.15478515625,1189.89,3,3261.46,3569.67,308.21,22.32,285.89,8.77,13,Target 1 Hit (50% Partial Lock)
+TRENT.NS,Trent Limited,Consumer Goods & Retail,2021-11-03,2021-11-18,1087.15478515625,1103.0475551295021,3,3261.46,3309.14,47.68,22.05,25.63,0.79,15,True Break-Even Stop (Runner)
+SAMMAANCAP.NS,Sammaan Capital Limited,Banking & Financial Services,2021-11-25,2021-11-26,198.17874145507812,217.35,17,3369.04,3694.95,325.91,22.57,303.34,9.0,1,Target 1 Hit (50% Partial Lock)
+SAMMAANCAP.NS,Sammaan Capital Limited,Banking & Financial Services,2021-11-25,2021-11-26,198.17874145507812,196.34255119557173,17,3369.04,3337.82,-31.22,22.21,-53.43,-1.59,1,True Break-Even Stop (Runner)
+DIVISLAB.NS,Divi's Laboratories Limited,Healthcare & Pharmaceuticals,2021-11-26,2021-11-30,4789.732421875,4751.821235024951,2,9579.46,9503.64,-75.82,35.95,-111.77,-1.17,4,Trailing Stop Hit
+CREDITACC.NS,CREDITACCESS GRAMEEN LIMITED,Banking & Financial Services,2021-12-10,2021-12-13,603.2662963867188,651.24,5,3016.33,3256.2,239.87,21.71,218.16,7.23,3,Target 1 Hit (50% Partial Lock)
+CREDITACC.NS,CREDITACCESS GRAMEEN LIMITED,Banking & Financial Services,2021-12-10,2021-12-13,603.2662963867188,711.21,5,3016.33,3556.05,539.72,22.02,517.7,17.16,3,Target 2 Hit (Runner Extension)
+MINDACORP.NS,Minda Corporation Limited,Automobile & Auto Components,2021-12-10,2021-12-16,171.768798828125,163.4751307104606,38,6527.21,6212.05,-315.16,28.93,-344.09,-5.27,6,Trailing Stop Hit
+MINDACORP.NS,Minda Corporation Limited,Automobile & Auto Components,2021-12-22,2021-12-24,168.72169494628906,163.51879908286566,40,6748.87,6540.75,-208.12,29.54,-237.66,-3.52,2,Trailing Stop Hit
+BLS.NS,BLS International Services Limited,Consumer Goods & Retail,2022-01-06,2022-01-10,48.51633071899414,53.06,68,3299.11,3608.08,308.97,22.4,286.57,8.69,4,Target 1 Hit (50% Partial Lock)
+GALLANTT.NS,Gallantt Ispat Limited,Information Technology,2021-12-28,2022-01-11,76.31903839111328,71.82359072680819,86,6563.44,6176.83,-386.61,28.93,-415.54,-6.33,14,Trailing Stop Hit
+GLAXO.NS,GlaxoSmithKline Pharmaceuticals Limited,Healthcare & Pharmaceuticals,2022-01-10,2022-01-12,1535.6097412109375,1522.8561351339451,4,6142.44,6091.42,-51.02,28.34,-79.36,-1.29,2,Trailing Stop Hit
+GALLANTT.NS,Gallantt Ispat Limited,Information Technology,2022-01-17,2022-01-19,73.63069152832031,71.36046627133227,90,6626.76,6422.44,-204.32,29.28,-233.6,-3.53,2,Trailing Stop Hit
+BLS.NS,BLS International Services Limited,Consumer Goods & Retail,2022-01-06,2022-01-24,48.51633071899414,51.814460649152096,68,3299.11,3523.38,224.27,22.3,201.97,6.12,18,True Break-Even Stop (Runner)
+CREDITACC.NS,CREDITACCESS GRAMEEN LIMITED,Banking & Financial Services,2022-01-21,2022-01-25,612.4931640625,588.0617837027228,10,6124.93,5880.62,-244.31,28.1,-272.41,-4.45,4,Trailing Stop Hit
+FEDERALBNK.NS,The Federal Bank  Limited,Banking & Financial Services,2022-01-25,2022-01-28,92.04792785644531,98.05,36,3313.73,3529.8,216.07,22.33,193.74,5.85,3,Target 1 Hit (50% Partial Lock)
+AXISBANK.NS,Axis Bank Limited,Banking & Financial Services,2022-01-25,2022-02-01,748.4951782226562,787.53,4,2993.98,3150.12,156.14,21.56,134.58,4.5,7,Target 1 Hit (50% Partial Lock)
+UNIONBANK.NS,Union Bank of India,Banking & Financial Services,2022-01-27,2022-02-01,38.96616744995117,37.86065144983621,168,6546.32,6360.59,-185.73,29.12,-214.85,-3.28,5,Trailing Stop Hit
+FEDERALBNK.NS,The Federal Bank  Limited,Banking & Financial Services,2022-01-25,2022-02-08,92.04792785644531,93.46273236564122,36,3313.73,3364.66,50.93,22.16,28.77,0.87,14,True Break-Even Stop (Runner)
+CGPOWER.NS,CG Power and Industrial Solutions Limited,Information Technology,2022-02-04,2022-02-08,183.34371948242188,177.91057932031035,36,6600.37,6404.78,-195.59,29.23,-224.82,-3.41,4,Trailing Stop Hit
+AXISBANK.NS,Axis Bank Limited,Banking & Financial Services,2022-01-25,2022-02-14,748.4951782226562,768.7694126108022,4,2993.98,3075.08,81.1,21.49,59.61,1.99,20,True Break-Even Stop (Runner)
+USHAMART.NS,Usha Martin Limited,Information Technology,2022-02-11,2022-02-15,86.4468002319336,85.36311247469523,76,6569.96,6487.6,-82.36,29.29,-111.65,-1.7,4,Trailing Stop Hit
+KPIL.NS,Kalpataru Projects International Limited,"Construction, Materials & Infra",2022-02-21,2022-02-24,382.46856689453125,375.0015614209535,18,6884.43,6750.03,-134.4,29.91,-164.31,-2.39,3,Trailing Stop Hit
+CUB.NS,City Union Bank Limited,Banking & Financial Services,2022-03-23,2022-03-25,90.36053466796875,88.70362222531868,72,6505.96,6386.66,-119.3,29.11,-148.41,-2.28,2,Trailing Stop Hit
+EIHOTEL.NS,EIH Limited,Consumer Goods & Retail,2022-03-17,2022-03-28,136.97360229492188,150.0070053244991,24,3287.37,3600.17,312.8,22.38,290.42,8.83,11,Target 1 Hit (50% Partial Lock)
+KPIL.NS,Kalpataru Projects International Limited,"Construction, Materials & Infra",2022-03-25,2022-03-29,362.2712097167969,353.6423673571422,18,6520.88,6365.56,-155.32,29.1,-184.42,-2.83,4,Trailing Stop Hit
+CREDITACC.NS,CREDITACCESS GRAMEEN LIMITED,Banking & Financial Services,2022-03-14,2022-04-04,797.972412109375,886.76,4,3191.89,3547.04,355.15,22.21,332.94,10.43,21,Target 1 Hit (50% Partial Lock)
+MINDACORP.NS,Minda Corporation Limited,Automobile & Auto Components,2022-03-15,2022-04-06,195.5846405029297,216.9,17,3324.94,3687.3,362.36,22.51,339.85,10.22,22,Target 1 Hit (50% Partial Lock)
+EIHOTEL.NS,EIH Limited,Consumer Goods & Retail,2022-03-17,2022-04-06,136.97360229492188,164.0,24,3287.37,3936.0,648.63,22.73,625.9,19.04,20,Target 2 Hit (Runner Extension)
+CREDITACC.NS,CREDITACCESS GRAMEEN LIMITED,Banking & Financial Services,2022-03-14,2022-04-13,797.972412109375,997.74,4,3191.89,3990.96,799.07,22.66,776.41,24.32,30,Target 2 Hit (Runner Extension)
+CHOLAFIN.NS,Cholamandalam Investment and Finance Company Limited,Banking & Financial Services,2022-04-08,2022-04-18,736.2622680664062,707.9158811845601,10,7362.62,7079.16,-283.46,30.82,-314.28,-4.27,10,Trailing Stop Hit
+PGEL.NS,PG Electroplast Limited,Consumer Goods & Retail,2022-04-13,2022-04-18,74.68771362304688,82.41,45,3360.95,3708.45,347.5,22.57,324.93,9.67,5,Target 1 Hit (50% Partial Lock)
+PGEL.NS,PG Electroplast Limited,Consumer Goods & Retail,2022-04-13,2022-04-18,74.68771362304688,74.44290413680537,45,3360.95,3349.93,-11.02,22.2,-33.22,-0.99,5,True Break-Even Stop (Runner)
+MINDACORP.NS,Minda Corporation Limited,Automobile & Auto Components,2022-03-15,2022-04-19,195.5846405029297,243.55,17,3324.94,4140.35,815.41,22.97,792.44,23.83,35,Target 2 Hit (Runner Extension)
+OFSS.NS,Oracle Financial Services Software Limited,Information Technology,2022-05-09,2022-05-11,2846.97607421875,2827.4456631221005,2,5693.95,5654.89,-39.06,27.36,-66.42,-1.17,2,Trailing Stop Hit
+ZYDUSWELL.NS,Zydus Wellness Limited,Consumer Goods & Retail,2022-05-17,2022-05-19,328.5323181152344,316.3819848056657,20,6570.65,6327.64,-243.01,29.13,-272.14,-4.14,2,Trailing Stop Hit
+ANANTRAJ.NS,Anant Raj Limited,"Construction, Materials & Infra",2022-05-18,2022-05-20,58.08666229248047,55.66019149047714,114,6621.88,6345.26,-276.62,29.2,-305.82,-4.62,2,Trailing Stop Hit
+TEGA.NS,Tega Industries Limited,Information Technology,2022-05-20,2022-05-24,446.0044250488281,435.5549176522753,14,6244.06,6097.77,-146.29,28.49,-174.78,-2.8,4,Trailing Stop Hit
+PGEL.NS,PG Electroplast Limited,Consumer Goods & Retail,2022-05-30,2022-05-31,77.77534484863281,87.99,43,3344.34,3783.57,439.23,22.62,416.61,12.46,1,Target 1 Hit (50% Partial Lock)
+PGEL.NS,PG Electroplast Limited,Consumer Goods & Retail,2022-05-30,2022-05-31,77.77534484863281,78.34,43,3344.34,3368.62,24.28,22.2,2.08,0.06,1,True Break-Even Stop (Runner)
+BLS.NS,BLS International Services Limited,Consumer Goods & Retail,2022-06-09,2022-06-15,94.82989501953125,104.46,35,3319.05,3656.1,337.05,22.48,314.57,9.48,6,Target 1 Hit (50% Partial Lock)
+BLS.NS,BLS International Services Limited,Consumer Goods & Retail,2022-06-09,2022-06-22,94.82989501953125,95.73819526971869,35,3319.05,3350.84,31.79,22.16,9.63,0.29,13,True Break-Even Stop (Runner)
+KPIL.NS,Kalpataru Projects International Limited,"Construction, Materials & Infra",2022-06-23,2022-06-28,346.38836669921875,341.41017463033984,20,6927.77,6828.2,-99.57,30.06,-129.63,-1.87,5,Trailing Stop Hit
+CUB.NS,City Union Bank Limited,Banking & Financial Services,2022-06-27,2022-07-01,98.74189758300781,94.99271741222334,68,6714.45,6459.5,-254.95,29.42,-284.37,-4.24,4,Trailing Stop Hit
+EIHOTEL.NS,EIH Limited,Consumer Goods & Retail,2022-07-07,2022-07-13,128.2682647705078,127.77637099617247,52,6669.95,6644.37,-25.58,29.56,-55.14,-0.83,6,Trailing Stop Hit
+KPIL.NS,Kalpataru Projects International Limited,"Construction, Materials & Infra",2022-07-13,2022-07-15,346.10394287109375,339.6085392265409,20,6922.08,6792.17,-129.91,30.01,-159.92,-2.31,2,Trailing Stop Hit
+ZYDUSWELL.NS,Zydus Wellness Limited,Consumer Goods & Retail,2022-07-28,2022-08-02,327.1626281738281,318.73580527563104,20,6543.25,6374.72,-168.53,29.12,-197.65,-3.02,5,Trailing Stop Hit
+PGEL.NS,PG Electroplast Limited,Consumer Goods & Retail,2022-07-29,2022-08-05,93.65316009521484,91.92949014333325,70,6555.72,6435.06,-120.66,29.21,-149.87,-2.29,7,Trailing Stop Hit
+SONACOMS.NS,Sona BLW Precision Forgings Limited,Automobile & Auto Components,2022-08-01,2022-08-05,582.4591674804688,560.178258496755,12,6989.51,6722.14,-267.37,30.02,-297.39,-4.25,4,Trailing Stop Hit
+ENDURANCE.NS,Endurance Technologies Limited,Automobile & Auto Components,2022-08-03,2022-08-05,1437.029052734375,1415.9157296564922,4,5748.12,5663.66,-84.46,27.44,-111.9,-1.95,2,Trailing Stop Hit
+TEGA.NS,Tega Industries Limited,Information Technology,2022-08-11,2022-08-16,490.5699768066406,520.5,7,3433.99,3643.5,209.51,22.59,186.92,5.44,5,Target 1 Hit (50% Partial Lock)
+TEGA.NS,Tega Industries Limited,Information Technology,2022-08-11,2022-08-16,490.5699768066406,493.82,7,3433.99,3456.74,22.75,22.4,0.35,0.01,5,True Break-Even Stop (Runner)
+ZYDUSWELL.NS,Zydus Wellness Limited,Consumer Goods & Retail,2022-08-17,2022-08-19,326.6679382324219,319.4783384693189,20,6533.36,6389.57,-143.79,29.13,-172.92,-2.65,2,Trailing Stop Hit
+OFSS.NS,Oracle Financial Services Software Limited,Information Technology,2022-08-02,2022-08-22,2784.399169921875,2781.653386253914,2,5568.8,5563.31,-5.49,27.14,-32.63,-0.59,20,Trailing Stop Hit
+ZYDUSWELL.NS,Zydus Wellness Limited,Consumer Goods & Retail,2022-08-23,2022-08-25,319.9598693847656,319.62841709781196,20,6399.2,6392.57,-6.63,28.98,-35.61,-0.56,2,Trailing Stop Hit
+ANANTRAJ.NS,Anant Raj Limited,"Construction, Materials & Infra",2022-08-23,2022-08-25,71.7246322631836,79.33,46,3299.33,3649.18,349.85,22.44,327.41,9.92,2,Target 1 Hit (50% Partial Lock)
+KPIL.NS,Kalpataru Projects International Limited,"Construction, Materials & Infra",2022-08-26,2022-08-29,377.05718994140625,396.05,9,3393.51,3564.45,170.94,22.46,148.48,4.38,3,Target 1 Hit (50% Partial Lock)
+KPIL.NS,Kalpataru Projects International Limited,"Construction, Materials & Infra",2022-08-26,2022-08-29,377.05718994140625,371.60371823348584,9,3393.51,3344.43,-49.08,22.23,-71.31,-2.1,3,True Break-Even Stop (Runner)
+ANANTRAJ.NS,Anant Raj Limited,"Construction, Materials & Infra",2022-08-23,2022-09-01,71.7246322631836,88.83,46,3299.33,4086.18,786.85,22.89,763.96,23.16,9,Target 2 Hit (Runner Extension)
+BLS.NS,BLS International Services Limited,Consumer Goods & Retail,2022-08-30,2022-09-13,127.58661651611328,139.22,26,3317.25,3619.72,302.47,22.44,280.03,8.44,14,Target 1 Hit (50% Partial Lock)
+BLS.NS,BLS International Services Limited,Consumer Goods & Retail,2022-08-30,2022-09-13,127.58661651611328,125.17934681395364,26,3317.25,3254.66,-62.59,22.06,-84.65,-2.55,14,True Break-Even Stop (Runner)
+LTFOODS.NS,LT Foods Limited,Consumer Goods & Retail,2022-09-13,2022-09-14,98.48609924316406,107.13,34,3348.53,3642.42,293.89,22.49,271.4,8.11,1,Target 1 Hit (50% Partial Lock)
+LTFOODS.NS,LT Foods Limited,Consumer Goods & Retail,2022-09-13,2022-09-14,98.48609924316406,96.05553228964153,34,3348.53,3265.89,-82.64,22.11,-104.75,-3.13,1,True Break-Even Stop (Runner)
+ARE&M.NS,Amara Raja Energy & Mobility Limited,Automobile & Auto Components,2022-09-05,2022-09-16,517.3611450195312,504.76496208142794,12,6208.33,6057.18,-151.15,28.39,-179.54,-2.89,11,Trailing Stop Hit
+MUTHOOTFIN.NS,Muthoot Finance Limited,Banking & Financial Services,2022-09-28,2022-09-30,991.3185424804688,974.1782354708757,6,5947.91,5845.07,-102.84,27.87,-130.71,-2.2,2,Trailing Stop Hit
+ANANTRAJ.NS,Anant Raj Limited,"Construction, Materials & Infra",2022-09-30,2022-10-18,96.34429931640625,108.70377047344202,35,3372.05,3804.63,432.58,22.68,409.9,12.16,18,Target 1 Hit (50% Partial Lock)
+UNIONBANK.NS,Union Bank of India,Banking & Financial Services,2022-10-18,2022-10-21,40.68821334838867,43.25,83,3377.12,3589.75,212.63,22.48,190.15,5.63,3,Target 1 Hit (50% Partial Lock)
+UNIONBANK.NS,Union Bank of India,Banking & Financial Services,2022-10-18,2022-10-25,40.68821334838867,46.46,83,3377.12,3856.18,479.06,22.75,456.31,13.51,7,Target 2 Hit (Runner Extension)
+ANANTRAJ.NS,Anant Raj Limited,"Construction, Materials & Infra",2022-09-30,2022-11-02,96.34429931640625,104.15817509517554,35,3372.05,3645.54,273.49,22.53,250.96,7.44,33,True Break-Even Stop (Runner)
+DIVISLAB.NS,Divi's Laboratories Limited,Healthcare & Pharmaceuticals,2022-11-01,2022-11-07,3749.8974609375,3584.407515786061,2,7499.79,7168.82,-330.97,31.07,-362.04,-4.83,6,Trailing Stop Hit
+NATCOPHARM.NS,Natco Pharma Limited,Healthcare & Pharmaceuticals,2022-11-01,2022-11-10,606.3800659179688,594.7310368805737,12,7276.56,7136.77,-139.79,30.79,-170.58,-2.34,9,Trailing Stop Hit
+CHOLAFIN.NS,Cholamandalam Investment and Finance Company Limited,Banking & Financial Services,2022-11-02,2022-11-10,739.9608154296875,731.667732425598,10,7399.61,7316.68,-82.93,31.12,-114.05,-1.54,8,Trailing Stop Hit
+JWL.NS,Jupiter Wagons Limited,Information Technology,2022-11-09,2022-11-15,76.64400482177734,82.9,44,3372.34,3647.6,275.26,22.53,252.73,7.49,6,Target 1 Hit (50% Partial Lock)
+JWL.NS,Jupiter Wagons Limited,Information Technology,2022-11-09,2022-11-16,76.64400482177734,77.2,44,3372.34,3396.8,24.46,22.27,2.19,0.06,7,True Break-Even Stop (Runner)
+TEGA.NS,Tega Industries Limited,Information Technology,2022-11-11,2022-11-17,558.6383056640625,547.3124354487115,12,6703.66,6567.75,-135.91,29.53,-165.44,-2.47,6,Trailing Stop Hit
+COFORGE.NS,Coforge Limited,Information Technology,2022-11-11,2022-11-18,744.7704467773438,727.8494331672896,10,7447.7,7278.49,-169.21,31.14,-200.35,-2.69,7,Trailing Stop Hit
+CGPOWER.NS,CG Power and Industrial Solutions Limited,Information Technology,2022-11-11,2022-11-18,260.3955078125,255.93218053162548,26,6770.28,6654.24,-116.04,29.69,-145.73,-2.15,7,Trailing Stop Hit
+USHAMART.NS,Usha Martin Limited,Information Technology,2022-11-24,2022-11-29,132.3901824951172,129.9764751804658,50,6619.51,6498.82,-120.69,29.35,-150.04,-2.27,5,Trailing Stop Hit
+EIHOTEL.NS,EIH Limited,Consumer Goods & Retail,2022-11-30,2022-12-02,175.9754180908203,172.13917212634158,38,6687.07,6541.29,-145.78,29.47,-175.25,-2.62,2,Trailing Stop Hit
+SAMMAANCAP.NS,Sammaan Capital Limited,Banking & Financial Services,2022-11-25,2022-12-13,120.79591369628906,120.7894664559797,56,6764.57,6764.21,-0.36,29.78,-30.14,-0.45,18,Trailing Stop Hit
+ANANTRAJ.NS,Anant Raj Limited,"Construction, Materials & Infra",2022-12-13,2022-12-16,106.519775390625,103.74154042416576,62,6604.23,6431.98,-172.25,29.26,-201.51,-3.05,3,Trailing Stop Hit
+USHAMART.NS,Usha Martin Limited,Information Technology,2022-12-19,2022-12-21,143.3944091796875,132.26835475023557,46,6596.14,6084.34,-511.8,28.89,-540.69,-8.2,2,Trailing Stop Hit
+LTFOODS.NS,LT Foods Limited,Consumer Goods & Retail,2022-12-19,2022-12-22,120.84060668945312,113.56833805287322,56,6767.07,6359.83,-407.24,29.39,-436.63,-6.45,3,Trailing Stop Hit
+PGEL.NS,PG Electroplast Limited,Consumer Goods & Retail,2022-12-26,2023-01-04,106.4283676147461,109.09144433581461,62,6598.56,6763.67,165.11,29.6,135.51,2.05,9,Trailing Stop Hit
+GALLANTT.NS,Gallantt Ispat Limited,Information Technology,2023-01-02,2023-01-04,64.42063903808594,61.93093896525933,102,6570.91,6316.96,-253.95,29.12,-283.07,-4.31,2,Trailing Stop Hit
+SONACOMS.NS,Sona BLW Precision Forgings Limited,Automobile & Auto Components,2023-01-10,2023-01-12,437.13751220703125,418.6542109398855,16,6994.2,6698.47,-295.73,30.0,-325.73,-4.66,2,Trailing Stop Hit
+CGPOWER.NS,CG Power and Industrial Solutions Limited,Information Technology,2023-01-09,2023-01-13,285.9312438964844,302.34,12,3431.17,3628.08,196.91,22.57,174.34,5.08,4,Target 1 Hit (50% Partial Lock)
+PVRINOX.NS,PVR INOX Limited,Diversified & Others,2023-01-12,2023-01-16,1753.3499755859375,1727.5675363960258,4,7013.4,6910.27,-103.13,30.24,-133.37,-1.9,4,Trailing Stop Hit
+MINDACORP.NS,Minda Corporation Limited,Automobile & Auto Components,2023-01-05,2023-01-17,216.1983642578125,229.66,15,3242.98,3444.9,201.92,22.16,179.76,5.54,12,Target 1 Hit (50% Partial Lock)
+TMPV.NS,Tata Motors Passenger Vehicles Limited,Automobile & Auto Components,2023-01-10,2023-01-19,402.2603454589844,394.35533950590366,16,6436.17,6309.69,-126.48,28.95,-155.43,-2.41,9,Trailing Stop Hit
+MINDACORP.NS,Minda Corporation Limited,Automobile & Auto Components,2023-01-05,2023-01-24,216.1983642578125,218.12915726636112,15,3242.98,3271.94,28.96,21.99,6.97,0.21,19,True Break-Even Stop (Runner)
+BLS.NS,BLS International Services Limited,Consumer Goods & Retail,2023-01-18,2023-01-25,180.5986785888672,173.00401496627262,36,6501.55,6228.14,-273.41,28.92,-302.33,-4.65,7,Trailing Stop Hit
+CGPOWER.NS,CG Power and Industrial Solutions Limited,Information Technology,2023-01-09,2023-01-27,285.9312438964844,290.6884153205592,12,3431.17,3488.26,57.09,22.42,34.67,1.01,18,True Break-Even Stop (Runner)
+EIHOTEL.NS,EIH Limited,Consumer Goods & Retail,2023-02-01,2023-02-03,172.58181762695312,166.34790605998427,38,6558.11,6321.22,-236.89,29.09,-265.98,-4.06,2,Trailing Stop Hit
+CREDITACC.NS,CREDITACCESS GRAMEEN LIMITED,Banking & Financial Services,2023-02-01,2023-02-03,893.7628173828125,882.130122292683,8,7150.1,7057.04,-93.06,30.55,-123.61,-1.73,2,Trailing Stop Hit
+ARE&M.NS,Amara Raja Energy & Mobility Limited,Automobile & Auto Components,2023-02-01,2023-02-07,572.003173828125,565.467511587538,12,6864.04,6785.61,-78.43,29.93,-108.36,-1.58,6,Trailing Stop Hit
+TEGA.NS,Tega Industries Limited,Information Technology,2023-01-31,2023-02-09,610.7725219726562,648.96,5,3053.86,3244.8,190.94,21.73,169.21,5.54,9,Target 1 Hit (50% Partial Lock)
+BLS.NS,BLS International Services Limited,Consumer Goods & Retail,2023-01-31,2023-02-09,180.10670471191406,175.71243124161197,36,6483.84,6325.65,-158.19,29.01,-187.2,-2.89,9,Trailing Stop Hit
+TEGA.NS,Tega Industries Limited,Information Technology,2023-01-31,2023-02-10,610.7725219726562,613.4614165401318,5,3053.86,3067.31,13.45,21.55,-8.1,-0.27,10,True Break-Even Stop (Runner)
+GLAXO.NS,GlaxoSmithKline Pharmaceuticals Limited,Healthcare & Pharmaceuticals,2023-02-08,2023-02-10,1183.5364990234375,1175.1617879730052,6,7101.22,7050.97,-50.25,30.49,-80.74,-1.14,2,Trailing Stop Hit
+UNIONBANK.NS,Union Bank of India,Banking & Financial Services,2023-03-03,2023-03-08,64.10939025878906,62.588059043995614,102,6539.16,6383.98,-155.18,29.13,-184.31,-2.82,5,Trailing Stop Hit
+EIHOTEL.NS,EIH Limited,Consumer Goods & Retail,2023-03-08,2023-03-13,167.41763305664062,161.1964382810909,38,6361.87,6125.46,-236.41,28.65,-265.06,-4.17,5,Trailing Stop Hit
+CREDITACC.NS,CREDITACCESS GRAMEEN LIMITED,Banking & Financial Services,2023-03-21,2023-03-23,942.774169921875,926.9128291844528,6,5656.65,5561.48,-95.17,27.24,-122.41,-2.16,2,Trailing Stop Hit
+MINDACORP.NS,Minda Corporation Limited,Automobile & Auto Components,2023-03-29,2023-04-03,210.12254333496094,229.6,15,3151.84,3444.0,292.16,22.04,270.12,8.57,5,Target 1 Hit (50% Partial Lock)
+MINDACORP.NS,Minda Corporation Limited,Automobile & Auto Components,2023-03-29,2023-04-12,210.12254333496094,253.96,15,3151.84,3809.4,657.56,22.42,635.14,20.15,14,Target 2 Hit (Runner Extension)
+COFORGE.NS,Coforge Limited,Information Technology,2023-04-05,2023-04-17,782.8158569335938,746.1236766856454,8,6262.53,5968.99,-293.54,28.38,-321.92,-5.14,12,Trailing Stop Hit
+BLS.NS,BLS International Services Limited,Consumer Goods & Retail,2023-03-31,2023-04-21,163.51548767089844,176.64,20,3270.31,3532.8,262.49,22.28,240.21,7.35,21,Target 1 Hit (50% Partial Lock)
+BLS.NS,BLS International Services Limited,Consumer Goods & Retail,2023-03-31,2023-04-21,163.51548767089844,164.67,20,3270.31,3293.4,23.09,22.04,1.05,0.03,21,True Break-Even Stop (Runner)
+ZYDUSWELL.NS,Zydus Wellness Limited,Consumer Goods & Retail,2023-05-03,2023-05-05,303.58538818359375,301.50035386725295,22,6678.88,6633.01,-45.87,29.56,-75.43,-1.13,2,Trailing Stop Hit
+ZYDUSWELL.NS,Zydus Wellness Limited,Consumer Goods & Retail,2023-05-16,2023-05-18,304.74298095703125,296.8080175417492,22,6704.35,6529.78,-174.57,29.48,-204.05,-3.04,2,Trailing Stop Hit
+DIVISLAB.NS,Divi's Laboratories Limited,Healthcare & Pharmaceuticals,2023-05-23,2023-06-12,3309.414306640625,3234.3469819526435,2,6618.83,6468.69,-150.14,29.32,-179.46,-2.71,20,Trailing Stop Hit
+ZYDUSWELL.NS,Zydus Wellness Limited,Consumer Goods & Retail,2023-06-06,2023-06-16,298.92535400390625,295.21388698689856,22,6576.36,6494.71,-81.65,29.3,-110.95,-1.69,10,Trailing Stop Hit
+PNB.NS,Punjab National Bank,Banking & Financial Services,2023-06-16,2023-06-22,47.50115966796875,47.44705634061292,138,6555.16,6547.69,-7.47,29.32,-36.79,-0.56,6,Trailing Stop Hit
+ATUL.NS,Atul Limited,Chemicals & Fertilisers,2023-06-13,2023-06-23,6811.3271484375,6816.797346221601,2,13622.65,13633.59,10.94,45.0,-34.06,-0.25,10,Trailing Stop Hit
+CREDITACC.NS,CREDITACCESS GRAMEEN LIMITED,Banking & Financial Services,2023-06-19,2023-06-23,1262.6378173828125,1356.64,3,3787.91,4069.92,282.01,23.45,258.56,6.83,4,Target 1 Hit (50% Partial Lock)
+CREDITACC.NS,CREDITACCESS GRAMEEN LIMITED,Banking & Financial Services,2023-06-19,2023-06-30,1262.6378173828125,1261.0007485752756,3,3787.91,3783.0,-4.91,23.15,-28.06,-0.74,11,True Break-Even Stop (Runner)
+KPIL.NS,Kalpataru Projects International Limited,"Construction, Materials & Infra",2023-06-30,2023-07-04,517.8804931640625,545.4,6,3107.28,3272.4,165.12,21.83,143.29,4.61,4,Target 1 Hit (50% Partial Lock)
+CUB.NS,City Union Bank Limited,Banking & Financial Services,2023-06-30,2023-07-13,92.14958953857422,92.33264234220732,70,6450.47,6463.28,12.81,29.11,-16.3,-0.25,13,Trailing Stop Hit
+PVRINOX.NS,PVR INOX Limited,Diversified & Others,2023-07-07,2023-07-13,1439.8499755859375,1405.4424903377937,4,5759.4,5621.77,-137.63,27.41,-165.04,-2.87,6,Trailing Stop Hit
+EIHOTEL.NS,EIH Limited,Consumer Goods & Retail,2023-07-11,2023-07-13,208.2392120361328,205.95922321322874,32,6663.65,6590.7,-72.95,29.5,-102.45,-1.54,2,Trailing Stop Hit
+GLAXO.NS,GlaxoSmithKline Pharmaceuticals Limited,Healthcare & Pharmaceuticals,2023-07-17,2023-07-20,1340.3580322265625,1321.3264498672972,4,5361.43,5285.31,-76.12,26.6,-102.72,-1.92,3,Trailing Stop Hit
+ATUL.NS,Atul Limited,Chemicals & Fertilisers,2023-07-21,2023-07-24,6936.1201171875,6624.58,2,13872.24,13249.16,-623.08,44.92,-668.0,-4.82,3,Stop Loss Hit
+KPIL.NS,Kalpataru Projects International Limited,"Construction, Materials & Infra",2023-06-30,2023-07-25,517.8804931640625,579.79,6,3107.28,3478.74,371.46,22.04,349.42,11.25,25,Target 2 Hit (Runner Extension)
+ZYDUSWELL.NS,Zydus Wellness Limited,Consumer Goods & Retail,2023-08-08,2023-08-09,300.93878173828125,314.12,11,3310.33,3455.32,144.99,22.26,122.73,3.71,1,Target 1 Hit (50% Partial Lock)
+ZYDUSWELL.NS,Zydus Wellness Limited,Consumer Goods & Retail,2023-08-08,2023-08-09,300.93878173828125,303.0,11,3310.33,3333.0,22.67,22.13,0.54,0.02,1,True Break-Even Stop (Runner)
+EIHOTEL.NS,EIH Limited,Consumer Goods & Retail,2023-08-09,2023-08-11,210.82029724121094,208.75491639995263,30,6324.61,6262.65,-61.96,28.76,-90.72,-1.43,2,Trailing Stop Hit
+DIVISLAB.NS,Divi's Laboratories Limited,Healthcare & Pharmaceuticals,2023-08-14,2023-08-17,3675.828369140625,3639.359006268348,2,7351.66,7278.72,-72.94,31.02,-103.96,-1.41,3,Trailing Stop Hit
+MAZDOCK.NS,Mazagon Dock Shipbuilders Limited,Information Technology,2023-08-14,2023-08-25,905.1207275390625,888.1244157587341,8,7240.97,7105.0,-135.97,30.72,-166.69,-2.3,11,Trailing Stop Hit
+GLAXO.NS,GlaxoSmithKline Pharmaceuticals Limited,Healthcare & Pharmaceuticals,2023-08-23,2023-08-25,1345.3740234375,1334.4429218599616,4,5381.5,5337.77,-43.73,26.68,-70.41,-1.31,2,Trailing Stop Hit
+COFORGE.NS,Coforge Limited,Information Technology,2023-08-24,2023-09-06,1043.4818115234375,1111.54,3,3130.45,3334.62,204.17,21.91,182.26,5.82,13,Target 1 Hit (50% Partial Lock)
+CGPOWER.NS,CG Power and Industrial Solutions Limited,Information Technology,2023-08-31,2023-09-08,426.31298828125,448.75,8,3410.5,3590.0,179.5,22.51,156.99,4.6,8,Target 1 Hit (50% Partial Lock)
+GALLANTT.NS,Gallantt Ispat Limited,Information Technology,2023-08-31,2023-09-11,93.14606475830078,101.68,35,3260.11,3558.8,298.69,22.31,276.38,8.48,11,Target 1 Hit (50% Partial Lock)
+COFORGE.NS,Coforge Limited,Information Technology,2023-08-24,2023-09-12,1043.4818115234375,1050.78,3,3130.45,3152.34,21.89,21.72,0.17,0.01,19,True Break-Even Stop (Runner)
+GALLANTT.NS,Gallantt Ispat Limited,Information Technology,2023-08-31,2023-09-12,93.14606475830078,93.83,35,3260.11,3284.05,23.94,22.02,1.92,0.06,12,True Break-Even Stop (Runner)
+LTFOODS.NS,LT Foods Limited,Consumer Goods & Retail,2023-09-06,2023-09-12,172.3721466064453,167.1216004625927,38,6550.14,6350.62,-199.52,29.11,-228.63,-3.49,6,Trailing Stop Hit
+CGPOWER.NS,CG Power and Industrial Solutions Limited,Information Technology,2023-08-31,2023-09-13,426.31298828125,429.16,8,3410.5,3433.28,22.78,22.34,0.44,0.01,13,True Break-Even Stop (Runner)
+CUB.NS,City Union Bank Limited,Banking & Financial Services,2023-10-10,2023-10-11,98.28339385986328,103.18,33,3243.35,3404.94,161.59,22.12,139.47,4.3,1,Target 1 Hit (50% Partial Lock)
+CUB.NS,City Union Bank Limited,Banking & Financial Services,2023-10-10,2023-10-11,98.28339385986328,99.0,33,3243.35,3267.0,23.65,21.99,1.66,0.05,1,True Break-Even Stop (Runner)
+DMART.NS,Avenue Supermarts Limited,Consumer Goods & Retail,2023-10-04,2023-10-16,3872.949951171875,3787.4355992549704,2,7745.9,7574.87,-171.03,31.78,-202.81,-2.62,12,Trailing Stop Hit
+MINDACORP.NS,Minda Corporation Limited,Automobile & Auto Components,2023-10-10,2023-10-17,331.6705627441406,331.74312596421123,20,6633.41,6634.86,1.45,29.51,-28.06,-0.42,7,Trailing Stop Hit
+BLS.NS,BLS International Services Limited,Consumer Goods & Retail,2023-10-16,2023-10-18,258.3414306640625,252.2022937052208,26,6716.88,6557.26,-159.62,29.53,-189.15,-2.82,2,Trailing Stop Hit
+GALLANTT.NS,Gallantt Ispat Limited,Information Technology,2023-10-16,2023-10-18,91.3040542602539,90.04962051228561,72,6573.89,6483.57,-90.32,29.28,-119.6,-1.82,2,Trailing Stop Hit
+PVRINOX.NS,PVR INOX Limited,Diversified & Others,2023-10-12,2023-10-20,1765.9000244140625,1732.4325012973522,4,7063.6,6929.73,-133.87,30.32,-164.19,-2.32,8,Trailing Stop Hit
+ANANTRAJ.NS,Anant Raj Limited,"Construction, Materials & Infra",2023-10-05,2023-10-23,234.59046936035156,229.0096778766185,28,6568.53,6412.27,-156.26,29.21,-185.47,-2.82,18,Trailing Stop Hit
+TEGA.NS,Tega Industries Limited,Information Technology,2023-10-18,2023-10-23,931.7535400390625,907.501048923157,6,5590.52,5445.01,-145.51,27.04,-172.55,-3.09,5,Trailing Stop Hit
+EIHOTEL.NS,EIH Limited,Consumer Goods & Retail,2023-10-30,2023-11-01,225.35621643066406,221.69752688179983,28,6309.97,6207.53,-102.44,28.68,-131.12,-2.08,2,Trailing Stop Hit
+ENDURANCE.NS,Endurance Technologies Limited,Automobile & Auto Components,2023-11-02,2023-11-06,1582.127685546875,1670.79,2,3164.26,3341.58,177.32,21.95,155.37,4.91,4,Target 1 Hit (50% Partial Lock)
+ENDURANCE.NS,Endurance Technologies Limited,Automobile & Auto Components,2023-11-02,2023-11-09,1582.127685546875,1616.3131007121574,2,3164.26,3232.63,68.37,21.84,46.53,1.47,7,True Break-Even Stop (Runner)
+CANBK.NS,Canara Bank,Banking & Financial Services,2023-10-27,2023-11-13,69.29777526855469,73.71,46,3187.7,3390.66,202.96,22.04,180.92,5.68,17,Target 1 Hit (50% Partial Lock)
+GLAXO.NS,GlaxoSmithKline Pharmaceuticals Limited,Healthcare & Pharmaceuticals,2023-11-10,2023-11-15,1392.9312744140625,1461.97,2,2785.86,2923.94,138.08,21.08,117.0,4.2,5,Target 1 Hit (50% Partial Lock)
+GLAXO.NS,GlaxoSmithKline Pharmaceuticals Limited,Healthcare & Pharmaceuticals,2023-11-10,2023-11-15,1392.9312744140625,1403.46,2,2785.86,2806.92,21.06,20.95,0.11,0.0,5,True Break-Even Stop (Runner)
+GALLANTT.NS,Gallantt Ispat Limited,Information Technology,2023-11-03,2023-11-17,93.29541778564453,102.01,35,3265.34,3570.35,305.01,22.33,282.68,8.66,14,Target 1 Hit (50% Partial Lock)
+EIHOTEL.NS,EIH Limited,Consumer Goods & Retail,2023-11-06,2023-11-17,230.9431610107422,227.28476826829666,28,6466.41,6363.97,-102.44,29.03,-131.47,-2.03,11,Trailing Stop Hit
+LTFOODS.NS,LT Foods Limited,Consumer Goods & Retail,2023-11-02,2023-11-20,186.3959197998047,204.75,17,3168.73,3480.75,312.02,22.11,289.91,9.15,18,Target 1 Hit (50% Partial Lock)
+CANBK.NS,Canara Bank,Banking & Financial Services,2023-10-27,2023-11-24,69.29777526855469,70.96505776310364,46,3187.7,3264.39,76.69,21.91,54.78,1.72,28,True Break-Even Stop (Runner)
+LTFOODS.NS,LT Foods Limited,Consumer Goods & Retail,2023-11-02,2023-12-05,186.3959197998047,227.7,17,3168.73,3870.9,702.17,22.51,679.66,21.45,33,Target 2 Hit (Runner Extension)
+GALLANTT.NS,Gallantt Ispat Limited,Information Technology,2023-11-03,2023-12-05,93.29541778564453,95.1033636408747,35,3265.34,3328.62,63.28,22.08,41.2,1.26,32,True Break-Even Stop (Runner)
+BLS.NS,BLS International Services Limited,Consumer Goods & Retail,2023-12-04,2023-12-12,278.688720703125,303.4807904312429,12,3344.26,3641.77,297.51,22.48,275.03,8.22,8,Target 1 Hit (50% Partial Lock)
+MINDACORP.NS,Minda Corporation Limited,Automobile & Auto Components,2023-11-29,2023-12-19,370.21502685546875,397.64,9,3331.94,3578.76,246.82,22.41,224.41,6.74,20,Target 1 Hit (50% Partial Lock)
+MINDACORP.NS,Minda Corporation Limited,Automobile & Auto Components,2023-11-29,2023-12-20,370.21502685546875,372.73,9,3331.94,3354.57,22.63,22.17,0.46,0.01,21,True Break-Even Stop (Runner)
+TEGA.NS,Tega Industries Limited,Information Technology,2023-12-15,2023-12-20,1036.3350830078125,1105.22,3,3109.01,3315.66,206.65,21.88,184.77,5.94,5,Target 1 Hit (50% Partial Lock)
+TEGA.NS,Tega Industries Limited,Information Technology,2023-12-15,2023-12-20,1036.3350830078125,1043.61,3,3109.01,3130.83,21.82,21.68,0.14,0.0,5,True Break-Even Stop (Runner)
+SONACOMS.NS,Sona BLW Precision Forgings Limited,Automobile & Auto Components,2023-12-21,2023-12-27,561.5104370117188,595.03,6,3369.06,3570.18,201.12,22.45,178.67,5.3,6,Target 1 Hit (50% Partial Lock)
+BLS.NS,BLS International Services Limited,Consumer Goods & Retail,2023-12-04,2023-12-28,278.688720703125,323.3,12,3344.26,3879.6,535.34,22.73,512.61,15.33,24,Target 2 Hit (Runner Extension)
+SONACOMS.NS,Sona BLW Precision Forgings Limited,Automobile & Auto Components,2023-12-21,2023-12-29,561.5104370117188,636.92,6,3369.06,3821.52,452.46,22.7,429.76,12.76,8,Target 2 Hit (Runner Extension)
+DIVISLAB.NS,Divi's Laboratories Limited,Healthcare & Pharmaceuticals,2023-12-26,2024-01-02,3806.828369140625,3977.29,1,3806.83,3977.29,170.46,23.38,147.08,3.86,7,Target 1 Hit (50% Partial Lock)
+KPIL.NS,Kalpataru Projects International Limited,"Construction, Materials & Infra",2023-12-29,2024-01-05,693.3841552734375,738.87,5,3466.92,3694.35,227.43,22.68,204.75,5.91,7,Target 1 Hit (50% Partial Lock)
+DIVISLAB.NS,Divi's Laboratories Limited,Healthcare & Pharmaceuticals,2023-12-26,2024-01-10,3806.828369140625,3830.11,1,3806.83,3830.11,23.28,23.22,0.06,0.0,15,True Break-Even Stop (Runner)
+CREDITACC.NS,CREDITACCESS GRAMEEN LIMITED,Banking & Financial Services,2024-01-05,2024-01-15,1715.496826171875,1664.8851630696947,4,6861.99,6659.54,-202.45,29.8,-232.25,-3.38,10,Trailing Stop Hit
+MINDACORP.NS,Minda Corporation Limited,Automobile & Auto Components,2024-01-09,2024-01-16,385.39471435546875,380.8949960599875,18,6937.1,6856.11,-80.99,30.1,-111.09,-1.6,7,Trailing Stop Hit
+ADANIENSOL.NS,Adani Energy Solutions Limited,"Energy, Power & Utilities",2024-01-03,2024-01-17,1183.199951171875,1106.3179796886075,6,7099.2,6637.91,-461.29,30.06,-491.35,-6.92,14,Trailing Stop Hit
+KPIL.NS,Kalpataru Projects International Limited,"Construction, Materials & Infra",2023-12-29,2024-01-19,693.3841552734375,700.5128578286485,5,3466.92,3502.56,35.64,22.48,13.16,0.38,21,True Break-Even Stop (Runner)
+SBFC.NS,SBFC Finance Limited,Banking & Financial Services,2024-01-25,2024-01-30,89.30000305175781,87.98256851337894,74,6608.2,6510.71,-97.49,29.35,-126.84,-1.92,5,Trailing Stop Hit
+SAMMAANCAP.NS,Sammaan Capital Limited,Banking & Financial Services,2024-01-30,2024-02-02,189.2247772216797,184.0534440629754,34,6433.64,6257.82,-175.82,28.89,-204.71,-3.18,3,Trailing Stop Hit
+DIVISLAB.NS,Divi's Laboratories Limited,Healthcare & Pharmaceuticals,2024-02-12,2024-02-14,3685.28759765625,3635.873394870438,2,7370.58,7271.75,-98.83,31.04,-129.87,-1.76,2,Trailing Stop Hit
+TEGA.NS,Tega Industries Limited,Information Technology,2024-02-12,2024-02-15,1198.64599609375,1305.62,3,3595.94,3916.86,320.92,23.08,297.84,8.28,3,Target 1 Hit (50% Partial Lock)
+MINDACORP.NS,Minda Corporation Limited,Automobile & Auto Components,2024-02-16,2024-02-19,403.5526428222656,435.01,8,3228.42,3480.08,251.66,22.18,229.48,7.11,3,Target 1 Hit (50% Partial Lock)
+TEGA.NS,Tega Industries Limited,Information Technology,2024-02-12,2024-02-27,1198.64599609375,1221.8527082565495,3,3595.94,3665.56,69.62,22.82,46.8,1.3,15,True Break-Even Stop (Runner)
+MINDACORP.NS,Minda Corporation Limited,Automobile & Auto Components,2024-02-16,2024-02-28,403.5526428222656,414.0163329788462,8,3228.42,3312.13,83.71,22.01,61.7,1.91,12,True Break-Even Stop (Runner)
+SONACOMS.NS,Sona BLW Precision Forgings Limited,Automobile & Auto Components,2024-02-23,2024-02-29,639.5653076171875,684.57,5,3197.83,3422.85,225.02,22.08,202.94,6.35,6,Target 1 Hit (50% Partial Lock)
+SONACOMS.NS,Sona BLW Precision Forgings Limited,Automobile & Auto Components,2024-02-23,2024-02-29,639.5653076171875,643.99,5,3197.83,3219.95,22.12,21.88,0.24,0.01,6,True Break-Even Stop (Runner)
+CGPOWER.NS,CG Power and Industrial Solutions Limited,Information Technology,2024-02-29,2024-03-01,441.3955078125,478.4896545410156,8,3531.16,3827.92,296.76,22.89,273.87,7.76,1,Target 1 Hit (50% Partial Lock)
+SBFC.NS,SBFC Finance Limited,Banking & Financial Services,2024-03-04,2024-03-05,89.80000305175781,95.86,37,3322.6,3546.82,224.22,22.37,201.85,6.08,1,Target 1 Hit (50% Partial Lock)
+SBFC.NS,SBFC Finance Limited,Banking & Financial Services,2024-03-04,2024-03-06,89.80000305175781,90.45,37,3322.6,3346.65,24.05,22.16,1.89,0.06,2,True Break-Even Stop (Runner)
+UNIONBANK.NS,Union Bank of India,Banking & Financial Services,2024-02-29,2024-03-07,133.90887451171875,145.89,25,3347.72,3647.25,299.53,22.5,277.03,8.28,7,Target 1 Hit (50% Partial Lock)
+UNIONBANK.NS,Union Bank of India,Banking & Financial Services,2024-02-29,2024-03-13,133.90887451171875,135.59539450787375,25,3347.72,3389.88,42.16,22.23,19.93,0.6,13,True Break-Even Stop (Runner)
+MUTHOOTFIN.NS,Muthoot Finance Limited,Banking & Financial Services,2024-03-05,2024-03-13,1315.508544921875,1312.020403739611,6,7893.05,7872.12,-20.93,32.25,-53.18,-0.67,8,Trailing Stop Hit
+ZYDUSWELL.NS,Zydus Wellness Limited,Consumer Goods & Retail,2024-03-11,2024-03-13,316.0577392578125,312.11666765227477,22,6953.27,6866.57,-86.7,30.12,-116.82,-1.68,2,Trailing Stop Hit
+CGPOWER.NS,CG Power and Industrial Solutions Limited,Information Technology,2024-02-29,2024-03-14,441.3955078125,449.9061256653591,8,3531.16,3599.25,68.09,22.66,45.43,1.29,14,True Break-Even Stop (Runner)
+LTFOODS.NS,LT Foods Limited,Consumer Goods & Retail,2024-03-20,2024-04-01,176.47970581054688,194.03,19,3353.11,3686.57,333.46,22.54,310.92,9.27,12,Target 1 Hit (50% Partial Lock)
+MAZDOCK.NS,Mazagon Dock Shipbuilders Limited,Information Technology,2024-04-01,2024-04-03,982.7162475585938,1062.41,3,2948.15,3187.23,239.08,21.55,217.53,7.38,2,Target 1 Hit (50% Partial Lock)
+MAZDOCK.NS,Mazagon Dock Shipbuilders Limited,Information Technology,2024-04-01,2024-04-03,982.7162475585938,980.3587071712858,3,2948.15,2941.08,-7.07,21.3,-28.37,-0.96,2,True Break-Even Stop (Runner)
+LTFOODS.NS,LT Foods Limited,Consumer Goods & Retail,2024-03-20,2024-04-15,176.47970581054688,193.83965922958026,19,3353.11,3682.95,329.84,22.53,307.31,9.16,26,True Break-Even Stop (Runner)
+ATUL.NS,Atul Limited,Chemicals & Fertilisers,2024-04-10,2024-04-15,6127.3681640625,5924.607022795447,2,12254.74,11849.21,-405.53,41.55,-447.08,-3.65,5,Trailing Stop Hit
+SONACOMS.NS,Sona BLW Precision Forgings Limited,Automobile & Auto Components,2024-04-12,2024-04-16,669.8566284179688,650.1549377475668,10,6698.57,6501.55,-197.02,29.44,-226.46,-3.38,4,Trailing Stop Hit
+JWL.NS,Jupiter Wagons Limited,Information Technology,2024-04-22,2024-04-25,395.35015869140625,428.55,8,3162.8,3428.4,265.6,22.04,243.56,7.7,3,Target 1 Hit (50% Partial Lock)
+JWL.NS,Jupiter Wagons Limited,Information Technology,2024-04-22,2024-04-25,395.35015869140625,391.9175166548163,8,3162.8,3135.34,-27.46,21.74,-49.2,-1.56,3,True Break-Even Stop (Runner)
+BLS.NS,BLS International Services Limited,Consumer Goods & Retail,2024-04-29,2024-05-06,346.1172790527344,336.0709941002356,20,6922.35,6721.42,-200.93,29.94,-230.87,-3.34,7,Trailing Stop Hit
+TEGA.NS,Tega Industries Limited,Information Technology,2024-05-23,2024-05-27,1539.4840087890625,1500.5651919528261,4,6157.94,6002.26,-155.68,28.27,-183.95,-2.99,4,Trailing Stop Hit
+CANBK.NS,Canara Bank,Banking & Financial Services,2024-05-31,2024-06-03,107.36786651611328,113.99,31,3328.4,3533.69,205.29,22.35,182.94,5.5,3,Target 1 Hit (50% Partial Lock)
+ARE&M.NS,Amara Raja Energy & Mobility Limited,Automobile & Auto Components,2024-05-24,2024-06-04,1180.8399658203125,1121.5334187244907,6,7085.04,6729.2,-355.84,30.14,-385.98,-5.45,11,Trailing Stop Hit
+CANBK.NS,Canara Bank,Banking & Financial Services,2024-05-31,2024-06-04,107.36786651611328,108.13,31,3328.4,3352.03,23.63,22.17,1.46,0.04,4,True Break-Even Stop (Runner)
+MUTHOOTFIN.NS,Muthoot Finance Limited,Banking & Financial Services,2024-05-31,2024-06-04,1649.15234375,1635.8648709572115,4,6596.61,6543.46,-53.15,29.37,-82.52,-1.25,4,Trailing Stop Hit
+ARE&M.NS,Amara Raja Energy & Mobility Limited,Automobile & Auto Components,2024-06-05,2024-06-07,1187.9141845703125,1337.4,3,3563.74,4012.2,448.46,23.12,425.34,11.94,2,Target 1 Hit (50% Partial Lock)
+CREDITACC.NS,CREDITACCESS GRAMEEN LIMITED,Banking & Financial Services,2024-06-05,2024-06-07,1393.2520751953125,1511.98,2,2786.5,3023.96,237.46,21.18,216.28,7.76,2,Target 1 Hit (50% Partial Lock)
+KPIL.NS,Kalpataru Projects International Limited,"Construction, Materials & Infra",2024-06-07,2024-06-18,1236.3494873046875,1183.0022502526133,6,7418.1,7098.01,-320.09,30.91,-351.0,-4.73,11,Trailing Stop Hit
+DMART.NS,Avenue Supermarts Limited,Consumer Goods & Retail,2024-06-05,2024-06-19,4862.25,5172.05,1,4862.25,5172.05,309.8,25.87,283.93,5.84,14,Target 1 Hit (50% Partial Lock)
+FEDERALBNK.NS,The Federal Bank  Limited,Banking & Financial Services,2024-06-05,2024-06-19,163.51806640625,173.89,20,3270.36,3477.8,207.44,22.23,185.21,5.66,14,Target 1 Hit (50% Partial Lock)
+DMART.NS,Avenue Supermarts Limited,Consumer Goods & Retail,2024-06-05,2024-06-20,4862.25,4887.88,1,4862.25,4887.88,25.63,25.58,0.05,0.0,15,True Break-Even Stop (Runner)
+CREDITACC.NS,CREDITACCESS GRAMEEN LIMITED,Banking & Financial Services,2024-06-05,2024-06-24,1393.2520751953125,1436.5985949994795,2,2786.5,2873.2,86.7,21.03,65.67,2.36,19,True Break-Even Stop (Runner)
+MINDACORP.NS,Minda Corporation Limited,Automobile & Auto Components,2024-06-06,2024-06-24,454.4126892089844,490.35,7,3180.89,3432.45,251.56,22.07,229.49,7.21,18,Target 1 Hit (50% Partial Lock)
+ARE&M.NS,Amara Raja Energy & Mobility Limited,Automobile & Auto Components,2024-06-05,2024-06-25,1187.9141845703125,1524.26,3,3563.74,4572.78,1009.04,23.71,985.33,27.65,20,Target 2 Hit (Runner Extension)
+FEDERALBNK.NS,The Federal Bank  Limited,Banking & Financial Services,2024-06-05,2024-07-11,163.51806640625,186.86,20,3270.36,3737.2,466.84,22.5,444.34,13.59,36,Target 2 Hit (Runner Extension)
+MINDACORP.NS,Minda Corporation Limited,Automobile & Auto Components,2024-06-06,2024-07-12,454.4126892089844,477.51135003797094,7,3180.89,3342.58,161.69,21.98,139.71,4.39,36,True Break-Even Stop (Runner)
+LTFOODS.NS,LT Foods Limited,Consumer Goods & Retail,2024-07-09,2024-07-23,269.75982666015625,293.49,13,3506.88,3815.37,308.49,22.86,285.63,8.14,14,Target 1 Hit (50% Partial Lock)
+LTFOODS.NS,LT Foods Limited,Consumer Goods & Retail,2024-07-09,2024-07-23,269.75982666015625,271.55,13,3506.88,3530.15,23.27,22.56,0.71,0.02,14,True Break-Even Stop (Runner)
+CHOLAFIN.NS,Cholamandalam Investment and Finance Company Limited,Banking & Financial Services,2024-07-29,2024-08-01,1429.7762451171875,1403.9725775479774,4,5719.1,5615.89,-103.21,27.37,-130.58,-2.28,3,Trailing Stop Hit
+CGPOWER.NS,CG Power and Industrial Solutions Limited,Information Technology,2024-07-25,2024-08-02,725.5516357421875,715.6172433184918,10,7255.52,7156.17,-99.35,30.79,-130.14,-1.79,8,Trailing Stop Hit
+DIVISLAB.NS,Divi's Laboratories Limited,Healthcare & Pharmaceuticals,2024-07-26,2024-08-02,4720.3291015625,4944.94,1,4720.33,4944.94,224.61,25.47,199.14,4.22,7,Target 1 Hit (50% Partial Lock)
+DIVISLAB.NS,Divi's Laboratories Limited,Healthcare & Pharmaceuticals,2024-07-26,2024-08-05,4720.3291015625,4745.65,1,4720.33,4745.65,25.32,25.27,0.05,0.0,10,True Break-Even Stop (Runner)
+CUB.NS,City Union Bank Limited,Banking & Financial Services,2024-07-29,2024-08-05,123.42498016357422,116.88977287547756,56,6911.8,6545.83,-365.97,29.75,-395.72,-5.73,7,Trailing Stop Hit
+BLS.NS,BLS International Services Limited,Consumer Goods & Retail,2024-08-06,2024-08-14,380.88226318359375,362.9805029373691,18,6855.88,6533.65,-322.23,29.66,-351.89,-5.13,8,Trailing Stop Hit
+ARE&M.NS,Amara Raja Energy & Mobility Limited,Automobile & Auto Components,2024-08-12,2024-08-14,1564.0848388671875,1530.5834054135078,4,6256.34,6122.33,-134.01,28.53,-162.54,-2.6,2,Trailing Stop Hit
+SAMMAANCAP.NS,Sammaan Capital Limited,Banking & Financial Services,2024-08-20,2024-08-28,168.40347290039062,163.7109868919682,40,6736.14,6548.44,-187.7,29.54,-217.24,-3.22,8,Trailing Stop Hit
+KPIL.NS,Kalpataru Projects International Limited,"Construction, Materials & Infra",2024-08-23,2024-09-02,1277.942138671875,1377.35,3,3833.83,4132.05,298.22,23.56,274.66,7.16,10,Target 1 Hit (50% Partial Lock)
+DMART.NS,Avenue Supermarts Limited,Consumer Goods & Retail,2024-08-29,2024-09-02,5008.7998046875,4977.0,2,10017.6,9954.0,-63.6,36.96,-100.56,-1.0,4,Trailing Stop Hit
+TMPV.NS,Tata Motors Passenger Vehicles Limited,Automobile & Auto Components,2024-08-29,2024-09-04,1102.9393310546875,1061.0007497418949,6,6617.64,6366.0,-251.64,29.22,-280.86,-4.24,6,Trailing Stop Hit
+MAZDOCK.NS,Mazagon Dock Shipbuilders Limited,Information Technology,2024-09-04,2024-09-06,2345.198974609375,2238.2258093536034,2,4690.4,4476.45,-213.95,24.94,-238.89,-5.09,2,Trailing Stop Hit
+KPIL.NS,Kalpataru Projects International Limited,"Construction, Materials & Infra",2024-08-23,2024-09-12,1277.942138671875,1320.3860641669257,3,3833.83,3961.16,127.33,23.39,103.94,2.71,20,True Break-Even Stop (Runner)
+SAMMAANCAP.NS,Sammaan Capital Limited,Banking & Financial Services,2024-09-13,2024-09-17,166.28065490722656,161.19243715088473,40,6651.23,6447.7,-203.53,29.34,-232.87,-3.5,4,Trailing Stop Hit
+UNIONBANK.NS,Union Bank of India,Banking & Financial Services,2024-09-16,2024-09-18,115.75534057617188,114.97667850135372,58,6713.81,6668.65,-45.16,29.64,-74.8,-1.11,2,Trailing Stop Hit
+CGPOWER.NS,CG Power and Industrial Solutions Limited,Information Technology,2024-09-12,2024-09-24,726.099365234375,774.93,5,3630.5,3874.65,244.15,23.06,221.09,6.09,12,Target 1 Hit (50% Partial Lock)
+CGPOWER.NS,CG Power and Industrial Solutions Limited,Information Technology,2024-09-12,2024-10-03,726.099365234375,731.9248697258196,5,3630.5,3659.62,29.12,22.84,6.28,0.17,21,True Break-Even Stop (Runner)
+ATUL.NS,Atul Limited,Chemicals & Fertilisers,2024-10-01,2024-10-04,7936.65771484375,7699.2225731256685,2,15873.32,15398.45,-474.87,49.55,-524.42,-3.3,3,Trailing Stop Hit
+MINDACORP.NS,Minda Corporation Limited,Automobile & Auto Components,2024-09-23,2024-10-07,585.073486328125,577.7461624645937,12,7020.88,6932.95,-87.93,30.27,-118.2,-1.68,14,Trailing Stop Hit
+CGPOWER.NS,CG Power and Industrial Solutions Limited,Information Technology,2024-10-07,2024-10-10,755.9738159179688,808.67,4,3023.9,3234.68,210.78,21.68,189.1,6.25,3,Target 1 Hit (50% Partial Lock)
+USHAMART.NS,Usha Martin Limited,Information Technology,2024-10-10,2024-10-11,361.5208435058594,388.32,9,3253.69,3494.88,241.19,22.22,218.97,6.73,1,Target 1 Hit (50% Partial Lock)
+USHAMART.NS,Usha Martin Limited,Information Technology,2024-10-10,2024-10-11,361.5208435058594,421.81,9,3253.69,3796.29,542.6,22.54,520.06,15.98,1,Target 2 Hit (Runner Extension)
+MAZDOCK.NS,Mazagon Dock Shipbuilders Limited,Information Technology,2024-10-10,2024-10-17,2181.35888671875,2098.6989998672757,4,8725.44,8394.8,-330.64,33.81,-364.45,-4.18,7,Trailing Stop Hit
+CGPOWER.NS,CG Power and Industrial Solutions Limited,Information Technology,2024-10-07,2024-10-21,755.9738159179688,790.7834958881906,4,3023.9,3163.13,139.23,21.6,117.63,3.89,14,True Break-Even Stop (Runner)
+BLS.NS,BLS International Services Limited,Consumer Goods & Retail,2024-10-23,2024-10-25,377.2022705078125,372.6202550665477,18,6789.64,6707.16,-82.48,29.77,-112.25,-1.65,2,Trailing Stop Hit
+SONACOMS.NS,Sona BLW Precision Forgings Limited,Automobile & Auto Components,2024-10-24,2024-10-29,720.2594604492188,671.4571256296658,10,7202.59,6714.57,-488.02,30.25,-518.27,-7.2,5,Trailing Stop Hit
+CANBK.NS,Canara Bank,Banking & Financial Services,2024-10-29,2024-10-31,96.97203826904297,95.86502377691096,70,6788.04,6710.55,-77.49,29.77,-107.26,-1.58,2,Trailing Stop Hit
+CUB.NS,City Union Bank Limited,Banking & Financial Services,2024-10-22,2024-11-04,124.04081726074219,132.2,27,3349.1,3569.4,220.3,22.42,197.88,5.91,13,Target 1 Hit (50% Partial Lock)
+JWL.NS,Jupiter Wagons Limited,Information Technology,2024-10-31,2024-11-04,514.4784545898438,497.2251356690891,14,7202.7,6961.15,-241.55,30.51,-272.06,-3.78,4,Trailing Stop Hit
+BANKBARODA.NS,Bank of Baroda,Banking & Financial Services,2024-10-28,2024-11-07,234.0247039794922,249.02,14,3276.35,3486.28,209.93,22.25,187.68,5.73,10,Target 1 Hit (50% Partial Lock)
+COFORGE.NS,Coforge Limited,Information Technology,2024-10-23,2024-11-11,1487.3624267578125,1587.41,2,2974.72,3174.82,200.1,21.56,178.54,6.0,19,Target 1 Hit (50% Partial Lock)
+BANKBARODA.NS,Bank of Baroda,Banking & Financial Services,2024-10-28,2024-11-12,234.0247039794922,235.9979828335839,14,3276.35,3303.97,27.62,22.06,5.56,0.17,15,True Break-Even Stop (Runner)
+CUB.NS,City Union Bank Limited,Banking & Financial Services,2024-10-22,2024-11-13,124.04081726074219,126.84560312361438,27,3349.1,3424.83,75.73,22.26,53.47,1.6,22,True Break-Even Stop (Runner)
+FEDERALBNK.NS,The Federal Bank  Limited,Banking & Financial Services,2024-10-29,2024-11-13,198.81314086914062,198.45646001597993,34,6759.65,6747.52,-12.13,29.77,-41.9,-0.62,15,Trailing Stop Hit
+SAMMAANCAP.NS,Sammaan Capital Limited,Banking & Financial Services,2024-11-18,2024-11-21,144.58999633789062,156.59,23,3325.57,3601.57,276.0,22.43,253.57,7.62,3,Target 1 Hit (50% Partial Lock)
+COFORGE.NS,Coforge Limited,Information Technology,2024-10-23,2024-11-27,1487.3624267578125,1712.47,2,2974.72,3424.94,450.22,21.82,428.4,14.4,35,Target 2 Hit (Runner Extension)
+PVRINOX.NS,PVR INOX Limited,Diversified & Others,2024-11-27,2024-12-03,1514.199951171875,1602.58,2,3028.4,3205.16,176.76,21.67,155.09,5.12,6,Target 1 Hit (50% Partial Lock)
+PVRINOX.NS,PVR INOX Limited,Diversified & Others,2024-11-27,2024-12-06,1514.199951171875,1529.5082268539795,2,3028.4,3059.02,30.62,21.51,9.11,0.3,9,True Break-Even Stop (Runner)
+NATCOPHARM.NS,Natco Pharma Limited,Healthcare & Pharmaceuticals,2024-12-02,2024-12-10,1402.122802734375,1488.56,2,2804.25,2977.12,172.87,21.15,151.72,5.41,8,Target 1 Hit (50% Partial Lock)
+BLS.NS,BLS International Services Limited,Consumer Goods & Retail,2024-12-03,2024-12-10,415.12548828125,445.96,8,3321.0,3567.68,246.68,22.39,224.29,6.75,7,Target 1 Hit (50% Partial Lock)
+SAMMAANCAP.NS,Sammaan Capital Limited,Banking & Financial Services,2024-11-18,2024-12-13,144.58999633789062,160.43768323415316,23,3325.57,3690.07,364.5,22.52,341.98,10.28,25,True Break-Even Stop (Runner)
+NATCOPHARM.NS,Natco Pharma Limited,Healthcare & Pharmaceuticals,2024-12-02,2024-12-16,1402.122802734375,1412.67,2,2804.25,2825.34,21.09,20.98,0.11,0.0,14,True Break-Even Stop (Runner)
+BLS.NS,BLS International Services Limited,Consumer Goods & Retail,2024-12-03,2024-12-16,415.12548828125,484.5,8,3321.0,3876.0,555.0,22.71,532.29,16.03,13,Target 2 Hit (Runner Extension)
+KPIL.NS,Kalpataru Projects International Limited,"Construction, Materials & Infra",2024-12-05,2024-12-16,1229.610107421875,1313.51,3,3688.83,3940.53,251.7,23.2,228.5,6.19,11,Target 1 Hit (50% Partial Lock)
+KPIL.NS,Kalpataru Projects International Limited,"Construction, Materials & Infra",2024-12-05,2024-12-23,1229.610107421875,1242.7455604780896,3,3688.83,3728.24,39.41,22.98,16.43,0.45,18,True Break-Even Stop (Runner)
+CREDITACC.NS,CREDITACCESS GRAMEEN LIMITED,Banking & Financial Services,2024-12-30,2025-01-02,909.25,973.91,4,3637.0,3895.64,258.64,23.11,235.53,6.48,3,Target 1 Hit (50% Partial Lock)
+CREDITACC.NS,CREDITACCESS GRAMEEN LIMITED,Banking & Financial Services,2024-12-30,2025-01-02,909.25,896.3499755859375,4,3637.0,3585.4,-51.6,22.79,-74.39,-2.05,3,True Break-Even Stop (Runner)
+MINDACORP.NS,Minda Corporation Limited,Automobile & Auto Components,2025-01-01,2025-01-03,518.9486083984375,506.05178663741475,14,7265.28,7084.73,-180.55,30.72,-211.27,-2.91,2,Trailing Stop Hit
+DIVISLAB.NS,Divi's Laboratories Limited,Healthcare & Pharmaceuticals,2024-12-30,2025-01-06,5992.88671875,5925.051426351051,2,11985.77,11850.1,-135.67,41.25,-176.92,-1.48,7,Trailing Stop Hit
+SAMMAANCAP.NS,Sammaan Capital Limited,Banking & Financial Services,2025-01-02,2025-01-06,162.7899932861328,156.42581745318623,42,6837.18,6569.88,-267.3,29.69,-296.99,-4.34,4,Trailing Stop Hit
+CHOLAFIN.NS,Cholamandalam Investment and Finance Company Limited,Banking & Financial Services,2025-01-02,2025-01-10,1268.2852783203125,1251.8420297523958,6,7609.71,7511.05,-98.66,31.56,-130.22,-1.71,8,Trailing Stop Hit
+MINDACORP.NS,Minda Corporation Limited,Automobile & Auto Components,2025-01-07,2025-01-13,527.904541015625,512.7755260150811,12,6334.85,6153.31,-181.54,28.64,-210.18,-3.32,6,Trailing Stop Hit
+MINDACORP.NS,Minda Corporation Limited,Automobile & Auto Components,2025-01-14,2025-01-16,539.2985229492188,580.79,6,3235.79,3484.74,248.95,22.2,226.75,7.01,2,Target 1 Hit (50% Partial Lock)
+JWL.NS,Jupiter Wagons Limited,Information Technology,2025-01-16,2025-01-21,493.53021240234375,482.33768755319227,14,6909.42,6752.73,-156.69,29.96,-186.65,-2.7,5,Trailing Stop Hit
+BLS.NS,BLS International Services Limited,Consumer Goods & Retail,2025-01-17,2025-01-21,496.9128723144531,460.20294547039146,14,6956.78,6442.84,-513.94,29.69,-543.63,-7.81,4,Trailing Stop Hit
+MINDACORP.NS,Minda Corporation Limited,Automobile & Auto Components,2025-01-14,2025-01-27,539.2985229492188,548.0041073974262,6,3235.79,3288.02,52.23,22.01,30.22,0.93,13,True Break-Even Stop (Runner)
+COFORGE.NS,Coforge Limited,Information Technology,2025-01-23,2025-01-27,1809.8460693359375,1765.5015564001437,4,7239.38,7062.01,-177.37,30.67,-208.04,-2.87,4,Trailing Stop Hit
+TEGA.NS,Tega Industries Limited,Information Technology,2025-02-05,2025-02-07,1642.357177734375,1560.6834153209998,4,6569.43,6242.73,-326.7,29.04,-355.74,-5.42,2,Trailing Stop Hit
+DIVISLAB.NS,Divi's Laboratories Limited,Healthcare & Pharmaceuticals,2025-02-03,2025-02-11,5833.3740234375,5838.140727482228,2,11666.75,11676.28,9.53,40.69,-31.16,-0.27,8,Trailing Stop Hit
+GLAXO.NS,GlaxoSmithKline Pharmaceuticals Limited,Healthcare & Pharmaceuticals,2025-02-06,2025-02-11,2176.16015625,2013.9505939077826,4,8704.64,8055.8,-648.84,33.43,-682.27,-7.84,5,Trailing Stop Hit
+MUTHOOTFIN.NS,Muthoot Finance Limited,Banking & Financial Services,2025-02-13,2025-02-17,2270.57861328125,2165.5637034883753,2,4541.16,4331.13,-210.03,24.6,-234.63,-5.17,4,Trailing Stop Hit
+GLAXO.NS,GlaxoSmithKline Pharmaceuticals Limited,Healthcare & Pharmaceuticals,2025-02-17,2025-02-18,2252.78515625,2462.96,1,2252.79,2462.96,210.17,19.96,190.21,8.44,1,Target 1 Hit (50% Partial Lock)
+GLAXO.NS,GlaxoSmithKline Pharmaceuticals Limited,Healthcare & Pharmaceuticals,2025-02-17,2025-02-18,2252.78515625,2246.816794370005,1,2252.79,2246.82,-5.97,19.75,-25.72,-1.14,1,True Break-Even Stop (Runner)
+ARE&M.NS,Amara Raja Energy & Mobility Limited,Automobile & Auto Components,2025-02-20,2025-02-24,1027.97216796875,999.2644518933241,6,6167.83,5995.59,-172.24,28.29,-200.53,-3.25,4,Trailing Stop Hit
+SBFC.NS,SBFC Finance Limited,Banking & Financial Services,2025-02-20,2025-02-28,85.41000366210938,85.17112475649944,78,6661.98,6643.35,-18.63,29.55,-48.18,-0.72,8,Trailing Stop Hit
+ADANIENSOL.NS,Adani Energy Solutions Limited,"Energy, Power & Utilities",2025-03-05,2025-03-10,709.4500122070312,774.98,5,3547.25,3874.9,327.65,22.97,304.68,8.59,5,Target 1 Hit (50% Partial Lock)
+CREDITACC.NS,CREDITACCESS GRAMEEN LIMITED,Banking & Financial Services,2025-03-06,2025-03-10,985.0,945.229910671235,6,5910.0,5671.38,-238.62,27.65,-266.27,-4.51,4,Trailing Stop Hit
+MUTHOOTFIN.NS,Muthoot Finance Limited,Banking & Financial Services,2025-03-17,2025-03-19,2243.540771484375,2369.91,1,2243.54,2369.91,126.37,19.86,106.51,4.75,2,Target 1 Hit (50% Partial Lock)
+MUTHOOTFIN.NS,Muthoot Finance Limited,Banking & Financial Services,2025-03-17,2025-03-26,2243.540771484375,2263.35,1,2243.54,2263.35,19.81,19.75,0.06,0.0,9,True Break-Even Stop (Runner)
+ADANIENSOL.NS,Adani Energy Solutions Limited,"Energy, Power & Utilities",2025-03-05,2025-03-27,709.4500122070312,856.9,5,3547.25,4284.5,737.25,23.39,713.86,20.12,22,Target 2 Hit (Runner Extension)
+SBFC.NS,SBFC Finance Limited,Banking & Financial Services,2025-03-21,2025-04-02,87.9800033569336,94.1,38,3343.24,3575.8,232.56,22.42,210.14,6.29,12,Target 1 Hit (50% Partial Lock)
+SBFC.NS,SBFC Finance Limited,Banking & Financial Services,2025-03-21,2025-04-07,87.9800033569336,82.0,38,3343.24,3116.0,-227.24,21.94,-249.18,-7.45,17,True Break-Even Stop (Runner)
+ATUL.NS,Atul Limited,Chemicals & Fertilisers,2025-04-11,2025-04-25,5680.26220703125,6257.02,1,5680.26,6257.02,576.76,27.99,548.77,9.66,14,Target 1 Hit (50% Partial Lock)
+ANANTRAJ.NS,Anant Raj Limited,"Construction, Materials & Infra",2025-04-21,2025-04-25,492.1978454589844,480.901261495608,14,6890.77,6732.62,-158.15,29.9,-188.05,-2.73,4,Trailing Stop Hit
+ATUL.NS,Atul Limited,Chemicals & Fertilisers,2025-04-11,2025-05-05,5680.26220703125,6993.029757548369,1,5680.26,6993.03,1312.77,28.74,1284.03,22.61,24,Target 2 Hit (Runner Extension)
+CANBK.NS,Canara Bank,Banking & Financial Services,2025-05-08,2025-05-13,89.13091278076172,95.19,38,3386.97,3617.22,230.25,22.52,207.73,6.13,5,Target 1 Hit (50% Partial Lock)
+ENDURANCE.NS,Endurance Technologies Limited,Automobile & Auto Components,2025-05-07,2025-05-14,2006.41162109375,2164.4,2,4012.82,4328.8,315.98,23.98,292.0,7.28,7,Target 1 Hit (50% Partial Lock)
+JWL.NS,Jupiter Wagons Limited,Information Technology,2025-05-12,2025-05-16,369.1875305175781,405.52,9,3322.69,3649.68,326.99,22.47,304.52,9.16,4,Target 1 Hit (50% Partial Lock)
+GLAXO.NS,GlaxoSmithKline Pharmaceuticals Limited,Healthcare & Pharmaceuticals,2025-05-14,2025-05-16,2771.207275390625,2717.6800493054093,2,5542.41,5435.36,-107.05,26.96,-134.01,-2.42,2,Trailing Stop Hit
+JWL.NS,Jupiter Wagons Limited,Information Technology,2025-05-12,2025-05-19,369.1875305175781,450.94,9,3322.69,4058.46,735.77,22.89,712.88,21.45,7,Target 2 Hit (Runner Extension)
+ENDURANCE.NS,Endurance Technologies Limited,Automobile & Auto Components,2025-05-07,2025-05-21,2006.41162109375,2361.89,2,4012.82,4723.78,710.96,24.39,686.57,17.11,14,Target 2 Hit (Runner Extension)
+CANBK.NS,Canara Bank,Banking & Financial Services,2025-05-08,2025-05-28,89.13091278076172,102.77,38,3386.97,3905.26,518.29,22.82,495.47,14.63,20,Target 2 Hit (Runner Extension)
+GLAXO.NS,GlaxoSmithKline Pharmaceuticals Limited,Healthcare & Pharmaceuticals,2025-05-21,2025-05-28,2872.66796875,3109.12,1,2872.67,3109.12,236.45,21.38,215.07,7.49,7,Target 1 Hit (50% Partial Lock)
+GLAXO.NS,GlaxoSmithKline Pharmaceuticals Limited,Healthcare & Pharmaceuticals,2025-05-21,2025-06-05,2872.66796875,3404.69,1,2872.67,3404.69,532.02,21.68,510.34,17.77,15,Target 2 Hit (Runner Extension)
+FIRSTCRY.NS,Brainbees Solutions Limited,Consumer Goods & Retail,2025-06-03,2025-06-05,371.95001220703125,409.37,9,3347.55,3684.33,336.78,22.53,314.25,9.39,2,Target 1 Hit (50% Partial Lock)
+FIRSTCRY.NS,Brainbees Solutions Limited,Consumer Goods & Retail,2025-06-03,2025-06-05,371.95001220703125,364.0,9,3347.55,3276.0,-71.55,22.12,-93.67,-2.8,2,True Break-Even Stop (Runner)
+MUTHOOTFIN.NS,Muthoot Finance Limited,Banking & Financial Services,2025-05-30,2025-06-06,2196.82470703125,2340.85,2,4393.65,4681.7,288.05,24.8,263.25,5.99,7,Target 1 Hit (50% Partial Lock)
+MUTHOOTFIN.NS,Muthoot Finance Limited,Banking & Financial Services,2025-05-30,2025-06-09,2196.82470703125,2520.88,2,4393.65,5041.76,648.11,25.18,622.93,14.18,10,Target 2 Hit (Runner Extension)
+OFSS.NS,Oracle Financial Services Software Limited,Information Technology,2025-06-04,2025-06-09,8295.544921875,8743.94,1,8295.54,8743.94,448.4,33.66,414.74,5.0,5,Target 1 Hit (50% Partial Lock)
+ADANIENSOL.NS,Adani Energy Solutions Limited,"Energy, Power & Utilities",2025-06-06,2025-06-12,884.0999755859375,885.1024884880053,8,7072.8,7080.82,8.02,30.48,-22.46,-0.32,6,Trailing Stop Hit
+SBFC.NS,SBFC Finance Limited,Banking & Financial Services,2025-05-14,2025-06-13,109.48999786376953,110.0,64,7007.36,7040.0,32.64,30.37,2.27,0.03,30,Trailing Stop Hit
+ZYDUSWELL.NS,Zydus Wellness Limited,Consumer Goods & Retail,2025-06-06,2025-06-13,387.38604736328125,380.8444835114406,18,6972.95,6855.2,-117.75,30.14,-147.89,-2.12,7,Trailing Stop Hit
+OFSS.NS,Oracle Financial Services Software Limited,Information Technology,2025-06-04,2025-06-16,8295.544921875,9304.44,1,8295.54,9304.44,1008.9,34.24,974.66,11.75,12,Target 2 Hit (Runner Extension)
+ATUL.NS,Atul Limited,Chemicals & Fertilisers,2025-06-16,2025-06-18,7193.865234375,7047.5393350324275,2,14387.73,14095.08,-292.65,46.43,-339.08,-2.36,2,Trailing Stop Hit
+ENDURANCE.NS,Endurance Technologies Limited,Automobile & Auto Components,2025-06-16,2025-06-19,2439.41796875,2382.6930247592113,2,4878.84,4765.39,-113.45,25.47,-138.92,-2.85,3,Trailing Stop Hit
+GALLANTT.NS,Gallantt Ispat Limited,Information Technology,2025-06-19,2025-06-23,469.7722473144531,511.99,8,3758.18,4095.92,337.74,23.44,314.3,8.36,4,Target 1 Hit (50% Partial Lock)
+GALLANTT.NS,Gallantt Ispat Limited,Information Technology,2025-06-19,2025-06-25,469.7722473144531,564.77,8,3758.18,4518.16,759.98,23.87,736.11,19.59,6,Target 2 Hit (Runner Extension)
+ENDURANCE.NS,Endurance Technologies Limited,Automobile & Auto Components,2025-06-20,2025-06-25,2555.382568359375,2748.99,1,2555.38,2748.99,193.61,20.62,172.99,6.77,5,Target 1 Hit (50% Partial Lock)
+ENDURANCE.NS,Endurance Technologies Limited,Automobile & Auto Components,2025-06-20,2025-06-25,2555.382568359375,2499.9298331407485,1,2555.38,2499.93,-55.45,20.36,-75.81,-2.97,5,True Break-Even Stop (Runner)
+USHAMART.NS,Usha Martin Limited,Information Technology,2025-06-24,2025-06-27,326.9590148925781,347.45,11,3596.55,3821.95,225.4,22.97,202.43,5.63,3,Target 1 Hit (50% Partial Lock)
+DMART.NS,Avenue Supermarts Limited,Consumer Goods & Retail,2025-06-18,2025-07-01,4228.39990234375,4439.35,1,4228.4,4439.35,210.95,24.35,186.6,4.41,13,Target 1 Hit (50% Partial Lock)
+GLAXO.NS,GlaxoSmithKline Pharmaceuticals Limited,Healthcare & Pharmaceuticals,2025-06-27,2025-07-02,3354.216796875,3195.8343964813766,2,6708.43,6391.67,-316.76,29.35,-346.11,-5.16,5,Trailing Stop Hit
+SBFC.NS,SBFC Finance Limited,Banking & Financial Services,2025-06-30,2025-07-02,112.12999725341797,107.87756672814488,64,7176.32,6904.16,-272.16,30.43,-302.59,-4.22,2,Trailing Stop Hit
+DMART.NS,Avenue Supermarts Limited,Consumer Goods & Retail,2025-06-18,2025-07-03,4228.39990234375,4252.62,1,4228.4,4252.62,24.22,24.16,0.06,0.0,15,True Break-Even Stop (Runner)
+FIRSTCRY.NS,Brainbees Solutions Limited,Consumer Goods & Retail,2025-06-26,2025-07-04,396.79998779296875,370.06599241409555,18,7142.4,6661.19,-481.21,30.13,-511.34,-7.16,8,Trailing Stop Hit
+ATUL.NS,Atul Limited,Chemicals & Fertilisers,2025-06-25,2025-07-11,7296.513671875,7324.392200219395,2,14593.03,14648.78,55.75,47.23,8.52,0.06,16,Trailing Stop Hit
+PGEL.NS,PG Electroplast Limited,Consumer Goods & Retail,2025-07-09,2025-07-11,788.4024658203125,760.5593073784908,10,7884.02,7605.59,-278.43,31.98,-310.41,-3.94,2,Trailing Stop Hit
+USHAMART.NS,Usha Martin Limited,Information Technology,2025-06-24,2025-07-14,326.9590148925781,373.07,11,3596.55,4103.77,507.22,23.26,483.96,13.46,20,Target 2 Hit (Runner Extension)
+BLS.NS,BLS International Services Limited,Consumer Goods & Retail,2025-07-07,2025-07-21,373.6376953125,374.5786441553845,20,7472.75,7491.57,18.82,31.37,-12.55,-0.17,14,Trailing Stop Hit
+SONACOMS.NS,Sona BLW Precision Forgings Limited,Automobile & Auto Components,2025-07-17,2025-07-22,483.02215576171875,470.76381928582333,14,6762.31,6590.69,-171.62,29.61,-201.23,-2.98,5,Trailing Stop Hit
+LTFOODS.NS,LT Foods Limited,Consumer Goods & Retail,2025-06-27,2025-07-23,478.7763671875,480.7619944355714,16,7660.42,7692.19,31.77,31.81,-0.04,-0.0,26,Trailing Stop Hit
+OFSS.NS,Oracle Financial Services Software Limited,Information Technology,2025-07-24,2025-07-28,8557.3681640625,8275.920729921128,2,17114.74,16551.84,-562.9,52.21,-615.11,-3.59,4,Trailing Stop Hit
+CANBK.NS,Canara Bank,Banking & Financial Services,2025-07-24,2025-07-28,109.88513946533203,107.16486492540227,66,7252.42,7072.88,-179.54,30.69,-210.23,-2.9,4,Trailing Stop Hit
+ANANTRAJ.NS,Anant Raj Limited,"Construction, Materials & Infra",2025-07-25,2025-07-29,572.50927734375,559.0813322969458,12,6870.11,6708.98,-161.13,29.86,-190.99,-2.78,4,Trailing Stop Hit
+ZYDUSWELL.NS,Zydus Wellness Limited,Consumer Goods & Retail,2025-07-30,2025-08-01,410.1206970214844,404.1925344465048,18,7382.17,7275.47,-106.7,31.06,-137.76,-1.87,2,Trailing Stop Hit
+BLS.NS,BLS International Services Limited,Consumer Goods & Retail,2025-07-30,2025-08-04,373.5386657714844,371.31811134979495,18,6723.7,6683.73,-39.97,29.66,-69.63,-1.04,5,Trailing Stop Hit
+ENDURANCE.NS,Endurance Technologies Limited,Automobile & Auto Components,2025-08-04,2025-08-06,2627.978759765625,2584.258642343848,2,5255.96,5168.52,-87.44,26.36,-113.8,-2.17,2,Trailing Stop Hit
+MUTHOOTFIN.NS,Muthoot Finance Limited,Banking & Financial Services,2025-08-04,2025-08-06,2643.448486328125,2613.0058164272264,2,5286.9,5226.01,-60.89,26.46,-87.35,-1.65,2,Trailing Stop Hit
+DMART.NS,Avenue Supermarts Limited,Consumer Goods & Retail,2025-07-30,2025-08-11,4281.39990234375,4150.10009765625,2,8562.8,8300.2,-262.6,33.51,-296.11,-3.46,12,Trailing Stop Hit
+SAGILITY.NS,SAGILITY LIMITED,Information Technology,2025-07-31,2025-08-11,46.46701431274414,44.32807974819985,152,7062.99,6737.87,-325.12,30.12,-355.24,-5.03,11,Trailing Stop Hit
+KPIL.NS,Kalpataru Projects International Limited,"Construction, Materials & Infra",2025-08-08,2025-08-12,1174.194091796875,1264.8677121148025,3,3522.58,3794.6,272.02,22.84,249.18,7.07,4,Target 1 Hit (50% Partial Lock)
+ENDURANCE.NS,Endurance Technologies Limited,Automobile & Auto Components,2025-08-14,2025-08-18,2591.52880859375,2764.24,1,2591.53,2764.24,172.71,20.67,152.04,5.87,4,Target 1 Hit (50% Partial Lock)
+MUTHOOTFIN.NS,Muthoot Finance Limited,Banking & Financial Services,2025-08-14,2025-08-21,2734.2802734375,2628.7913789661256,2,5468.56,5257.58,-210.98,26.7,-237.68,-4.35,7,Trailing Stop Hit
+ARE&M.NS,Amara Raja Energy & Mobility Limited,Automobile & Auto Components,2025-08-19,2025-08-26,979.0845947265625,960.123805778628,8,7832.68,7680.99,-151.69,31.99,-183.68,-2.35,7,Trailing Stop Hit
+KPIL.NS,Kalpataru Projects International Limited,"Construction, Materials & Infra",2025-08-08,2025-09-01,1174.194091796875,1226.4950613002204,3,3522.58,3679.49,156.91,22.73,134.18,3.81,24,True Break-Even Stop (Runner)
+CGPOWER.NS,CG Power and Industrial Solutions Limited,Information Technology,2025-08-29,2025-09-01,692.7709350585938,724.52,5,3463.85,3622.6,158.75,22.6,136.15,3.93,3,Target 1 Hit (50% Partial Lock)
+SAMMAANCAP.NS,Sammaan Capital Limited,Banking & Financial Services,2025-08-29,2025-09-02,123.95999908447266,134.1,28,3470.88,3754.8,283.92,22.74,261.18,7.52,4,Target 1 Hit (50% Partial Lock)
+ENDURANCE.NS,Endurance Technologies Limited,Automobile & Auto Components,2025-08-14,2025-09-04,2591.52880859375,2987.697499672684,1,2591.53,2987.7,396.17,20.92,375.25,14.48,21,Target 2 Hit (Runner Extension)
+TEGA.NS,Tega Industries Limited,Information Technology,2025-09-01,2025-09-05,1931.9263916015625,2069.53,2,3863.85,4139.06,275.21,23.6,251.61,6.51,4,Target 1 Hit (50% Partial Lock)
+FIRSTCRY.NS,Brainbees Solutions Limited,Consumer Goods & Retail,2025-09-05,2025-09-08,401.1000061035156,436.81,9,3609.9,3931.29,321.39,23.1,298.29,8.26,3,Target 1 Hit (50% Partial Lock)
+FIRSTCRY.NS,Brainbees Solutions Limited,Consumer Goods & Retail,2025-09-05,2025-09-08,401.1000061035156,402.0,9,3609.9,3618.0,8.1,22.78,-14.68,-0.41,3,True Break-Even Stop (Runner)
+CGPOWER.NS,CG Power and Industrial Solutions Limited,Information Technology,2025-08-29,2025-09-10,692.7709350585938,764.21,5,3463.85,3821.05,357.2,22.8,334.4,9.65,12,Target 2 Hit (Runner Extension)
+OFSS.NS,Oracle Financial Services Software Limited,Information Technology,2025-09-10,2025-09-11,8868.9716796875,9525.206630471956,1,8868.97,9525.21,656.24,35.14,621.1,7.0,1,Target 1 Hit (50% Partial Lock)
+OFSS.NS,Oracle Financial Services Software Limited,Information Technology,2025-09-10,2025-09-11,8868.9716796875,8903.52,1,8868.97,8903.52,34.55,34.49,0.06,0.0,1,True Break-Even Stop (Runner)
+TEGA.NS,Tega Industries Limited,Information Technology,2025-09-01,2025-09-12,1931.9263916015625,1954.6032505825103,2,3863.85,3909.21,45.36,23.37,21.99,0.57,11,True Break-Even Stop (Runner)
+SAGILITY.NS,SAGILITY LIMITED,Information Technology,2025-09-11,2025-09-15,44.55331802368164,44.14923424541405,162,7217.64,7152.18,-65.46,30.72,-96.18,-1.33,4,Trailing Stop Hit
+GALLANTT.NS,Gallantt Ispat Limited,Information Technology,2025-09-08,2025-09-16,699.9666748046875,663.3204814749903,10,6999.67,6633.2,-366.47,29.94,-396.41,-5.66,8,Trailing Stop Hit
+ANANTRAJ.NS,Anant Raj Limited,"Construction, Materials & Infra",2025-09-15,2025-09-19,588.4830322265625,626.33,6,3530.9,3757.98,227.08,22.82,204.26,5.78,4,Target 1 Hit (50% Partial Lock)
+ANANTRAJ.NS,Anant Raj Limited,"Construction, Materials & Infra",2025-09-15,2025-09-19,588.4830322265625,585.1385143887426,6,3530.9,3510.83,-20.07,22.56,-42.63,-1.21,4,True Break-Even Stop (Runner)
+JWL.NS,Jupiter Wagons Limited,Information Technology,2025-09-11,2025-09-22,333.45001220703125,335.02449828719915,22,7335.9,7370.54,34.64,31.1,3.54,0.05,11,Trailing Stop Hit
+NATCOPHARM.NS,Natco Pharma Limited,Healthcare & Pharmaceuticals,2025-09-18,2025-09-22,879.7150268554688,864.332739187672,8,7037.72,6914.66,-123.06,30.28,-153.34,-2.18,4,Trailing Stop Hit
+SAMMAANCAP.NS,Sammaan Capital Limited,Banking & Financial Services,2025-08-29,2025-09-23,123.95999908447266,134.65424820102297,28,3470.88,3770.32,299.44,22.76,276.68,7.97,25,True Break-Even Stop (Runner)
+EIHOTEL.NS,EIH Limited,Consumer Goods & Retail,2025-10-03,2025-10-07,391.4735412597656,379.5775034419222,18,7046.52,6832.4,-214.12,30.2,-244.32,-3.47,4,Trailing Stop Hit
+JWL.NS,Jupiter Wagons Limited,Information Technology,2025-09-26,2025-10-08,336.3999938964844,335.8789105999799,22,7400.8,7389.34,-11.46,31.19,-42.65,-0.58,12,Trailing Stop Hit
+TMPV.NS,Tata Motors Passenger Vehicles Limited,Automobile & Auto Components,2025-10-01,2025-10-08,712.4400634765625,689.1830768666096,10,7124.4,6891.83,-232.57,30.34,-262.91,-3.69,7,Trailing Stop Hit
+ABLBL.NS,Aditya Birla Lifestyle Brands Limited,Consumer Goods & Retail,2025-10-06,2025-10-08,145.9450225830078,139.42812894360384,48,7005.36,6692.55,-312.81,30.01,-342.82,-4.89,2,Trailing Stop Hit
+FEDERALBNK.NS,The Federal Bank  Limited,Banking & Financial Services,2025-10-07,2025-10-09,198.49188232421875,205.2,18,3572.85,3693.6,120.75,22.81,97.94,2.74,2,Target 1 Hit (50% Partial Lock)
+DIVISLAB.NS,Divi's Laboratories Limited,Healthcare & Pharmaceuticals,2025-10-07,2025-10-10,6079.43017578125,6350.57,1,6079.43,6350.57,271.14,28.55,242.59,3.99,3,Target 1 Hit (50% Partial Lock)
+DIVISLAB.NS,Divi's Laboratories Limited,Healthcare & Pharmaceuticals,2025-10-07,2025-10-10,6079.43017578125,6107.315163732781,1,6079.43,6107.32,27.89,28.29,-0.4,-0.01,3,True Break-Even Stop (Runner)
+PGEL.NS,PG Electroplast Limited,Consumer Goods & Retail,2025-10-09,2025-10-13,553.1500244140625,594.79,6,3318.9,3568.74,249.84,22.39,227.45,6.85,4,Target 1 Hit (50% Partial Lock)
+FEDERALBNK.NS,The Federal Bank  Limited,Banking & Financial Services,2025-10-07,2025-10-14,198.49188232421875,213.59,18,3572.85,3844.62,271.77,22.96,248.81,6.96,7,Target 2 Hit (Runner Extension)
+NATCOPHARM.NS,Natco Pharma Limited,Healthcare & Pharmaceuticals,2025-10-10,2025-10-14,841.4146118164062,829.7371980999588,8,6731.32,6637.9,-93.42,29.63,-123.05,-1.83,4,Trailing Stop Hit
+PGEL.NS,PG Electroplast Limited,Consumer Goods & Retail,2025-10-09,2025-10-28,553.1500244140625,564.5983365967452,6,3318.9,3387.59,68.69,22.2,46.49,1.4,19,True Break-Even Stop (Runner)
+PVRINOX.NS,PVR INOX Limited,Diversified & Others,2025-10-20,2025-10-28,1157.9000244140625,1222.29,3,3473.7,3666.87,193.17,22.66,170.51,4.91,8,Target 1 Hit (50% Partial Lock)
+CREDITACC.NS,CREDITACCESS GRAMEEN LIMITED,Banking & Financial Services,2025-10-24,2025-10-29,1422.5,1380.7538872192847,6,8535.0,8284.52,-250.48,33.47,-283.95,-3.33,5,Trailing Stop Hit
+KPIL.NS,Kalpataru Projects International Limited,"Construction, Materials & Infra",2025-10-28,2025-10-30,1259.213134765625,1248.3833282188411,6,7555.28,7490.3,-64.98,31.47,-96.45,-1.28,2,Trailing Stop Hit
+ZYDUSWELL.NS,Zydus Wellness Limited,Consumer Goods & Retail,2025-10-20,2025-10-31,468.3643493652344,476.7468385460232,16,7493.83,7627.95,134.12,31.54,102.58,1.37,11,Trailing Stop Hit
+CGPOWER.NS,CG Power and Industrial Solutions Limited,Information Technology,2025-10-29,2025-10-31,746.9513549804688,733.3813193734768,10,7469.51,7333.81,-135.7,31.21,-166.91,-2.23,2,Trailing Stop Hit
+SBFC.NS,SBFC Finance Limited,Banking & Financial Services,2025-10-17,2025-11-03,112.83000183105469,118.96,32,3610.56,3806.72,196.16,22.97,173.19,4.8,17,Target 1 Hit (50% Partial Lock)
+PVRINOX.NS,PVR INOX Limited,Diversified & Others,2025-10-20,2025-11-04,1157.9000244140625,1165.45,3,3473.7,3496.35,22.65,22.48,0.17,0.0,15,True Break-Even Stop (Runner)
+SBFC.NS,SBFC Finance Limited,Banking & Financial Services,2025-10-17,2025-11-06,112.83000183105469,113.59,32,3610.56,3634.88,24.32,22.79,1.53,0.04,20,True Break-Even Stop (Runner)
+ADANIENSOL.NS,Adani Energy Solutions Limited,"Energy, Power & Utilities",2025-10-29,2025-11-07,967.5499877929688,947.2680844118667,8,7740.4,7578.14,-162.26,31.79,-194.05,-2.51,9,Trailing Stop Hit
+MINDACORP.NS,Minda Corporation Limited,Automobile & Auto Components,2025-11-07,2025-11-13,577.9630737304688,617.98,6,3467.78,3707.88,240.1,22.7,217.4,6.27,6,Target 1 Hit (50% Partial Lock)
+GALLANTT.NS,Gallantt Ispat Limited,Information Technology,2025-11-10,2025-11-13,656.2999877929688,592.6156855877401,10,6563.0,5926.16,-636.84,28.68,-665.52,-10.14,3,Trailing Stop Hit
+BLS.NS,BLS International Services Limited,Consumer Goods & Retail,2025-11-12,2025-11-14,334.2988586425781,318.6386518003839,22,7354.57,7010.05,-344.52,30.74,-375.26,-5.1,2,Trailing Stop Hit
+NATCOPHARM.NS,Natco Pharma Limited,Healthcare & Pharmaceuticals,2025-11-19,2025-11-20,825.8457641601562,865.05,4,3303.38,3460.2,156.82,22.25,134.57,4.07,1,Target 1 Hit (50% Partial Lock)
+NATCOPHARM.NS,Natco Pharma Limited,Healthcare & Pharmaceuticals,2025-11-19,2025-11-20,825.8457641601562,828.8854807149927,4,3303.38,3315.54,12.16,22.11,-9.95,-0.3,1,True Break-Even Stop (Runner)
+MINDACORP.NS,Minda Corporation Limited,Automobile & Auto Components,2025-11-07,2025-11-21,577.9630737304688,588.4969731625231,6,3467.78,3530.98,63.2,22.51,40.69,1.17,14,True Break-Even Stop (Runner)
+PGEL.NS,PG Electroplast Limited,Consumer Goods & Retail,2025-11-14,2025-11-25,578.0999755859375,568.6683299087059,12,6937.2,6824.02,-113.18,30.06,-143.24,-2.06,11,Trailing Stop Hit
+SONACOMS.NS,Sona BLW Precision Forgings Limited,Automobile & Auto Components,2025-12-19,2025-12-23,493.7559509277344,487.6644362922325,14,6912.58,6827.3,-85.28,30.04,-115.32,-1.67,4,Trailing Stop Hit
+JWL.NS,Jupiter Wagons Limited,Information Technology,2025-12-22,2025-12-23,310.45001220703125,333.69,11,3414.95,3670.59,255.64,22.59,233.05,6.82,1,Target 1 Hit (50% Partial Lock)
+JWL.NS,Jupiter Wagons Limited,Information Technology,2025-12-22,2025-12-23,310.45001220703125,311.0,11,3414.95,3421.0,6.05,22.33,-16.28,-0.48,1,True Break-Even Stop (Runner)
+BLS.NS,BLS International Services Limited,Consumer Goods & Retail,2025-12-19,2025-12-26,322.9801330566406,319.1017137836874,22,7105.56,7020.24,-85.32,30.47,-115.79,-1.63,7,Trailing Stop Hit
+DIVISLAB.NS,Divi's Laboratories Limited,Healthcare & Pharmaceuticals,2025-12-19,2025-12-26,6451.89453125,6404.242638137337,2,12903.79,12808.49,-95.3,43.32,-138.62,-1.07,7,Trailing Stop Hit
+BELRISE.NS,Belrise Industries Limited,Automobile & Auto Components,2025-12-23,2025-12-26,168.22999572753906,181.28,21,3532.83,3806.88,274.05,22.87,251.18,7.11,3,Target 1 Hit (50% Partial Lock)
+ADANIENSOL.NS,Adani Energy Solutions Limited,"Energy, Power & Utilities",2025-12-19,2026-01-01,988.25,1035.67,4,3953.0,4142.68,189.68,23.71,165.97,4.2,13,Target 1 Hit (50% Partial Lock)
+MUTHOOTFIN.NS,Muthoot Finance Limited,Banking & Financial Services,2025-12-30,2026-01-06,3767.246337890625,3922.55,1,3767.25,3922.55,155.3,23.28,132.02,3.5,7,Target 1 Hit (50% Partial Lock)
+ADANIENSOL.NS,Adani Energy Solutions Limited,"Energy, Power & Utilities",2025-12-19,2026-01-08,988.25,1016.7105086910061,4,3953.0,4066.84,113.84,23.64,90.2,2.28,20,True Break-Even Stop (Runner)
+MUTHOOTFIN.NS,Muthoot Finance Limited,Banking & Financial Services,2025-12-30,2026-01-08,3767.246337890625,3790.44,1,3767.25,3790.44,23.19,23.14,0.05,0.0,9,True Break-Even Stop (Runner)
+MINDACORP.NS,Minda Corporation Limited,Automobile & Auto Components,2026-01-02,2026-01-08,601.2132568359375,588.4331942114848,12,7214.56,7061.2,-153.36,30.62,-183.98,-2.55,6,Trailing Stop Hit
+ATUL.NS,Atul Limited,Chemicals & Fertilisers,2025-12-19,2026-01-09,5977.52490234375,6027.048226050514,2,11955.05,12054.1,99.05,41.43,57.62,0.48,21,Trailing Stop Hit
+BELRISE.NS,Belrise Industries Limited,Automobile & Auto Components,2025-12-23,2026-01-09,168.22999572753906,174.97458089680705,21,3532.83,3674.47,141.64,22.73,118.91,3.37,17,True Break-Even Stop (Runner)
+DMART.NS,Avenue Supermarts Limited,Consumer Goods & Retail,2026-01-07,2026-01-09,3841.60009765625,3794.0,2,7683.2,7588.0,-95.2,31.73,-126.93,-1.65,2,Trailing Stop Hit
+JWL.NS,Jupiter Wagons Limited,Information Technology,2026-01-14,2026-01-20,331.1499938964844,313.83663725251773,22,7285.3,6904.41,-380.89,30.56,-411.45,-5.65,6,Trailing Stop Hit
+SBFC.NS,SBFC Finance Limited,Banking & Financial Services,2026-01-16,2026-01-20,107.01000213623047,103.85033206009449,66,7062.66,6854.12,-208.54,30.23,-238.77,-3.38,4,Trailing Stop Hit
+OFSS.NS,Oracle Financial Services Software Limited,Information Technology,2026-01-16,2026-01-21,7737.82080078125,7534.156032250806,2,15475.64,15068.31,-407.33,48.74,-456.07,-2.95,5,Trailing Stop Hit
+FEDERALBNK.NS,The Federal Bank  Limited,Banking & Financial Services,2026-01-16,2026-01-22,269.3298645019531,282.99,13,3501.29,3678.87,177.58,22.71,154.87,4.42,6,Target 1 Hit (50% Partial Lock)
+CREDITACC.NS,CREDITACCESS GRAMEEN LIMITED,Banking & Financial Services,2026-01-21,2026-01-22,1355.199951171875,1457.72,3,4065.6,4373.16,307.56,24.09,283.47,6.97,1,Target 1 Hit (50% Partial Lock)
+CREDITACC.NS,CREDITACCESS GRAMEEN LIMITED,Banking & Financial Services,2026-01-21,2026-01-22,1355.199951171875,1363.19,3,4065.6,4089.57,23.97,23.8,0.17,0.0,1,True Break-Even Stop (Runner)
+SONACOMS.NS,Sona BLW Precision Forgings Limited,Automobile & Auto Components,2026-01-22,2026-01-27,466.2257080078125,461.5445540981793,16,7459.61,7384.71,-74.9,31.25,-106.15,-1.42,5,Trailing Stop Hit
+OFSS.NS,Oracle Financial Services Software Limited,Information Technology,2026-01-22,2026-01-29,7677.0615234375,7606.991802258552,2,15354.12,15213.98,-140.14,48.73,-188.87,-1.23,7,Trailing Stop Hit
+AXISBANK.NS,Axis Bank Limited,Banking & Financial Services,2026-01-27,2026-01-30,1314.7860107421875,1369.21,3,3944.36,4107.63,163.27,23.67,139.6,3.54,3,Target 1 Hit (50% Partial Lock)
+AXISBANK.NS,Axis Bank Limited,Banking & Financial Services,2026-01-27,2026-02-02,1314.7860107421875,1322.68,3,3944.36,3968.04,23.68,23.53,0.15,0.0,6,True Break-Even Stop (Runner)
+SAMMAANCAP.NS,Sammaan Capital Limited,Banking & Financial Services,2026-01-29,2026-02-02,147.57000732421875,143.0,48,7083.36,6864.0,-219.36,30.26,-249.62,-3.52,4,Trailing Stop Hit
+SONACOMS.NS,Sona BLW Precision Forgings Limited,Automobile & Auto Components,2026-01-27,2026-02-03,484.81109619140625,547.8576641807896,7,3393.68,3835.0,441.32,22.73,418.59,12.33,7,Target 1 Hit (50% Partial Lock)
+ENDURANCE.NS,Endurance Technologies Limited,Automobile & Auto Components,2026-02-03,2026-02-05,2497.814697265625,2425.01449052569,2,4995.63,4850.03,-145.6,25.7,-171.3,-3.43,2,Trailing Stop Hit
+ANANTRAJ.NS,Anant Raj Limited,"Construction, Materials & Infra",2026-02-02,2026-02-06,557.2843017578125,536.9060165823412,12,6687.41,6442.87,-244.54,29.37,-273.91,-4.1,4,Trailing Stop Hit
+BLS.NS,BLS International Services Limited,Consumer Goods & Retail,2026-02-04,2026-02-09,287.2865295410156,282.8800600356017,24,6894.88,6789.12,-105.76,29.96,-135.72,-1.97,5,Trailing Stop Hit
+EIHOTEL.NS,EIH Limited,Consumer Goods & Retail,2026-02-05,2026-02-11,339.65869140625,335.57913071344916,20,6793.17,6711.58,-81.59,29.77,-111.36,-1.64,6,Trailing Stop Hit
+JSWCEMENT.NS,JSW Cement Limited,"Construction, Materials & Infra",2026-02-05,2026-02-11,123.06342315673828,118.31593056777507,58,7137.68,6862.32,-275.36,30.33,-305.69,-4.28,6,Trailing Stop Hit
+JAINREC.NS,Jain Resource Recycling Limited,Metals & Mining,2026-02-09,2026-02-11,401.79998779296875,399.1008843921661,18,7232.4,7183.82,-48.58,30.76,-79.34,-1.1,2,Trailing Stop Hit
+ADANIENSOL.NS,Adani Energy Solutions Limited,"Energy, Power & Utilities",2026-02-03,2026-02-16,974.4000244140625,973.6426243540133,8,7795.2,7789.14,-6.06,32.07,-38.13,-0.49,13,Trailing Stop Hit
+NATCOPHARM.NS,Natco Pharma Limited,Healthcare & Pharmaceuticals,2026-02-16,2026-02-24,878.4671630859375,941.4,4,3513.87,3765.6,251.73,22.81,228.92,6.51,8,Target 1 Hit (50% Partial Lock)
+NATCOPHARM.NS,Natco Pharma Limited,Healthcare & Pharmaceuticals,2026-02-16,2026-02-24,878.4671630859375,884.16,4,3513.87,3536.64,22.77,22.58,0.19,0.01,8,True Break-Even Stop (Runner)
+LTFOODS.NS,LT Foods Limited,Consumer Goods & Retail,2026-02-03,2026-02-25,410.9125671386719,405.9099126038584,18,7396.43,7306.38,-90.05,31.11,-121.16,-1.64,22,Trailing Stop Hit
+ATUL.NS,Atul Limited,Chemicals & Fertilisers,2026-02-03,2026-02-25,6240.72705078125,6408.844257013115,2,12481.45,12817.69,336.24,42.83,293.41,2.35,22,Trailing Stop Hit
+FEDERALBNK.NS,The Federal Bank  Limited,Banking & Financial Services,2026-01-16,2026-02-26,269.3298645019531,300.07,13,3501.29,3900.91,399.62,22.94,376.68,10.76,41,Target 2 Hit (Runner Extension)
+USHAMART.NS,Usha Martin Limited,Information Technology,2026-02-25,2026-02-27,422.5752868652344,413.91812188070253,16,6761.2,6622.69,-138.51,29.64,-168.15,-2.49,2,Trailing Stop Hit
+SONACOMS.NS,Sona BLW Precision Forgings Limited,Automobile & Auto Components,2026-01-27,2026-03-02,484.81109619140625,500.5451720335911,7,3393.68,3503.82,110.14,22.39,87.75,2.59,34,True Break-Even Stop (Runner)
+LTFOODS.NS,LT Foods Limited,Consumer Goods & Retail,2026-03-05,2026-03-06,429.11883544921875,469.86,8,3432.95,3758.88,325.93,22.7,303.23,8.83,1,Target 1 Hit (50% Partial Lock)
+LTFOODS.NS,LT Foods Limited,Consumer Goods & Retail,2026-03-05,2026-03-06,429.11883544921875,431.97,8,3432.95,3455.76,22.81,22.39,0.42,0.01,1,True Break-Even Stop (Runner)
+MAZDOCK.NS,Mazagon Dock Shipbuilders Limited,Information Technology,2026-03-05,2026-03-06,2348.2607421875,2518.67,1,2348.26,2518.67,170.41,20.13,150.28,6.4,1,Target 1 Hit (50% Partial Lock)
+MAZDOCK.NS,Mazagon Dock Shipbuilders Limited,Information Technology,2026-03-05,2026-03-06,2348.2607421875,2368.3,1,2348.26,2368.3,20.04,19.98,0.06,0.0,1,True Break-Even Stop (Runner)
+JWL.NS,Jupiter Wagons Limited,Information Technology,2026-03-06,2026-03-10,298.6000061035156,284.09655697004655,24,7166.4,6818.32,-348.08,30.32,-378.4,-5.28,4,Trailing Stop Hit
+DMART.NS,Avenue Supermarts Limited,Consumer Goods & Retail,2026-03-09,2026-03-12,3966.199951171875,3874.2652890007657,2,7932.4,7748.53,-183.87,32.19,-216.06,-2.72,3,Trailing Stop Hit
+ZYDUSWELL.NS,Zydus Wellness Limited,Consumer Goods & Retail,2026-03-13,2026-03-16,403.44403076171875,435.86,9,3631.0,3922.74,291.74,23.11,268.63,7.4,3,Target 1 Hit (50% Partial Lock)
+ZYDUSWELL.NS,Zydus Wellness Limited,Consumer Goods & Retail,2026-03-13,2026-03-16,403.44403076171875,406.03,9,3631.0,3654.27,23.27,22.83,0.44,0.01,3,True Break-Even Stop (Runner)
+FIRSTCRY.NS,Brainbees Solutions Limited,Consumer Goods & Retail,2026-03-20,2026-03-23,250.8699951171875,227.02,28,7024.36,6356.56,-667.8,29.68,-697.48,-9.93,3,Stop Loss Hit
+BLS.NS,BLS International Services Limited,Consumer Goods & Retail,2026-03-24,2026-03-27,259.3999938964844,254.11359885336387,28,7263.2,7115.18,-148.02,30.75,-178.77,-2.46,3,Trailing Stop Hit
+BELRISE.NS,Belrise Industries Limited,Automobile & Auto Components,2026-03-20,2026-03-30,189.0,186.21727959465017,38,7182.0,7076.26,-105.74,30.61,-136.35,-1.9,10,Trailing Stop Hit
+DMART.NS,Avenue Supermarts Limited,Consumer Goods & Retail,2026-03-25,2026-04-01,3910.800048828125,4140.37,1,3910.8,4140.37,229.57,23.67,205.9,5.26,7,Target 1 Hit (50% Partial Lock)
+SAMMAANCAP.NS,Sammaan Capital Limited,Banking & Financial Services,2026-03-25,2026-04-02,146.8800048828125,143.59585119140155,48,7050.24,6892.6,-157.64,30.26,-187.9,-2.67,8,Trailing Stop Hit
+DMART.NS,Avenue Supermarts Limited,Consumer Goods & Retail,2026-03-25,2026-04-06,3910.800048828125,4450.0,1,3910.8,4450.0,539.2,23.99,515.21,13.17,12,Target 2 Hit (Runner Extension)
+OFSS.NS,Oracle Financial Services Software Limited,Information Technology,2026-03-27,2026-04-15,6753.52001953125,7200.56,1,6753.52,7200.56,447.04,30.22,416.82,6.17,19,Target 1 Hit (50% Partial Lock)
+OFSS.NS,Oracle Financial Services Software Limited,Information Technology,2026-03-27,2026-04-17,6753.52001953125,7759.35,1,6753.52,7759.35,1005.83,30.8,975.03,14.44,21,Target 2 Hit (Runner Extension)
+TRENT.NS,Trent Limited,Consumer Goods & Retail,2026-04-06,2026-04-17,2551.96240234375,2755.61,1,2551.96,2755.61,203.65,20.62,183.03,7.17,11,Target 1 Hit (50% Partial Lock)
+ENDURANCE.NS,Endurance Technologies Limited,Automobile & Auto Components,2026-04-08,2026-04-20,2349.42578125,2345.8300721971746,4,9397.7,9383.32,-14.38,35.62,-50.0,-0.53,12,Trailing Stop Hit
+PIRAMALFIN.NS,Piramal Finance Limited,Banking & Financial Services,2026-04-22,2026-04-28,1828.1300048828125,1975.22,2,3656.26,3950.44,294.18,23.18,271.0,7.41,6,Target 1 Hit (50% Partial Lock)
+ANANTRAJ.NS,Anant Raj Limited,"Construction, Materials & Infra",2026-04-27,2026-04-29,500.07830810546875,488.6607752409951,14,7001.1,6841.25,-159.85,30.15,-190.0,-2.71,2,Trailing Stop Hit
+TRENT.NS,Trent Limited,Consumer Goods & Retail,2026-04-06,2026-05-04,2551.96240234375,2713.398565193588,1,2551.96,2713.4,161.44,20.57,140.87,5.52,28,True Break-Even Stop (Runner)
+JAINREC.NS,Jain Resource Recycling Limited,Metals & Mining,2026-04-28,2026-05-04,447.5,481.18,8,3580.0,3849.44,269.44,22.98,246.46,6.88,6,Target 1 Hit (50% Partial Lock)
+ABLBL.NS,Aditya Birla Lifestyle Brands Limited,Consumer Goods & Retail,2026-05-05,2026-05-07,104.23649597167969,110.83,34,3544.04,3768.22,224.18,22.85,201.33,5.68,2,Target 1 Hit (50% Partial Lock)
+JAINREC.NS,Jain Resource Recycling Limited,Metals & Mining,2026-04-28,2026-05-08,447.5,523.27,8,3580.0,4186.16,606.16,23.33,582.83,16.28,10,Target 2 Hit (Runner Extension)
+ABLBL.NS,Aditya Birla Lifestyle Brands Limited,Consumer Goods & Retail,2026-05-05,2026-05-08,104.23649597167969,104.95,34,3544.04,3568.3,24.26,22.65,1.61,0.05,3,True Break-Even Stop (Runner)
+COFORGE.NS,Coforge Limited,Information Technology,2026-05-06,2026-05-11,1274.4990234375,1374.49,3,3823.5,4123.47,299.97,23.53,276.44,7.23,5,Target 1 Hit (50% Partial Lock)
+PIRAMALFIN.NS,Piramal Finance Limited,Banking & Financial Services,2026-04-22,2026-05-12,1828.1300048828125,1882.451110215513,2,3656.26,3764.9,108.64,22.98,85.66,2.34,20,True Break-Even Stop (Runner)
+COFORGE.NS,Coforge Limited,Information Technology,2026-05-06,2026-05-14,1274.4990234375,1282.31,3,3823.5,3846.93,23.43,23.25,0.18,0.0,8,True Break-Even Stop (Runner)
+ENDURANCE.NS,Endurance Technologies Limited,Automobile & Auto Components,2026-05-07,2026-05-15,2525.79931640625,2442.736217248596,2,5051.6,4885.47,-166.13,25.82,-191.95,-3.8,8,Trailing Stop Hit
+MUTHOOTFIN.NS,Muthoot Finance Limited,Banking & Financial Services,2026-05-13,2026-05-15,3506.39990234375,3476.3502275372884,2,7012.8,6952.7,-60.1,30.28,-90.38,-1.29,2,Trailing Stop Hit
+JSWCEMENT.NS,JSW Cement Limited,"Construction, Materials & Infra",2026-05-21,2026-05-22,126.9888687133789,134.04,28,3555.69,3753.12,197.43,22.85,174.58,4.91,1,Target 1 Hit (50% Partial Lock)
+MINDACORP.NS,Minda Corporation Limited,Automobile & Auto Components,2026-05-21,2026-05-22,536.246826171875,572.03,7,3753.73,4004.21,250.48,23.33,227.15,6.05,1,Target 1 Hit (50% Partial Lock)
+MINDACORP.NS,Minda Corporation Limited,Automobile & Auto Components,2026-05-21,2026-05-22,536.246826171875,536.5964581024582,7,3753.73,3756.18,2.45,23.08,-20.63,-0.55,1,True Break-Even Stop (Runner)
+SAMMAANCAP.NS,Sammaan Capital Limited,Banking & Financial Services,2026-05-21,2026-05-25,154.25999450683594,166.1,23,3547.98,3820.3,272.32,22.91,249.41,7.03,4,Target 1 Hit (50% Partial Lock)
+TMPV.NS,Tata Motors Passenger Vehicles Limited,Automobile & Auto Components,2026-05-15,2026-05-26,353.61663818359375,374.96,10,3536.17,3749.6,213.43,22.83,190.6,5.39,11,Target 1 Hit (50% Partial Lock)
+ENRIN.NS,Siemens Energy India Limited,Information Technology,2026-05-20,2026-05-27,3459.60009765625,3709.21,1,3459.6,3709.21,249.61,22.69,226.92,6.56,7,Target 1 Hit (50% Partial Lock)
+ENRIN.NS,Siemens Energy India Limited,Information Technology,2026-05-20,2026-05-27,3459.60009765625,3470.699951171875,1,3459.6,3470.7,11.1,22.44,-11.34,-0.33,7,True Break-Even Stop (Runner)
+TMPV.NS,Tata Motors Passenger Vehicles Limited,Automobile & Auto Components,2026-05-15,2026-05-29,353.61663818359375,401.63,10,3536.17,4016.3,480.13,23.11,457.02,12.92,14,Target 2 Hit (Runner Extension)
+SAMMAANCAP.NS,Sammaan Capital Limited,Banking & Financial Services,2026-05-21,2026-05-29,154.25999450683594,180.89,23,3547.98,4160.47,612.49,23.26,589.23,16.61,8,Target 2 Hit (Runner Extension)
+JSWCEMENT.NS,JSW Cement Limited,"Construction, Materials & Infra",2026-05-21,2026-06-01,126.9888687133789,127.85,28,3555.69,3579.8,24.11,22.68,1.43,0.04,11,True Break-Even Stop (Runner)
+JWL.NS,Jupiter Wagons Limited,Information Technology,2026-05-25,2026-06-01,296.29998779296875,279.0,24,7111.2,6696.0,-415.2,30.14,-445.34,-6.26,7,Trailing Stop Hit
+ARE&M.NS,Amara Raja Energy & Mobility Limited,Automobile & Auto Components,2026-05-25,2026-06-02,878.1375122070312,854.5708490099809,8,7025.1,6836.57,-188.53,30.18,-218.71,-3.11,8,Trailing Stop Hit
+SBFC.NS,SBFC Finance Limited,Banking & Financial Services,2026-05-29,2026-06-02,94.30000305175781,91.11000061035156,78,7355.4,7106.58,-248.82,30.85,-279.67,-3.8,4,Trailing Stop Hit
+TEGA.NS,Tega Industries Limited,Information Technology,2026-05-29,2026-06-04,1766.0,1890.93,2,3532.0,3781.86,249.86,22.84,227.02,6.43,6,Target 1 Hit (50% Partial Lock)
+TEGA.NS,Tega Industries Limited,Information Technology,2026-05-29,2026-06-08,1766.0,1777.36,2,3532.0,3554.72,22.72,22.61,0.11,0.0,10,True Break-Even Stop (Runner)
+CUB.NS,City Union Bank Limited,Banking & Financial Services,2026-06-09,2026-06-12,190.51515197753906,201.68,19,3619.79,3831.92,212.13,23.0,189.13,5.22,3,Target 1 Hit (50% Partial Lock)
+TMCV.NS,Tata Motors Limited,Information Technology,2026-06-12,2026-06-15,390.29998779296875,419.52,9,3512.7,3775.68,262.98,22.82,240.16,6.84,3,Target 1 Hit (50% Partial Lock)
+CHOLAFIN.NS,Cholamandalam Investment and Finance Company Limited,Banking & Financial Services,2026-06-12,2026-06-16,1567.484375,1673.0,2,3134.97,3346.0,211.03,21.93,189.1,6.03,4,Target 1 Hit (50% Partial Lock)
+SBFC.NS,SBFC Finance Limited,Banking & Financial Services,2026-06-19,2026-06-23,95.4000015258789,92.51352893709833,76,7250.4,7031.03,-219.37,30.65,-250.02,-3.45,4,Trailing Stop Hit
+CHOLAFIN.NS,Cholamandalam Investment and Finance Company Limited,Banking & Financial Services,2026-06-12,2026-06-25,1567.484375,1806.290516563962,2,3134.97,3612.58,477.61,22.2,455.41,14.53,13,Target 2 Hit (Runner Extension)
+FIRSTCRY.NS,Brainbees Solutions Limited,Consumer Goods & Retail,2026-06-24,2026-06-29,226.83999633789062,221.57624362992752,32,7258.88,7090.44,-168.44,30.72,-199.16,-2.74,5,Trailing Stop Hit
+CUB.NS,City Union Bank Limited,Banking & Financial Services,2026-06-09,2026-07-02,190.51515197753906,215.64,19,3619.79,4097.16,477.37,23.28,454.09,12.54,23,Target 2 Hit (Runner Extension)
+SAGILITY.NS,SAGILITY LIMITED,Information Technology,2026-07-02,2026-07-07,41.15573501586914,40.19793872357283,180,7408.03,7235.63,-172.4,31.04,-203.44,-2.75,5,Trailing Stop Hit
+TMCV.NS,Tata Motors Limited,Information Technology,2026-06-12,2026-07-08,390.29998779296875,414.39764955193164,9,3512.7,3729.58,216.88,22.77,194.11,5.53,26,True Break-Even Stop (Runner)
+SBFC.NS,SBFC Finance Limited,Banking & Financial Services,2026-07-06,2026-07-08,92.48999786376953,91.72966567909208,80,7399.2,7338.37,-60.83,31.14,-91.97,-1.24,2,Trailing Stop Hit
+SBFC.NS,SBFC Finance Limited,Banking & Financial Services,2026-07-10,2026-07-14,91.95999908447266,91.74014596765639,80,7356.8,7339.21,-17.59,31.09,-48.68,-0.66,4,Trailing Stop Hit
+ARE&M.NS,Amara Raja Energy & Mobility Limited,Automobile & Auto Components,2026-07-09,2026-07-20,864.3202514648438,912.92,4,3457.28,3651.68,194.4,22.63,171.77,4.97,11,Target 1 Hit (50% Partial Lock)
+ARE&M.NS,Amara Raja Energy & Mobility Limited,Automobile & Auto Components,2026-07-09,2026-07-23,864.3202514648438,874.918869910212,4,3457.28,3499.68,42.4,22.47,19.93,0.58,14,True Break-Even Stop (Runner)
+PVRINOX.NS,PVR INOX Limited,Diversified & Others,2026-07-23,2026-07-24,1007.4000244140625,1060.89,4,4029.6,4243.56,213.96,23.91,190.05,4.72,1,Target 1 Hit (50% Partial Lock)
+PVRINOX.NS,PVR INOX Limited,Diversified & Others,2026-07-23,2026-07-24,1007.4000244140625,1010.0,4,4029.6,4040.0,10.4,23.7,-13.3,-0.33,1,True Break-Even Stop (Runner)
+ATUL.NS,Atul Limited,Chemicals & Fertilisers,2026-07-24,2026-07-27,6407.5,6774.81,1,6407.5,6774.81,367.31,29.38,337.93,5.27,3,Target 1 Hit (50% Partial Lock)
+SAGILITY.NS,SAGILITY LIMITED,Information Technology,2026-07-27,2026-07-30,43.19107437133789,46.1,86,3714.43,3964.6,250.17,23.25,226.92,6.11,3,Target 1 Hit (50% Partial Lock)
+CUB.NS,City Union Bank Limited,Banking & Financial Services,2026-07-28,2026-07-30,235.9296875,219.68796986473984,32,7549.75,7030.02,-519.73,30.99,-550.72,-7.29,2,Trailing Stop Hit
+SAGILITY.NS,SAGILITY LIMITED,Information Technology,2026-07-27,2026-07-31,43.19107437133789,43.51,86,3714.43,3741.86,27.43,23.02,4.41,0.12,4,True Break-Even Stop (Runner)
+LTFOODS.NS,LT Foods Limited,Consumer Goods & Retail,2026-07-30,2026-08-04,396.1480712890625,417.5,9,3565.33,3757.5,192.17,22.87,169.3,4.75,5,Target 1 Hit (50% Partial Lock)
+JWL.NS,Jupiter Wagons Limited,Information Technology,2026-07-29,2026-08-05,259.29998779296875,256.71571744438893,28,7260.4,7188.04,-72.36,30.82,-103.18,-1.42,7,Trailing Stop Hit
+TMCV.NS,Tata Motors Limited,Information Technology,2026-07-31,2026-08-05,436.79998779296875,461.13,8,3494.4,3689.04,194.64,22.7,171.94,4.92,5,Target 1 Hit (50% Partial Lock)
+PNB.NS,Punjab National Bank,Banking & Financial Services,2026-07-20,2026-08-12,111.76000213623047,116.62,33,3688.08,3848.46,160.38,23.1,137.28,3.72,23,Target 1 Hit (50% Partial Lock)
+NATCOPHARM.NS,Natco Pharma Limited,Healthcare & Pharmaceuticals,2026-08-13,2026-08-14,950.09033203125,901.43,8,7600.72,7211.44,-389.28,31.24,-420.52,-5.53,1,Stop Loss Hit
+ATUL.NS,Atul Limited,Chemicals & Fertilisers,2026-07-24,2026-08-18,6407.5,6692.594111188502,1,6407.5,6692.59,285.09,29.3,255.79,3.99,25,True Break-Even Stop (Runner)
+ENRIN.NS,Siemens Energy India Limited,Information Technology,2026-08-07,2026-08-19,3648.800048828125,3460.515414553954,2,7297.6,6921.03,-376.57,30.59,-407.16,-5.58,12,Trailing Stop Hit
+ARE&M.NS,Amara Raja Energy & Mobility Limited,Automobile & Auto Components,2026-08-11,2026-08-21,970.25,923.9622498380043,8,7762.0,7391.7,-370.3,31.61,-401.91,-5.18,10,Trailing Stop Hit
+LTFOODS.NS,LT Foods Limited,Consumer Goods & Retail,2026-07-30,2026-08-24,396.1480712890625,444.18,9,3565.33,3997.62,432.29,23.12,409.17,11.48,25,Target 2 Hit (Runner Extension)
+PNB.NS,Punjab National Bank,Banking & Financial Services,2026-07-20,2026-08-27,111.76000213623047,115.18207397761117,33,3688.08,3801.01,112.93,23.05,89.88,2.44,38,True Break-Even Stop (Runner)
+TMCV.NS,Tata Motors Limited,Information Technology,2026-07-31,2026-08-31,436.79998779296875,462.7486547396767,8,3494.4,3701.99,207.59,22.71,184.88,5.29,31,True Break-Even Stop (Runner)
+SAGILITY.NS,SAGILITY LIMITED,Information Technology,2026-08-26,2026-08-31,44.0,46.65,84,3696.0,3918.6,222.6,23.19,199.41,5.4,5,Target 1 Hit (50% Partial Lock)
+SAGILITY.NS,SAGILITY LIMITED,Information Technology,2026-08-26,2026-09-09,44.0,44.91672266142334,84,3696.0,3773.0,77.0,23.03,53.97,1.46,14,True Break-Even Stop (Runner)
+ANANTRAJ.NS,Anant Raj Limited,"Construction, Materials & Infra",2026-09-03,2026-09-09,628.2999877929688,615.1847867420221,12,7539.6,7382.22,-157.38,31.34,-188.72,-2.5,6,Trailing Stop Hit
+PVRINOX.NS,PVR INOX Limited,Diversified & Others,2026-09-08,2026-09-09,1231.300048828125,1169.199951171875,6,7387.8,7015.2,-372.6,30.8,-403.4,-5.46,1,Final Day Horizon Close
+TEGA.NS,Tega Industries Limited,Information Technology,2026-09-09,2026-09-09,1678.300048828125,1678.300048828125,4,6713.2,6713.2,0.0,29.68,-29.68,-0.44,0,Final Day Horizon Close
