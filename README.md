@@ -1,3 +1,14 @@
+---
+title: AI Swing Trade 2
+emoji: 🎯
+colorFrom: red
+colorTo: yellow
+sdk: streamlit
+sdk_version: 1.35.0
+app_file: app.py
+pinned: false
+---
+
 # 📈 AI Swing Trading System #2: Strategy v2 (Optimized)
 
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
