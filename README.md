@@ -1,3 +1,14 @@
+---
+title: ETF Swing Trade 1
+emoji: 📊
+colorFrom: purple
+colorTo: blue
+sdk: streamlit
+sdk_version: 1.35.0
+app_file: app.py
+pinned: false
+---
+
 # 📈 ETF Strategy 1: Systematic Dual-Target Swing Trading System
 
 Welcome to **ETF Strategy 1**, an institutional-grade swing trading system engineered specifically for liquid **National Stock Exchange of India (NSE)** Exchange Traded Funds (ETFs).

@@ -1,4 +1,24 @@
 import os
+import subprocess
+import sys
+
+# Auto-load .env if available
+def _load_env():
+    env_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+    if os.path.exists(env_file):
+        try:
+            from dotenv import load_dotenv
+            load_dotenv(env_file)
+        except Exception:
+            with open(env_file, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith("#") and "=" in line:
+                        k, v = line.split("=", 1)
+                        if k.strip() not in os.environ:
+                            os.environ[k.strip()] = v.strip().strip("'").strip('"')
+_load_env()
+
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -8,6 +28,64 @@ from datetime import datetime
 import portfolio_manager
 import screener
 import trading_graph
+
+# Failsafe background bot launcher & health checker
+def is_bot_pid_alive() -> bool:
+    try:
+        pid_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bot.pid")
+        if os.path.exists(pid_file):
+            with open(pid_file, "r") as f:
+                pid_str = f.read().strip()
+            if pid_str and pid_str.isdigit():
+                pid = int(pid_str)
+                if sys.platform == "win32":
+                    import ctypes
+                    kernel32 = ctypes.windll.kernel32
+                    SYNCHRONIZE = 0x00100000
+                    process = kernel32.OpenProcess(SYNCHRONIZE, False, pid)
+                    if process:
+                        kernel32.CloseHandle(process)
+                        return True
+                    return False
+                else:
+                    try:
+                        os.kill(pid, 0)
+                        return True
+                    except (OSError, ProcessLookupError):
+                        return False
+    except Exception:
+        pass
+    return False
+
+def _ensure_bot_running():
+    if is_bot_pid_alive():
+        return True
+    if hasattr(_ensure_bot_running, "proc") and _ensure_bot_running.proc is not None:
+        if _ensure_bot_running.proc.poll() is None:
+            return True
+    try:
+        bot_script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bot.py")
+        proc = subprocess.Popen([sys.executable, "-u", bot_script], env=os.environ.copy())
+        _ensure_bot_running.proc = proc
+        print(f"Spawned background Telegram bot daemon (PID: {proc.pid}) from app.py")
+        try:
+            client = portfolio_manager.get_gspread_client()
+            sh = portfolio_manager.get_or_create_portfolio_sheet(client)
+            portfolio_manager.log_cloud_event(sh, "app.py", f"Spawned bot.py daemon from app.py (PID {proc.pid})")
+        except Exception:
+            pass
+        return True
+    except Exception as e:
+        print(f"Error starting background bot from app.py: {e}")
+        try:
+            client = portfolio_manager.get_gspread_client()
+            sh = portfolio_manager.get_or_create_portfolio_sheet(client)
+            portfolio_manager.log_cloud_event(sh, "app.py", f"Failed to spawn bot: {e}")
+        except Exception:
+            pass
+        return False
+
+_ensure_bot_running()
 
 st.set_page_config(
     page_title="ETF Strategy 1 - Systematic Swing Trading",
