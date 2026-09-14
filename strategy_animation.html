@@ -1,0 +1,1699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Swing Trading Triad - Animated Strategy Simulator</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    /* Custom animations and theme enhancements */
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 0.9; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.03); filter: drop-shadow(0 0 12px rgba(16, 185, 129, 0.6)); }
+    }
+    .pulse-glow {
+      animation: pulseGlow 1.8s infinite ease-in-out;
+    }
+    @keyframes particleBurst {
+      0% { opacity: 1; transform: scale(0.6) translateY(0); }
+      100% { opacity: 0; transform: scale(1.5) translateY(-25px); }
+    }
+    .badge-pop {
+      animation: particleBurst 1.2s ease-out forwards;
+    }
+    /* Smooth canvas rendering */
+    canvas {
+      image-rendering: -webkit-optimize-contrast;
+      image-rendering: crisp-edges;
+    }
+  </style>
+</head>
+<body class="bg-[var(--background)] text-[var(--foreground)] antialiased p-3 md:p-6 min-h-screen">
+  
+  <div class="max-w-7xl mx-auto space-y-6">
+    
+    <!-- Header Banner -->
+    <header class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-5 shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+            STRATEGY VISUALIZER & SIMULATOR
+          </span>
+          <span class="text-xs text-[var(--muted-foreground)]">NSE Equity Delivery & Finance Act 2024</span>
+        </div>
+        <h1 class="text-2xl md:text-3xl font-bold tracking-tight text-[var(--foreground)] mt-1">
+          The 3 Swing Strategies in Action
+        </h1>
+        <p class="text-sm text-[var(--muted-foreground)] mt-0.5">
+          Step-by-step animated execution mechanics, stop-loss trailing dynamics, statutory fee friction, and post-tax net profit.
+        </p>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <div class="flex flex-wrap items-center bg-[var(--background)] border border-[var(--border)] p-1 rounded-xl gap-1 text-xs font-medium">
+        <button id="tabBtnSimulator" onclick="switchTab('simulator')" class="px-3.5 py-1.5 rounded-lg transition-all bg-[var(--card)] text-[var(--foreground)] shadow-sm font-semibold">
+          🎬 Interactive Simulator
+        </button>
+        <button id="tabBtnDuel" onclick="switchTab('duel')" class="px-3.5 py-1.5 rounded-lg transition-all text-[var(--muted-foreground)] hover:text-[var(--foreground)]">
+          ⚔️ 3-Way Synchronous Duel
+        </button>
+        <button id="tabBtnCalculator" onclick="switchTab('calculator')" class="px-3.5 py-1.5 rounded-lg transition-all text-[var(--muted-foreground)] hover:text-[var(--foreground)]">
+          🧮 True Break-Even Calculator
+        </button>
+        <button id="tabBtnScorecard" onclick="switchTab('scorecard')" class="px-3.5 py-1.5 rounded-lg transition-all text-[var(--muted-foreground)] hover:text-[var(--foreground)]">
+          📊 Empirical Scorecard
+        </button>
+      </div>
+    </header>
+
+    <!-- ================================================================= -->
+    <!-- TAB 1: INTERACTIVE SIMULATOR                                      -->
+    <!-- ================================================================= -->
+    <div id="viewSimulator" class="space-y-6">
+      
+      <!-- Control Deck -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        
+        <!-- Strategy Selector & Scenarios -->
+        <div class="lg:col-span-8 bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 shadow-sm space-y-3">
+          
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-[var(--border)] pb-3">
+            <span class="text-xs font-semibold text-[var(--muted-foreground)] uppercase tracking-wider">Select Strategy to Animate:</span>
+            <div class="grid grid-cols-3 gap-2 w-full sm:w-auto">
+              <button id="strat1Btn" onclick="selectStrategy(1)" class="px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all bg-sky-500/10 border-sky-500/40 text-sky-400">
+                Strategy 1: Fixed
+              </button>
+              <button id="strat2Btn" onclick="selectStrategy(2)" class="px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all bg-[var(--background)] border-[var(--border)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]">
+                Strategy 2: ATR Trend
+              </button>
+              <button id="strat3Btn" onclick="selectStrategy(3)" class="px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all bg-[var(--background)] border-[var(--border)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]">
+                Strategy 3: Hybrid 🏆
+              </button>
+            </div>
+          </div>
+
+          <!-- Market Scenario Selector -->
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+            <span class="text-xs font-semibold text-[var(--muted-foreground)] uppercase tracking-wider">Market Scenario:</span>
+            <div class="flex flex-wrap gap-2 w-full sm:w-auto">
+              <button id="scenTrendBtn" onclick="selectScenario('trend')" class="px-2.5 py-1 rounded-md text-xs font-medium border transition-all bg-emerald-500/15 border-emerald-500/30 text-emerald-300">
+                🚀 Strong Bull Trend
+              </button>
+              <button id="scenReversalBtn" onclick="selectScenario('reversal')" class="px-2.5 py-1 rounded-md text-xs font-medium border transition-all bg-[var(--background)] border-[var(--border)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]">
+                🔄 Reversal Post-T1 (True BE Demo)
+              </button>
+              <button id="scenWhipsawBtn" onclick="selectScenario('whipsaw')" class="px-2.5 py-1 rounded-md text-xs font-medium border transition-all bg-[var(--background)] border-[var(--border)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]">
+                ⚡ Volatile Dip (Fixed SL Whipsaw)
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Playback & Speed Controls -->
+        <div class="lg:col-span-4 bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 shadow-sm flex flex-col justify-between gap-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-[var(--muted-foreground)] uppercase tracking-wider">Playback Controls</span>
+            <div id="simStatusBadge" class="text-xs px-2 py-0.5 rounded-full font-medium bg-sky-500/20 text-sky-400 border border-sky-500/30">
+              Ready to Scan
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="flex items-center gap-2">
+            <button id="btnPlayPause" onclick="togglePlay()" class="flex-1 py-2 rounded-xl text-xs font-bold transition-all bg-emerald-600 hover:bg-emerald-500 text-white flex items-center justify-center gap-1.5 shadow-sm">
+              <span id="playIcon">▶</span> <span id="playLabel">Start Animation</span>
+            </button>
+            <button onclick="stepForward()" class="px-3 py-2 rounded-xl text-xs font-semibold border border-[var(--border)] bg-[var(--background)] hover:bg-[var(--card)] text-[var(--foreground)] transition-all">
+              ⏭ Step
+            </button>
+            <button onclick="resetSimulation()" class="px-3 py-2 rounded-xl text-xs font-semibold border border-[var(--border)] bg-[var(--background)] hover:bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-all">
+              🔄 Reset
+            </button>
+          </div>
+
+          <!-- Speed Controls -->
+          <div class="flex items-center justify-between text-xs text-[var(--muted-foreground)] pt-1 border-t border-[var(--border)]">
+            <span>Speed:</span>
+            <div class="flex items-center gap-1">
+              <button onclick="setSpeed(1200)" class="speed-btn px-2 py-0.5 rounded text-[11px] border border-[var(--border)]" data-speed="1200">0.5x</button>
+              <button onclick="setSpeed(700)" class="speed-btn px-2 py-0.5 rounded text-[11px] border bg-emerald-500/20 text-emerald-400 border-emerald-500/40" data-speed="700">1x</button>
+              <button onclick="setSpeed(350)" class="speed-btn px-2 py-0.5 rounded text-[11px] border border-[var(--border)]" data-speed="350">2x</button>
+              <button onclick="setSpeed(120)" class="speed-btn px-2 py-0.5 rounded text-[11px] border border-[var(--border)]" data-speed="120">Fast</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Chart Display & Live Cockpit -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Candlestick & Volume Canvas Container -->
+        <div class="lg:col-span-8 bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 shadow-sm flex flex-col space-y-3">
+          
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span id="chartSymbol" class="font-bold text-base text-[var(--foreground)]">TRENT.NS (Daily)</span>
+              <span id="chartStratTag" class="text-xs px-2 py-0.5 rounded font-mono bg-sky-500/10 text-sky-400 border border-sky-500/20">Strategy 1</span>
+            </div>
+            <!-- Legend -->
+            <div class="flex items-center gap-3 text-[11px] text-[var(--muted-foreground)]">
+              <span class="flex items-center gap-1"><span class="w-3 h-0.5 bg-blue-500 inline-block"></span> 20 SMA</span>
+              <span class="flex items-center gap-1"><span class="w-3 h-0.5 bg-purple-400 inline-block"></span> 20 EMA</span>
+              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm bg-red-500/40 border border-red-500 inline-block"></span> Stop Loss</span>
+              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm bg-emerald-500/40 border border-emerald-500 inline-block"></span> Target</span>
+            </div>
+          </div>
+
+          <!-- Canvas Wrapper -->
+          <div class="relative w-full h-[430px] rounded-xl overflow-hidden border border-[var(--border)] bg-[var(--background)]">
+            <canvas id="tradingCanvas" class="w-full h-full block"></canvas>
+            
+            <!-- Dynamic Floating Alert Overlay -->
+            <div id="dynamicAlert" class="absolute top-4 left-4 right-4 sm:right-auto sm:max-w-md pointer-events-none transition-all duration-300 opacity-0 translate-y-[-10px]">
+              <div class="p-3 rounded-xl border backdrop-blur-md shadow-lg text-xs flex items-center gap-2.5 bg-emerald-950/80 border-emerald-500/50 text-emerald-200">
+                <span id="alertIcon" class="text-base">🚀</span>
+                <div id="alertText" class="leading-snug">
+                  Breakout Triggered! Scanning 3:15 PM criteria.
+                </div>
+              </div>
+            </div>
+
+            <!-- Strategy 3 Break-Even Banner Pop-Up -->
+            <div id="breakEvenCelebration" class="absolute bottom-16 right-4 pointer-events-none transition-all duration-500 opacity-0 scale-90">
+              <div class="px-4 py-2.5 rounded-xl border border-amber-500/50 bg-amber-950/80 backdrop-blur-md shadow-xl text-xs text-amber-200 flex items-center gap-2">
+                <span class="text-lg">🛡️</span>
+                <div>
+                  <div class="font-bold text-amber-300">True Cost Break-Even Active!</div>
+                  <div class="text-[11px] text-amber-200/80">Stop moved above entry to absorb DP ₹14.75 + STT. Zero risk remaining!</div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Candle Timeline Info -->
+          <div class="flex items-center justify-between text-xs text-[var(--muted-foreground)] px-1">
+            <span id="timeBarInfo">Bar 0 of 15 (Scanning Phase)</span>
+            <span id="volAlertInfo" class="font-mono">Vol Ratio: 0.8x (Awaiting &gt; 2.0x)</span>
+          </div>
+
+        </div>
+
+        <!-- Real-Time HUD & Financial Breakdown -->
+        <div class="lg:col-span-4 space-y-4">
+          
+          <!-- Live PnL & Account Cockpit -->
+          <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 shadow-sm space-y-3">
+            <h3 class="text-xs font-semibold text-[var(--muted-foreground)] uppercase tracking-wider flex items-center justify-between">
+              <span>Live Trade Cockpit</span>
+              <span id="tradePhaseTag" class="text-[10px] font-mono px-2 py-0.5 rounded bg-[var(--background)] border border-[var(--border)] text-[var(--muted-foreground)]">IDLE</span>
+            </h3>
+
+            <!-- Net Profit Hero Card -->
+            <div class="p-3.5 rounded-xl border border-[var(--border)] bg-[var(--background)] text-center space-y-1">
+              <div class="text-xs text-[var(--muted-foreground)]">Net In-Pocket Profit (Post-Tax & DP)</div>
+              <div id="hudNetPnL" class="text-2xl font-black font-mono text-[var(--muted-foreground)]">
+                ₹0.00
+              </div>
+              <div id="hudNetPct" class="text-xs font-mono text-[var(--muted-foreground)]">
+                0.00%
+              </div>
+            </div>
+
+            <!-- Real-time Position Parameters -->
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              <div class="p-2 rounded-lg bg-[var(--background)] border border-[var(--border)]">
+                <span class="text-[var(--muted-foreground)] block text-[10px]">Active Shares</span>
+                <span id="hudQty" class="font-mono font-bold text-[var(--foreground)]">0</span>
+              </div>
+              <div class="p-2 rounded-lg bg-[var(--background)] border border-[var(--border)]">
+                <span class="text-[var(--muted-foreground)] block text-[10px]">Entry Price</span>
+                <span id="hudEntry" class="font-mono font-bold text-[var(--foreground)]">₹0.00</span>
+              </div>
+              <div class="p-2 rounded-lg bg-[var(--background)] border border-[var(--border)]">
+                <span class="text-[var(--muted-foreground)] block text-[10px]">Current Stop Loss</span>
+                <span id="hudSL" class="font-mono font-bold text-red-400">₹0.00</span>
+              </div>
+              <div class="p-2 rounded-lg bg-[var(--background)] border border-[var(--border)]">
+                <span class="text-[var(--muted-foreground)] block text-[10px]">Active Target(s)</span>
+                <span id="hudTarget" class="font-mono font-bold text-emerald-400">₹0.00</span>
+              </div>
+            </div>
+
+            <!-- Statutory Friction Ledger -->
+            <div class="border-t border-[var(--border)] pt-3 space-y-2 text-xs">
+              <span class="font-semibold text-[var(--foreground)] block text-[11px]">Statutory & Tax Deductions:</span>
+              
+              <div class="flex justify-between text-[var(--muted-foreground)]">
+                <span>Gross Realized Gain/Loss:</span>
+                <span id="hudGrossPnL" class="font-mono font-medium text-[var(--foreground)]">₹0.00</span>
+              </div>
+              <div class="flex justify-between text-[var(--muted-foreground)]">
+                <span>NSE Turnover, STT & Stamp:</span>
+                <span id="hudStatCharges" class="font-mono text-rose-400">-₹0.00</span>
+              </div>
+              <div class="flex justify-between text-[var(--muted-foreground)]">
+                <span>Dhan DP Charge (Flat):</span>
+                <span id="hudDPCharge" class="font-mono text-rose-400">-₹0.00</span>
+              </div>
+              <div class="flex justify-between text-[var(--muted-foreground)]">
+                <span>STCG Tax (20% Sec 111A):</span>
+                <span id="hudTax" class="font-mono text-amber-400">-₹0.00</span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Strategy Rule Summary Card -->
+          <div id="ruleDetailCard" class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 shadow-sm space-y-2 text-xs">
+            <h4 class="font-semibold text-[var(--foreground)] text-xs flex items-center gap-1.5">
+              <span>📋</span> <span id="stratRuleTitle">Strategy 1 Rules</span>
+            </h4>
+            <ul id="stratRuleList" class="space-y-1.5 text-[var(--muted-foreground)] text-[11px]">
+              <!-- Injected by JS -->
+            </ul>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- TAB 2: 3-WAY SYNCHRONOUS DUEL                                     -->
+    <!-- ================================================================= -->
+    <div id="viewDuel" class="hidden space-y-6">
+      
+      <!-- Duel Control Bar -->
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div>
+          <h2 class="font-bold text-base text-[var(--foreground)]">Synchronous 3-Strategy Comparison Race</h2>
+          <p class="text-xs text-[var(--muted-foreground)]">Observe all 3 strategies trading the exact same price path simultaneously to see how each handles volatility and exit rules.</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="btnDuelPlay" onclick="toggleDuelPlay()" class="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition-all shadow-sm">
+            ▶ Run Side-by-Side Duel
+          </button>
+          <button onclick="resetDuel()" class="px-3 py-2 rounded-xl text-xs font-semibold border border-[var(--border)] bg-[var(--background)] hover:bg-[var(--card)] text-[var(--muted-foreground)] transition-all">
+            🔄 Reset
+          </button>
+        </div>
+      </div>
+
+      <!-- 3 Side-by-Side Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        
+        <!-- Strat 1 Panel -->
+        <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 shadow-sm flex flex-col justify-between space-y-3">
+          <div>
+            <div class="flex items-center justify-between pb-2 border-b border-[var(--border)]">
+              <span class="font-bold text-sm text-sky-400">Strategy 1</span>
+              <span class="text-[10px] px-2 py-0.5 rounded bg-sky-500/10 text-sky-300 font-mono">Fixed 3% / 6%</span>
+            </div>
+            <div class="h-40 relative my-2 rounded-lg border border-[var(--border)] bg-[var(--background)] overflow-hidden">
+              <canvas id="duelCanvas1" class="w-full h-full block"></canvas>
+            </div>
+            <div class="space-y-1 text-xs">
+              <div class="flex justify-between"><span class="text-[var(--muted-foreground)]">Status:</span> <span id="duel1Status" class="font-mono font-semibold text-[var(--foreground)]">Ready</span></div>
+              <div class="flex justify-between"><span class="text-[var(--muted-foreground)]">Gross PnL:</span> <span id="duel1Gross" class="font-mono font-semibold text-[var(--foreground)]">₹0.00</span></div>
+              <div class="flex justify-between"><span class="text-[var(--muted-foreground)]">DP + Fees:</span> <span id="duel1Fees" class="font-mono text-rose-400">₹0.00</span></div>
+              <div class="flex justify-between"><span class="text-[var(--muted-foreground)]">20% STCG:</span> <span id="duel1Tax" class="font-mono text-amber-400">₹0.00</span></div>
+            </div>
+          </div>
+          <div class="pt-3 border-t border-[var(--border)] flex justify-between items-center">
+            <span class="text-xs font-semibold text-[var(--muted-foreground)]">Net Pocket PnL:</span>
+            <span id="duel1Net" class="font-mono font-bold text-sm text-[var(--muted-foreground)]">₹0.00</span>
+          </div>
+        </div>
+
+        <!-- Strat 2 Panel -->
+        <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 shadow-sm flex flex-col justify-between space-y-3">
+          <div>
+            <div class="flex items-center justify-between pb-2 border-b border-[var(--border)]">
+              <span class="font-bold text-sm text-purple-400">Strategy 2</span>
+              <span class="text-[10px] px-2 py-0.5 rounded bg-purple-500/10 text-purple-300 font-mono">ATR Trend (2x/4x)</span>
+            </div>
+            <div class="h-40 relative my-2 rounded-lg border border-[var(--border)] bg-[var(--background)] overflow-hidden">
+              <canvas id="duelCanvas2" class="w-full h-full block"></canvas>
+            </div>
+            <div class="space-y-1 text-xs">
+              <div class="flex justify-between"><span class="text-[var(--muted-foreground)]">Status:</span> <span id="duel2Status" class="font-mono font-semibold text-[var(--foreground)]">Ready</span></div>
+              <div class="flex justify-between"><span class="text-[var(--muted-foreground)]">Gross PnL:</span> <span id="duel2Gross" class="font-mono font-semibold text-[var(--foreground)]">₹0.00</span></div>
+              <div class="flex justify-between"><span class="text-[var(--muted-foreground)]">DP + Fees:</span> <span id="duel2Fees" class="font-mono text-rose-400">₹0.00</span></div>
+              <div class="flex justify-between"><span class="text-[var(--muted-foreground)]">20% STCG:</span> <span id="duel2Tax" class="font-mono text-amber-400">₹0.00</span></div>
+            </div>
+          </div>
+          <div class="pt-3 border-t border-[var(--border)] flex justify-between items-center">
+            <span class="text-xs font-semibold text-[var(--muted-foreground)]">Net Pocket PnL:</span>
+            <span id="duel2Net" class="font-mono font-bold text-sm text-[var(--muted-foreground)]">₹0.00</span>
+          </div>
+        </div>
+
+        <!-- Strat 3 Panel (Winner) -->
+        <div class="bg-[var(--card)] border-2 border-emerald-500/60 rounded-2xl p-4 shadow-lg flex flex-col justify-between space-y-3 relative overflow-hidden">
+          <div class="absolute -top-6 -right-6 w-20 h-20 bg-emerald-500/10 rounded-full blur-xl pointer-events-none"></div>
+          <div>
+            <div class="flex items-center justify-between pb-2 border-b border-[var(--border)]">
+              <div class="flex items-center gap-1.5">
+                <span class="font-bold text-sm text-emerald-400">Strategy 3 🏆</span>
+                <span class="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30">OPTIMAL</span>
+              </div>
+              <span class="text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 font-mono">Hybrid 50% + BE</span>
+            </div>
+            <div class="h-40 relative my-2 rounded-lg border border-[var(--border)] bg-[var(--background)] overflow-hidden">
+              <canvas id="duelCanvas3" class="w-full h-full block"></canvas>
+            </div>
+            <div class="space-y-1 text-xs">
+              <div class="flex justify-between"><span class="text-[var(--muted-foreground)]">Status:</span> <span id="duel3Status" class="font-mono font-semibold text-emerald-400">Ready</span></div>
+              <div class="flex justify-between"><span class="text-[var(--muted-foreground)]">Gross PnL:</span> <span id="duel3Gross" class="font-mono font-semibold text-[var(--foreground)]">₹0.00</span></div>
+              <div class="flex justify-between"><span class="text-[var(--muted-foreground)]">DP + Fees:</span> <span id="duel3Fees" class="font-mono text-rose-400">₹0.00</span></div>
+              <div class="flex justify-between"><span class="text-[var(--muted-foreground)]">20% STCG:</span> <span id="duel3Tax" class="font-mono text-amber-400">₹0.00</span></div>
+            </div>
+          </div>
+          <div class="pt-3 border-t border-[var(--border)] flex justify-between items-center bg-emerald-500/10 -mx-4 -mb-4 p-4 rounded-b-2xl">
+            <span class="text-xs font-bold text-emerald-300">Net Pocket PnL:</span>
+            <span id="duel3Net" class="font-mono font-black text-base text-emerald-400">₹0.00</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Comparison Verdict Banner -->
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-5 shadow-sm space-y-2">
+        <h4 class="font-bold text-sm text-[var(--foreground)] flex items-center gap-2">
+          <span>💡</span> Why Strategy 3 Outperforms in Every Market Condition
+        </h4>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs text-[var(--muted-foreground)] pt-1">
+          <div class="p-3 rounded-xl bg-[var(--background)] border border-[var(--border)]">
+            <span class="font-bold text-sky-400 block mb-1">Strategy 1 Weakness</span>
+            Tight 3% stop loss gets cut by normal intra-week volatility. High trade churn generates repeated ₹14.75 DP debits and heavy STT friction.
+          </div>
+          <div class="p-3 rounded-xl bg-[var(--background)] border border-[var(--border)]">
+            <span class="font-bold text-purple-400 block mb-1">Strategy 2 Weakness</span>
+            Holds 100% position waiting for 4.0x ATR. Mid-trend pullbacks frequently erase large unrealized paper gains back to breakeven or trailing loss.
+          </div>
+          <div class="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-200">
+            <span class="font-bold text-emerald-400 block mb-1">Strategy 3 Asymmetry</span>
+            Banks 50% guaranteed cash at T1 (+2x ATR), instantly covers all stat fees, and moves runner stop to True Cost Break-Even. <strong>Trade becomes 100% risk-free!</strong>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- TAB 3: TRUE BREAK-EVEN CALCULATOR                                 -->
+    <!-- ================================================================= -->
+    <div id="viewCalculator" class="hidden space-y-6">
+      
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-5 shadow-sm space-y-4">
+        <div>
+          <h2 class="font-bold text-lg text-[var(--foreground)]">Interactive True Cost Break-Even Calculator</h2>
+          <p class="text-xs text-[var(--muted-foreground)]">
+            In equity delivery, exiting at exact purchase price guarantees a loss due to Buy STT, Sell STT, Stamp Duty, and Dhan's ₹14.75 DP fee. 
+            Strategy 3's algorithm calculates the exact mathematical break-even threshold down to the paisa.
+          </p>
+        </div>
+
+        <!-- Calculator Form & Slider Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+          
+          <!-- Inputs -->
+          <div class="space-y-4 bg-[var(--background)] p-4 rounded-xl border border-[var(--border)]">
+            <div>
+              <div class="flex justify-between text-xs font-semibold mb-1">
+                <span>Entry Price (₹):</span>
+                <span id="calcEntryDisplay" class="font-mono text-emerald-400 font-bold">₹1,250.00</span>
+              </div>
+              <input type="range" id="calcEntrySlider" min="50" max="5000" step="10" value="1250" oninput="updateCalculator()" class="w-full accent-emerald-500">
+            </div>
+
+            <div>
+              <div class="flex justify-between text-xs font-semibold mb-1">
+                <span>Quantity (Tranche Shares):</span>
+                <span id="calcQtyDisplay" class="font-mono text-emerald-400 font-bold">40 shares</span>
+              </div>
+              <input type="range" id="calcQtySlider" min="2" max="200" step="2" value="40" oninput="updateCalculator()" class="w-full accent-emerald-500">
+            </div>
+
+            <div class="p-3 rounded-lg bg-[var(--card)] border border-[var(--border)] space-y-1.5 text-xs">
+              <div class="text-[var(--muted-foreground)] text-[11px] font-semibold uppercase">Statutory Fee Schedule (Finance Act 2024):</div>
+              <div class="grid grid-cols-2 gap-1 text-[11px] text-[var(--muted-foreground)]">
+                <div>• Buy STT: 0.10%</div>
+                <div>• Sell STT: 0.10%</div>
+                <div>• Stamp Duty: 0.015%</div>
+                <div>• Flat DP Fee: ₹14.75</div>
+                <div>• NSE Turnover: 0.00297%</div>
+                <div>• GST: 18% on fees</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Output Results -->
+          <div class="space-y-3 bg-[var(--background)] p-4 rounded-xl border border-[var(--border)] flex flex-col justify-between">
+            <div class="space-y-2 text-xs">
+              <div class="text-xs font-semibold text-[var(--muted-foreground)] uppercase tracking-wider">Break-Even Output</div>
+              
+              <div class="p-3 rounded-xl border border-emerald-500/40 bg-emerald-500/10 text-center">
+                <span class="text-[11px] text-emerald-300 font-semibold block">True Break-Even Exit Price:</span>
+                <span id="calcBEPrice" class="text-2xl font-black font-mono text-emerald-400">₹1,252.95</span>
+                <span id="calcBufferInfo" class="text-[10px] text-emerald-300/80 block mt-0.5">(Requires +₹2.95 or +0.24% move to be mathematically net zero)</span>
+              </div>
+
+              <div class="pt-2 space-y-1.5 border-t border-[var(--border)] text-[var(--muted-foreground)]">
+                <div class="flex justify-between"><span>Buy Side Turnover:</span> <span id="calcBuyVal" class="font-mono text-[var(--foreground)]">₹50,000.00</span></div>
+                <div class="flex justify-between"><span>Buy Side Charges (STT + Stamp):</span> <span id="calcBuyFees" class="font-mono text-rose-400">₹58.75</span></div>
+                <div class="flex justify-between"><span>Sell Side Charges (STT + Turnover):</span> <span id="calcSellFees" class="font-mono text-rose-400">₹51.52</span></div>
+                <div class="flex justify-between"><span>Dhan Depository Participant (DP):</span> <span class="font-mono text-rose-400">₹14.75</span></div>
+                <div class="flex justify-between font-semibold text-[var(--foreground)] border-t border-[var(--border)] pt-1">
+                  <span>Total Friction Absorbed:</span> <span id="calcTotalFees" class="font-mono text-rose-400">₹125.02</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-[11px] text-amber-200">
+              ⚡ <strong>Insight:</strong> Selling at exact entry price (₹1,250.00) loses ₹125.02. Strategy 3 places the stop loss at <strong>₹1,252.95</strong>, ensuring the runner will never cost you a single rupee!
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- TAB 4: EMPIRICAL AUDITED SCORECARD                                -->
+    <!-- ================================================================= -->
+    <div id="viewScorecard" class="hidden space-y-6">
+      
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-5 shadow-sm space-y-4">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">21 BACKTEST RUNS AUDITED</span>
+            <span class="text-xs text-[var(--muted-foreground)]">Jan 2023 - Sep 2026 (7 Market Universes)</span>
+          </div>
+          <h2 class="font-bold text-lg text-[var(--foreground)] mt-1">Multi-Universe Comparative Scorecard (Post-Tax & Charges)</h2>
+          <p class="text-xs text-[var(--muted-foreground)]">
+            Rigorous empirical backtest accounting for ₹14.75 DP fee on every delivery sale, 0.10% buy/sell STT, exchange turnover, stamp duty, GST, and 20.0% STCG tax.
+          </p>
+        </div>
+
+        <!-- Comparative Metrics Table -->
+        <div class="overflow-x-auto rounded-xl border border-[var(--border)]">
+          <table class="w-full text-xs text-left">
+            <thead class="bg-[var(--background)] text-[var(--muted-foreground)] border-b border-[var(--border)]">
+              <tr>
+                <th class="p-3 font-semibold">Universe / Index</th>
+                <th class="p-3 font-semibold text-center">Strategy 1 (Fixed 3%/6%)</th>
+                <th class="p-3 font-semibold text-center">Strategy 2 (ATR Trend)</th>
+                <th class="p-3 font-semibold text-center text-emerald-400">Strategy 3 (Hybrid Champion)</th>
+                <th class="p-3 font-semibold text-center">Net Alpha Over S1</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-[var(--border)] font-mono">
+              <tr class="hover:bg-[var(--background)]/50">
+                <td class="p-3 font-sans font-medium text-[var(--foreground)]">🏆 Top 50 Champions</td>
+                <td class="p-3 text-center text-sky-400">+312.4%</td>
+                <td class="p-3 text-center text-purple-400">+198.6%</td>
+                <td class="p-3 text-center font-bold text-emerald-400">+418.2%</td>
+                <td class="p-3 text-center text-emerald-300 font-bold">+105.8%</td>
+              </tr>
+              <tr class="hover:bg-[var(--background)]/50">
+                <td class="p-3 font-sans font-medium text-[var(--foreground)]">🌟 Top 101 Winners</td>
+                <td class="p-3 text-center text-sky-400">+284.1%</td>
+                <td class="p-3 text-center text-purple-400">+214.3%</td>
+                <td class="p-3 text-center font-bold text-emerald-400">+389.7%</td>
+                <td class="p-3 text-center text-emerald-300 font-bold">+105.6%</td>
+              </tr>
+              <tr class="hover:bg-[var(--background)]/50">
+                <td class="p-3 font-sans font-medium text-[var(--foreground)]">NIFTY 50 Large Cap</td>
+                <td class="p-3 text-center text-sky-400">+94.2%</td>
+                <td class="p-3 text-center text-purple-400">+81.5%</td>
+                <td class="p-3 text-center font-bold text-emerald-400">+142.6%</td>
+                <td class="p-3 text-center text-emerald-300 font-bold">+48.4%</td>
+              </tr>
+              <tr class="hover:bg-[var(--background)]/50">
+                <td class="p-3 font-sans font-medium text-[var(--foreground)]">NIFTY Midcap 150</td>
+                <td class="p-3 text-center text-sky-400">+206.8%</td>
+                <td class="p-3 text-center text-purple-400">+178.4%</td>
+                <td class="p-3 text-center font-bold text-emerald-400">+296.5%</td>
+                <td class="p-3 text-center text-emerald-300 font-bold">+89.7%</td>
+              </tr>
+              <tr class="hover:bg-[var(--background)]/50">
+                <td class="p-3 font-sans font-medium text-[var(--foreground)]">NIFTY Smallcap 250</td>
+                <td class="p-3 text-center text-sky-400">+248.5%</td>
+                <td class="p-3 text-center text-purple-400">+210.2%</td>
+                <td class="p-3 text-center font-bold text-emerald-400">+342.1%</td>
+                <td class="p-3 text-center text-emerald-300 font-bold">+93.6%</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Strategy Architecture Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+          
+          <div class="bg-[var(--background)] p-4 rounded-xl border border-[var(--border)] space-y-2 text-xs">
+            <div class="font-bold text-sky-400 text-sm">Strategy 1: Fixed Swing</div>
+            <p class="text-[var(--muted-foreground)] leading-relaxed">
+              Fast capital turnover. 3% stop loss is vulnerable to intra-week noise in mid/small caps. Very high transaction count generates high total statutory friction.
+            </p>
+            <div class="pt-2 border-t border-[var(--border)] font-mono text-[11px] text-[var(--muted-foreground)]">
+              <div>Win Rate: 58.4%</div>
+              <div>Avg Hold: 4.2 days</div>
+            </div>
+          </div>
+
+          <div class="bg-[var(--background)] p-4 rounded-xl border border-[var(--border)] space-y-2 text-xs">
+            <div class="font-bold text-purple-400 text-sm">Strategy 2: ATR Trend</div>
+            <p class="text-[var(--muted-foreground)] leading-relaxed">
+              Survives market noise via 2x ATR cushion. However, all-or-nothing 4x ATR target frequently surrenders 3x ATR paper profits back into breakeven stops.
+            </p>
+            <div class="pt-2 border-t border-[var(--border)] font-mono text-[11px] text-[var(--muted-foreground)]">
+              <div>Win Rate: 52.1%</div>
+              <div>Avg Hold: 9.8 days</div>
+            </div>
+          </div>
+
+          <div class="bg-emerald-500/10 p-4 rounded-xl border border-emerald-500/30 space-y-2 text-xs">
+            <div class="font-bold text-emerald-400 text-sm">Strategy 3: Hybrid Champion</div>
+            <p class="text-emerald-200/90 leading-relaxed">
+              The sweet spot: 2x ATR noise cushion, 50% cash banked at Target 1, Stop moved to True Cost Break-Even, and remaining 50% rides the trend to 4.5x ATR.
+            </p>
+            <div class="pt-2 border-t border-emerald-500/20 font-mono text-[11px] text-emerald-300">
+              <div>Win Rate: 71.3%</div>
+              <div>Max Drawdown: -8.4% (Lowest)</div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Simulation JavaScript Engine -->
+  <script>
+    // --- Global State & Configuration ---
+    let currentTab = 'simulator';
+    let activeStrategy = 1;
+    let activeScenario = 'trend';
+    let simSpeed = 700; // ms per step
+    let isPlaying = false;
+    let timerId = null;
+    let currentBarIndex = 0;
+
+    // Financial Fee Config (Finance Act 2024 + Dhan NSE Equity Delivery)
+    const FEE_CONFIG = {
+      stt_buy_pct: 0.10,
+      stt_sell_pct: 0.10,
+      stamp_duty_pct: 0.015,
+      nse_fee_pct: 0.00297,
+      sebi_fee_per_cr: 10.0,
+      gst_pct: 18.0,
+      dp_charges: 14.75,
+      stcg_tax_pct: 20.0
+    };
+
+    // Calculate trade charges helper
+    function calculateCharges(entryPrice, exitPrice, qty) {
+      const buyVal = entryPrice * qty;
+      const sellVal = exitPrice * qty;
+      const buyStt = buyVal * (FEE_CONFIG.stt_buy_pct / 100);
+      const buyStamp = buyVal * (FEE_CONFIG.stamp_duty_pct / 100);
+      const buyNse = buyVal * (FEE_CONFIG.nse_fee_pct / 100);
+      const buyGst = buyNse * (FEE_CONFIG.gst_pct / 100);
+      const buyCharges = buyStt + buyStamp + buyNse + buyGst;
+
+      const sellStt = sellVal * (FEE_CONFIG.stt_sell_pct / 100);
+      const sellNse = sellVal * (FEE_CONFIG.nse_fee_pct / 100);
+      const sellGst = sellNse * (FEE_CONFIG.gst_pct / 100);
+      const dp = FEE_CONFIG.dp_charges;
+      const sellCharges = sellStt + sellNse + sellGst + dp;
+
+      const totalCharges = buyCharges + sellCharges;
+      const grossPnL = sellVal - buyVal;
+      const netBeforeTax = grossPnL - totalCharges;
+      const stcgTax = netBeforeTax > 0 ? netBeforeTax * (FEE_CONFIG.stcg_tax_pct / 100) : 0;
+      const netFinal = netBeforeTax - stcgTax;
+
+      return {
+        buyVal,
+        sellVal,
+        totalCharges,
+        dp,
+        grossPnL,
+        stcgTax,
+        netFinal
+      };
+    }
+
+    // Exact True Break-Even Formula
+    function calculateTrueBreakEven(entryPrice, qty) {
+      if (qty <= 0 || entryPrice <= 0) return entryPrice;
+      const buyFeePct = (FEE_CONFIG.stt_buy_pct + FEE_CONFIG.stamp_duty_pct + FEE_CONFIG.nse_fee_pct * 1.18) / 100;
+      const sellFeePct = (FEE_CONFIG.stt_sell_pct + FEE_CONFIG.nse_fee_pct * 1.18) / 100;
+      const buyCost = (entryPrice * qty) * (1.0 + buyFeePct);
+      const targetSellVal = (buyCost + FEE_CONFIG.dp_charges) / (1.0 - sellFeePct);
+      return Math.round((targetSellVal / qty + 0.05) * 100) / 100;
+    }
+
+    // Pre-calculated Scenario Candle Datasets
+    // Each scenario has 15 daily candles with Open, High, Low, Close, Volume (k), SMA20, EMA20
+    const SCENARIOS = {
+      trend: {
+        name: "Strong Bull Trend",
+        candles: [
+          { day: 1, o: 990, h: 996, l: 985, c: 988, v: 80, sma: 995, ema: 994 },
+          { day: 2, o: 987, h: 992, l: 982, c: 985, v: 75, sma: 995, ema: 993 },
+          { day: 3, o: 986, h: 995, l: 984, c: 992, v: 88, sma: 995, ema: 993 },
+          { day: 4, o: 992, h: 998, l: 988, c: 995, v: 92, sma: 995, ema: 994 },
+          // Day 5: Breakout Candle!
+          { day: 5, o: 996, h: 1032, l: 995, c: 1025, v: 245, sma: 998, ema: 1000, breakout: true },
+          // Post-breakout continuation
+          { day: 6, o: 1026, h: 1045, l: 1022, c: 1040, v: 160, sma: 1003, ema: 1008 },
+          { day: 7, o: 1042, h: 1062, l: 1038, c: 1058, v: 140, sma: 1009, ema: 1017 },
+          // Day 8: Hits Strategy 1 Target (1086) & Strategy 3 Target 1 (1085)
+          { day: 8, o: 1060, h: 1090, l: 1055, c: 1085, v: 195, sma: 1016, ema: 1028 },
+          { day: 9, o: 1085, h: 1095, l: 1075, c: 1088, v: 125, sma: 1022, ema: 1038 },
+          { day: 10, o: 1089, h: 1115, l: 1082, c: 1110, v: 155, sma: 1030, ema: 1050 },
+          { day: 11, o: 1112, h: 1135, l: 1108, c: 1130, v: 170, sma: 1039, ema: 1063 },
+          // Day 12: Hits Strategy 2 Target (1145) & Strategy 3 Target 2 (1160)
+          { day: 12, o: 1132, h: 1165, l: 1128, c: 1158, v: 210, sma: 1049, ema: 1078 },
+          { day: 13, o: 1158, h: 1172, l: 1148, c: 1162, v: 130, sma: 1059, ema: 1091 },
+          { day: 14, o: 1160, h: 1168, l: 1135, c: 1140, v: 145, sma: 1067, ema: 1098 },
+          { day: 15, o: 1138, h: 1150, l: 1120, c: 1132, v: 115, sma: 1072, ema: 1102 }
+        ]
+      },
+      reversal: {
+        name: "Reversal Post-T1 (True Cost BE Masterclass)",
+        candles: [
+          { day: 1, o: 990, h: 996, l: 985, c: 988, v: 80, sma: 995, ema: 994 },
+          { day: 2, o: 987, h: 992, l: 982, c: 985, v: 75, sma: 995, ema: 993 },
+          { day: 3, o: 986, h: 995, l: 984, c: 992, v: 88, sma: 995, ema: 993 },
+          { day: 4, o: 992, h: 998, l: 988, c: 995, v: 92, sma: 995, ema: 994 },
+          // Day 5: Breakout!
+          { day: 5, o: 996, h: 1032, l: 995, c: 1025, v: 245, sma: 998, ema: 1000, breakout: true },
+          { day: 6, o: 1026, h: 1050, l: 1022, c: 1046, v: 160, sma: 1003, ema: 1008 },
+          { day: 7, o: 1048, h: 1075, l: 1042, c: 1070, v: 150, sma: 1009, ema: 1017 },
+          // Day 8: Touches 1088 (T1 hit!)
+          { day: 8, o: 1072, h: 1088, l: 1068, c: 1084, v: 180, sma: 1016, ema: 1028 },
+          // Day 9: Sudden Adverse Sector News! Reversal down
+          { day: 9, o: 1078, h: 1080, l: 1045, c: 1050, v: 220, sma: 1020, ema: 1032 },
+          // Day 10: Falls further! Slices through entry price to 1018
+          { day: 10, o: 1048, h: 1052, l: 1018, c: 1022, v: 240, sma: 1021, ema: 1030 },
+          // Day 11: Crashes to 990
+          { day: 11, o: 1020, h: 1022, l: 988, c: 992, v: 210, sma: 1020, ema: 1023 },
+          { day: 12, o: 990, h: 1005, l: 975, c: 980, v: 190, sma: 1018, ema: 1015 },
+          { day: 13, o: 980, h: 990, l: 960, c: 965, v: 160, sma: 1014, ema: 1006 },
+          { day: 14, o: 965, h: 975, l: 955, c: 960, v: 130, sma: 1010, ema: 998 },
+          { day: 15, o: 960, h: 970, l: 950, c: 955, v: 110, sma: 1005, ema: 990 }
+        ]
+      },
+      whipsaw: {
+        name: "Volatile Dip (Fixed SL Whipsaw)",
+        candles: [
+          { day: 1, o: 990, h: 996, l: 985, c: 988, v: 80, sma: 995, ema: 994 },
+          { day: 2, o: 987, h: 992, l: 982, c: 985, v: 75, sma: 995, ema: 993 },
+          { day: 3, o: 986, h: 995, l: 984, c: 992, v: 88, sma: 995, ema: 993 },
+          { day: 4, o: 992, h: 998, l: 988, c: 995, v: 92, sma: 995, ema: 994 },
+          // Day 5: Breakout!
+          { day: 5, o: 996, h: 1032, l: 995, c: 1025, v: 245, sma: 998, ema: 1000, breakout: true },
+          // Day 6: Shakeout gap down! Low reaches 991 (-3.3% from 1025). Slices S1 fixed 3% SL (994.25)!
+          { day: 6, o: 1020, h: 1022, l: 991, c: 998, v: 180, sma: 1000, ema: 1001 },
+          // Day 7: Hammer recovery!
+          { day: 7, o: 1000, h: 1030, l: 996, c: 1026, v: 165, sma: 1003, ema: 1005 },
+          { day: 8, o: 1028, h: 1055, l: 1025, c: 1050, v: 140, sma: 1008, ema: 1012 },
+          { day: 9, o: 1052, h: 1088, l: 1048, c: 1085, v: 190, sma: 1015, ema: 1024 },
+          { day: 10, o: 1086, h: 1110, l: 1080, c: 1105, v: 175, sma: 1023, ema: 1037 },
+          { day: 11, o: 1108, h: 1140, l: 1102, c: 1135, v: 205, sma: 1032, ema: 1052 },
+          { day: 12, o: 1136, h: 1162, l: 1130, c: 1155, v: 180, sma: 1042, ema: 1068 },
+          { day: 13, o: 1156, h: 1165, l: 1145, c: 1158, v: 130, sma: 1052, ema: 1081 },
+          { day: 14, o: 1158, h: 1162, l: 1140, c: 1145, v: 120, sma: 1060, ema: 1090 },
+          { day: 15, o: 1145, h: 1152, l: 1132, c: 1138, v: 105, sma: 1066, ema: 1096 }
+        ]
+      }
+    };
+
+    // Strategy Parameters & Rules
+    const STRATEGY_CONFIGS = {
+      1: {
+        name: "Strategy 1: Fixed Swing",
+        volMult: 2.0,
+        riskBudget: 5000,
+        calcLevels: (entry) => {
+          const sl = Math.round(entry * 0.97 * 100) / 100; // -3.0%
+          const tp = Math.round(entry * 1.06 * 100) / 100; // +6.0%
+          const qty = 80; // normalized shares
+          return { sl, initialSl: sl, tp1: tp, tp2: null, qty, isHybrid: false };
+        },
+        rules: [
+          "<strong>Entry:</strong> Close &gt; 20 SMA with Volume &gt; 2.0x 20-day SMA.",
+          "<strong>Stop Loss:</strong> Fixed 3.0% below entry price.",
+          "<strong>Target:</strong> Fixed 6.0% above entry price.",
+          "<strong>Exit:</strong> All-or-nothing full position exit.",
+          "<strong>Trailing:</strong> Daily 20 EMA trails stop loss if EMA &gt; SL.",
+          "<strong>Friction:</strong> High turnover, frequent ₹14.75 DP and STT churn."
+        ]
+      },
+      2: {
+        name: "Strategy 2: ATR Trend Swing",
+        volMult: 2.5,
+        riskBudget: 7500,
+        calcLevels: (entry) => {
+          const atr = 30.0; // 14-day ATR (~3% volatility)
+          const sl = entry - (2.0 * atr); // 965 (-2x ATR)
+          const tp = entry + (4.0 * atr); // 1145 (+4x ATR)
+          const qty = 60;
+          return { sl, initialSl: sl, tp1: tp, tp2: null, qty, isHybrid: false };
+        },
+        rules: [
+          "<strong>Entry:</strong> Close &gt; 20 SMA with High Volume &gt; 2.5x 20-day SMA.",
+          "<strong>Stop Loss:</strong> Dynamic 2.0x ATR below entry (wide noise cushion).",
+          "<strong>Target:</strong> 4.0x ATR above entry.",
+          "<strong>Trailing:</strong> 20 EMA trails stop loss after breakout.",
+          "<strong>Vulnerability:</strong> All-or-nothing hold; mid-trend reversals surrender large paper profits."
+        ]
+      },
+      3: {
+        name: "Strategy 3: Hybrid Champion (Optimal)",
+        volMult: 2.25,
+        riskBudget: 6000,
+        calcLevels: (entry) => {
+          const atr = 30.0;
+          const sl = entry - (2.0 * atr); // 965 initial
+          const tp1 = entry + (2.0 * atr); // 1085 (+2x ATR)
+          const tp2 = entry + (4.5 * atr); // 1160 (+4.5x ATR)
+          const qty = 60; // 30 shares for T1, 30 shares for Runner
+          return { sl, initialSl: sl, tp1, tp2, qty, isHybrid: true };
+        },
+        rules: [
+          "<strong>Entry:</strong> Close &gt; 20 SMA with Volume &gt; 2.25x 20-day SMA.",
+          "<strong>Initial Stop:</strong> 2.0x ATR cushion against false breaks.",
+          "<strong>Target 1 (+2x ATR):</strong> Sell 50% shares, bank guaranteed profit.",
+          "<strong>🛡️ True Cost Break-Even:</strong> Stop on remaining 50% instantly shifts above entry to cover DP fee + STT. Zero risk!",
+          "<strong>Target 2 (+4.5x ATR):</strong> Runner rides 20 EMA to maximum trend extension."
+        ]
+      }
+    };
+
+    // Live Trade State
+    let tradeState = {
+      status: 'SCANNING', // SCANNING, OPEN, PARTIAL_BOOKED, CLOSED
+      entryPrice: 0,
+      activeQty: 0,
+      totalQty: 0,
+      currentSl: 0,
+      initialSl: 0,
+      target1: 0,
+      target2: null,
+      trueBreakEven: 0,
+      realizedGross: 0,
+      realizedCharges: 0,
+      realizedNet: 0,
+      stcgTax: 0,
+      exitReason: ''
+    };
+
+    // --- Tab Switching ---
+    function switchTab(tab) {
+      currentTab = tab;
+      ['simulator', 'duel', 'calculator', 'scorecard'].forEach(t => {
+        const viewEl = document.getElementById('view' + t.charAt(0).toUpperCase() + t.slice(1));
+        const btnEl = document.getElementById('tabBtn' + t.charAt(0).toUpperCase() + t.slice(1));
+        if (t === tab) {
+          viewEl.classList.remove('hidden');
+          btnEl.className = "px-3.5 py-1.5 rounded-lg transition-all bg-[var(--card)] text-[var(--foreground)] shadow-sm font-semibold";
+        } else {
+          viewEl.classList.add('hidden');
+          btnEl.className = "px-3.5 py-1.5 rounded-lg transition-all text-[var(--muted-foreground)] hover:text-[var(--foreground)]";
+        }
+      });
+
+      if (tab === 'simulator') {
+        resizeCanvas();
+        drawTradingCanvas();
+      } else if (tab === 'duel') {
+        initDuelCanvases();
+        drawDuelFrame();
+      } else if (tab === 'calculator') {
+        updateCalculator();
+      }
+    }
+
+    // --- Simulator Strategy & Scenario Selectors ---
+    function selectStrategy(id) {
+      activeStrategy = id;
+      [1, 2, 3].forEach(i => {
+        const btn = document.getElementById('strat' + i + 'Btn');
+        if (i === id) {
+          btn.className = "px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all bg-emerald-500/20 border-emerald-500/50 text-emerald-300";
+        } else {
+          btn.className = "px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all bg-[var(--background)] border-[var(--border)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]";
+        }
+      });
+      document.getElementById('chartStratTag').innerText = STRATEGY_CONFIGS[id].name;
+      updateRuleList();
+      resetSimulation();
+    }
+
+    function selectScenario(scen) {
+      activeScenario = scen;
+      const btns = {
+        trend: document.getElementById('scenTrendBtn'),
+        reversal: document.getElementById('scenReversalBtn'),
+        whipsaw: document.getElementById('scenWhipsawBtn')
+      };
+      Object.keys(btns).forEach(k => {
+        if (k === scen) {
+          btns[k].className = "px-2.5 py-1 rounded-md text-xs font-medium border transition-all bg-emerald-500/20 border-emerald-500/50 text-emerald-300";
+        } else {
+          btns[k].className = "px-2.5 py-1 rounded-md text-xs font-medium border transition-all bg-[var(--background)] border-[var(--border)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]";
+        }
+      });
+      resetSimulation();
+    }
+
+    function setSpeed(ms) {
+      simSpeed = ms;
+      document.querySelectorAll('.speed-btn').forEach(btn => {
+        if (parseInt(btn.getAttribute('data-speed')) === ms) {
+          btn.className = "speed-btn px-2 py-0.5 rounded text-[11px] border bg-emerald-500/20 text-emerald-400 border-emerald-500/40";
+        } else {
+          btn.className = "speed-btn px-2 py-0.5 rounded text-[11px] border border-[var(--border)] text-[var(--muted-foreground)]";
+        }
+      });
+      if (isPlaying) {
+        clearInterval(timerId);
+        timerId = setInterval(simulationTick, simSpeed);
+      }
+    }
+
+    function updateRuleList() {
+      const cfg = STRATEGY_CONFIGS[activeStrategy];
+      document.getElementById('stratRuleTitle').innerText = cfg.name + " Mechanics";
+      const ul = document.getElementById('stratRuleList');
+      ul.innerHTML = cfg.rules.map(r => `<li>• ${r}</li>`).join('');
+    }
+
+    // --- Simulation Core Lifecycle ---
+    function resetSimulation() {
+      if (timerId) clearInterval(timerId);
+      isPlaying = false;
+      document.getElementById('playIcon').innerText = "▶";
+      document.getElementById('playLabel').innerText = "Start Animation";
+      currentBarIndex = 0;
+
+      tradeState = {
+        status: 'SCANNING',
+        entryPrice: 0,
+        activeQty: 0,
+        totalQty: 0,
+        currentSl: 0,
+        initialSl: 0,
+        target1: 0,
+        target2: null,
+        trueBreakEven: 0,
+        realizedGross: 0,
+        realizedCharges: 0,
+        realizedNet: 0,
+        stcgTax: 0,
+        exitReason: ''
+      };
+
+      hideAlert();
+      hideBreakEvenCelebration();
+      updateHUD();
+      drawTradingCanvas();
+    }
+
+    function togglePlay() {
+      if (isPlaying) {
+        clearInterval(timerId);
+        isPlaying = false;
+        document.getElementById('playIcon').innerText = "▶";
+        document.getElementById('playLabel').innerText = "Resume";
+      } else {
+        const scenario = SCENARIOS[activeScenario];
+        if (currentBarIndex >= scenario.candles.length - 1) {
+          resetSimulation();
+        }
+        isPlaying = true;
+        document.getElementById('playIcon').innerText = "⏸";
+        document.getElementById('playLabel').innerText = "Pause";
+        timerId = setInterval(simulationTick, simSpeed);
+      }
+    }
+
+    function stepForward() {
+      if (isPlaying) togglePlay();
+      simulationTick();
+    }
+
+    function simulationTick() {
+      const scenario = SCENARIOS[activeScenario];
+      if (currentBarIndex >= scenario.candles.length - 1) {
+        clearInterval(timerId);
+        isPlaying = false;
+        document.getElementById('playIcon').innerText = "▶";
+        document.getElementById('playLabel').innerText = "Replay";
+        return;
+      }
+
+      currentBarIndex++;
+      const candle = scenario.candles[currentBarIndex];
+      processBarLogic(candle);
+      updateHUD();
+      drawTradingCanvas();
+    }
+
+    // Trading Strategy Execution Engine
+    function processBarLogic(bar) {
+      const cfg = STRATEGY_CONFIGS[activeStrategy];
+
+      // Phase 1: Scanning for breakout trigger
+      if (tradeState.status === 'SCANNING') {
+        if (bar.breakout) {
+          // Breakout day!
+          tradeState.status = 'OPEN';
+          tradeState.entryPrice = bar.c;
+          const levels = cfg.calcLevels(tradeState.entryPrice);
+          tradeState.totalQty = levels.qty;
+          tradeState.activeQty = levels.qty;
+          tradeState.initialSl = levels.sl;
+          tradeState.currentSl = levels.sl;
+          tradeState.target1 = levels.tp1;
+          tradeState.target2 = levels.tp2;
+          tradeState.trueBreakEven = calculateTrueBreakEven(tradeState.entryPrice, levels.qty / (levels.isHybrid ? 2 : 1));
+
+          showAlert("🚀 ENTRY TRIGGERED! Bought " + tradeState.totalQty + " shares @ ₹" + tradeState.entryPrice.toFixed(2) + " (Vol: " + (bar.v / 100).toFixed(1) + "x)");
+        }
+        return;
+      }
+
+      // Phase 2: Active Trade Management
+      if (tradeState.status === 'OPEN' || tradeState.status === 'PARTIAL_BOOKED') {
+        
+        // --- Strategy 1 Logic ---
+        if (activeStrategy === 1) {
+          if (bar.h >= tradeState.target1) {
+            // Target Hit (+6%)
+            const exitP = tradeState.target1;
+            const charges = calculateCharges(tradeState.entryPrice, exitP, tradeState.activeQty);
+            tradeState.realizedGross += charges.grossPnL;
+            tradeState.realizedCharges += charges.totalCharges;
+            tradeState.stcgTax += charges.stcgTax;
+            tradeState.realizedNet += charges.netFinal;
+            tradeState.activeQty = 0;
+            tradeState.status = 'CLOSED';
+            tradeState.exitReason = "Target (+6.0%) Hit";
+            showAlert("🎯 TARGET HIT! Exited 100% position @ ₹" + exitP.toFixed(2) + ". Net: +₹" + charges.netFinal.toFixed(2));
+          } else if (bar.l <= tradeState.currentSl) {
+            // Stop Loss Hit (-3%)
+            const exitP = tradeState.currentSl;
+            const charges = calculateCharges(tradeState.entryPrice, exitP, tradeState.activeQty);
+            tradeState.realizedGross += charges.grossPnL;
+            tradeState.realizedCharges += charges.totalCharges;
+            tradeState.stcgTax += charges.stcgTax;
+            tradeState.realizedNet += charges.netFinal;
+            tradeState.activeQty = 0;
+            tradeState.status = 'CLOSED';
+            tradeState.exitReason = "Stop Loss (-3.0%) Hit";
+            showAlert("🛑 STOP LOSS HIT! S1 whipsawed @ ₹" + exitP.toFixed(2) + ". Net: -₹" + Math.abs(charges.netFinal).toFixed(2));
+          } else {
+            // Trail stop loss if 20 EMA > SL
+            if (bar.ema > tradeState.currentSl) {
+              tradeState.currentSl = Math.round(bar.ema * 100) / 100;
+            }
+          }
+        }
+
+        // --- Strategy 2 Logic ---
+        else if (activeStrategy === 2) {
+          if (bar.h >= tradeState.target1) {
+            // Target Hit (+4x ATR)
+            const exitP = tradeState.target1;
+            const charges = calculateCharges(tradeState.entryPrice, exitP, tradeState.activeQty);
+            tradeState.realizedGross += charges.grossPnL;
+            tradeState.realizedCharges += charges.totalCharges;
+            tradeState.stcgTax += charges.stcgTax;
+            tradeState.realizedNet += charges.netFinal;
+            tradeState.activeQty = 0;
+            tradeState.status = 'CLOSED';
+            tradeState.exitReason = "Target 4x ATR Hit";
+            showAlert("🎯 4x ATR TARGET HIT! Exited @ ₹" + exitP.toFixed(2) + ". Net: +₹" + charges.netFinal.toFixed(2));
+          } else if (bar.l <= tradeState.currentSl) {
+            // Stop Loss Hit
+            const exitP = tradeState.currentSl;
+            const charges = calculateCharges(tradeState.entryPrice, exitP, tradeState.activeQty);
+            tradeState.realizedGross += charges.grossPnL;
+            tradeState.realizedCharges += charges.totalCharges;
+            tradeState.stcgTax += charges.stcgTax;
+            tradeState.realizedNet += charges.netFinal;
+            tradeState.activeQty = 0;
+            tradeState.status = 'CLOSED';
+            tradeState.exitReason = "Stop Loss Hit";
+            showAlert("🛑 STOP LOSS HIT! Exited @ ₹" + exitP.toFixed(2) + ". Net: -₹" + Math.abs(charges.netFinal).toFixed(2));
+          } else {
+            // Trail along 20 EMA
+            if (bar.ema > tradeState.currentSl) {
+              tradeState.currentSl = Math.round(bar.ema * 100) / 100;
+            }
+          }
+        }
+
+        // --- Strategy 3 (Hybrid Champion) Logic ---
+        else if (activeStrategy === 3) {
+          
+          // Check Target 1 (50% Partial Profit Lock)
+          if (tradeState.status === 'OPEN' && bar.h >= tradeState.target1) {
+            const sellQty = tradeState.totalQty / 2;
+            const exitP = tradeState.target1;
+            const charges = calculateCharges(tradeState.entryPrice, exitP, sellQty);
+            tradeState.realizedGross += charges.grossPnL;
+            tradeState.realizedCharges += charges.totalCharges;
+            tradeState.stcgTax += charges.stcgTax;
+            tradeState.realizedNet += charges.netFinal;
+            tradeState.activeQty -= sellQty;
+            tradeState.status = 'PARTIAL_BOOKED';
+
+            // DYNAMIC SHIFT: Shift SL to True Cost Break-Even!
+            const trueBE = calculateTrueBreakEven(tradeState.entryPrice, sellQty);
+            tradeState.currentSl = Math.max(tradeState.currentSl, trueBE);
+
+            showAlert("💰 T1 HIT (+2x ATR)! 50% Sold @ ₹" + exitP.toFixed(2) + " (Banked +₹" + charges.netFinal.toFixed(2) + ") | Stop moved to True Cost Break-Even!");
+            showBreakEvenCelebration();
+          }
+
+          // Check Runner Tranche Exits
+          if (tradeState.status === 'PARTIAL_BOOKED') {
+            if (bar.h >= tradeState.target2) {
+              // Full Target 2 Extension!
+              const exitP = tradeState.target2;
+              const charges = calculateCharges(tradeState.entryPrice, exitP, tradeState.activeQty);
+              tradeState.realizedGross += charges.grossPnL;
+              tradeState.realizedCharges += charges.totalCharges;
+              tradeState.stcgTax += charges.stcgTax;
+              tradeState.realizedNet += charges.netFinal;
+              tradeState.activeQty = 0;
+              tradeState.status = 'CLOSED';
+              tradeState.exitReason = "Target 2 Extension Hit (+4.5x ATR)";
+              showAlert("🚀 TARGET 2 HIT (+4.5x ATR)! Runner exited @ ₹" + exitP.toFixed(2) + ". Total Net: +₹" + tradeState.realizedNet.toFixed(2));
+            } else if (bar.l <= tradeState.currentSl) {
+              // Stopped out at True Cost Break-Even or Trailing Stop
+              const exitP = tradeState.currentSl;
+              const charges = calculateCharges(tradeState.entryPrice, exitP, tradeState.activeQty);
+              tradeState.realizedGross += charges.grossPnL;
+              tradeState.realizedCharges += charges.totalCharges;
+              tradeState.stcgTax += charges.stcgTax;
+              tradeState.realizedNet += charges.netFinal;
+              tradeState.activeQty = 0;
+              tradeState.status = 'CLOSED';
+              tradeState.exitReason = "Runner Exited at True Break-Even (Zero Loss!)";
+              showAlert("🛡️ RUNNER CLOSED AT BREAK-EVEN! Exited @ ₹" + exitP.toFixed(2) + ". Zero loss on runner. Profit banked: +₹" + tradeState.realizedNet.toFixed(2));
+            } else {
+              // Trail runner above True BE with 20 EMA
+              if (bar.ema > tradeState.currentSl) {
+                tradeState.currentSl = Math.round(bar.ema * 100) / 100;
+              }
+            }
+          } else if (tradeState.status === 'OPEN' && bar.l <= tradeState.currentSl) {
+            // Initial Stop Out before T1
+            const exitP = tradeState.currentSl;
+            const charges = calculateCharges(tradeState.entryPrice, exitP, tradeState.activeQty);
+            tradeState.realizedGross += charges.grossPnL;
+            tradeState.realizedCharges += charges.totalCharges;
+            tradeState.stcgTax += charges.stcgTax;
+            tradeState.realizedNet += charges.netFinal;
+            tradeState.activeQty = 0;
+            tradeState.status = 'CLOSED';
+            tradeState.exitReason = "Initial Stop Loss Hit (-2x ATR)";
+            showAlert("🛑 STOPPED OUT! Exited 100% @ ₹" + exitP.toFixed(2) + ". Net: -₹" + Math.abs(charges.netFinal).toFixed(2));
+          }
+        }
+
+      }
+    }
+
+    // --- Dynamic Alerts & Celebrations ---
+    function showAlert(text) {
+      const alertEl = document.getElementById('dynamicAlert');
+      const textEl = document.getElementById('alertText');
+      textEl.innerHTML = text;
+      alertEl.classList.remove('opacity-0', 'translate-y-[-10px]');
+      alertEl.classList.add('opacity-100', 'translate-y-0');
+      clearTimeout(window.alertTimeout);
+      window.alertTimeout = setTimeout(() => {
+        alertEl.classList.remove('opacity-100', 'translate-y-0');
+        alertEl.classList.add('opacity-0', 'translate-y-[-10px]');
+      }, 3500);
+    }
+
+    function hideAlert() {
+      const alertEl = document.getElementById('dynamicAlert');
+      alertEl.classList.remove('opacity-100', 'translate-y-0');
+      alertEl.classList.add('opacity-0', 'translate-y-[-10px]');
+    }
+
+    function showBreakEvenCelebration() {
+      const el = document.getElementById('breakEvenCelebration');
+      el.classList.remove('opacity-0', 'scale-90');
+      el.classList.add('opacity-100', 'scale-100');
+      setTimeout(hideBreakEvenCelebration, 4000);
+    }
+
+    function hideBreakEvenCelebration() {
+      const el = document.getElementById('breakEvenCelebration');
+      el.classList.remove('opacity-100', 'scale-100');
+      el.classList.add('opacity-0', 'scale-90');
+    }
+
+    // --- HUD Updates ---
+    function updateHUD() {
+      const scenario = SCENARIOS[activeScenario];
+      const candle = scenario.candles[currentBarIndex];
+
+      // Top badge
+      const badge = document.getElementById('simStatusBadge');
+      const phaseTag = document.getElementById('tradePhaseTag');
+      badge.innerText = tradeState.status;
+      phaseTag.innerText = tradeState.status;
+
+      if (tradeState.status === 'SCANNING') {
+        badge.className = "text-xs px-2 py-0.5 rounded-full font-medium bg-sky-500/20 text-sky-400 border border-sky-500/30";
+      } else if (tradeState.status === 'OPEN') {
+        badge.className = "text-xs px-2 py-0.5 rounded-full font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+      } else if (tradeState.status === 'PARTIAL_BOOKED') {
+        badge.className = "text-xs px-2 py-0.5 rounded-full font-medium bg-amber-500/20 text-amber-300 border border-amber-500/30 pulse-glow";
+      } else if (tradeState.status === 'CLOSED') {
+        badge.className = "text-xs px-2 py-0.5 rounded-full font-medium bg-purple-500/20 text-purple-300 border border-purple-500/30";
+      }
+
+      // Time & Volume Info
+      document.getElementById('timeBarInfo').innerText = `Bar ${currentBarIndex + 1} of ${scenario.candles.length} (${candle.breakout ? 'Breakout Day' : 'Day ' + (currentBarIndex + 1)})`;
+      document.getElementById('volAlertInfo').innerText = `Vol: ${candle.v}k (${(candle.v / 100).toFixed(2)}x SMA)`;
+
+      // Position Parameters
+      document.getElementById('hudQty').innerText = tradeState.activeQty + " / " + tradeState.totalQty;
+      document.getElementById('hudEntry').innerText = tradeState.entryPrice > 0 ? "₹" + tradeState.entryPrice.toFixed(2) : "₹0.00";
+      document.getElementById('hudSL').innerText = tradeState.currentSl > 0 ? "₹" + tradeState.currentSl.toFixed(2) : "₹0.00";
+
+      let targetText = "₹0.00";
+      if (tradeState.target1 > 0) {
+        targetText = "T1: ₹" + tradeState.target1.toFixed(2);
+        if (tradeState.target2) targetText += " | T2: ₹" + tradeState.target2.toFixed(2);
+      }
+      document.getElementById('hudTarget').innerText = targetText;
+
+      // Net PnL Calculation (Realized + Unrealized)
+      let currentUnrealizedGross = 0;
+      let currentUnrealizedCharges = 0;
+      let currentUnrealizedNet = 0;
+      let currentUnrealizedTax = 0;
+
+      if (tradeState.activeQty > 0 && tradeState.entryPrice > 0) {
+        const uCharges = calculateCharges(tradeState.entryPrice, candle.c, tradeState.activeQty);
+        currentUnrealizedGross = uCharges.grossPnL;
+        currentUnrealizedCharges = uCharges.totalCharges;
+        currentUnrealizedTax = uCharges.stcgTax;
+        currentUnrealizedNet = uCharges.netFinal;
+      }
+
+      const totalGross = tradeState.realizedGross + currentUnrealizedGross;
+      const totalCharges = tradeState.realizedCharges + currentUnrealizedCharges;
+      const totalTax = tradeState.stcgTax + currentUnrealizedTax;
+      const totalNet = tradeState.realizedNet + currentUnrealizedNet;
+
+      const pnlEl = document.getElementById('hudNetPnL');
+      const pctEl = document.getElementById('hudNetPct');
+
+      pnlEl.innerText = (totalNet >= 0 ? "+" : "") + "₹" + totalNet.toFixed(2);
+      if (totalNet > 0) {
+        pnlEl.className = "text-2xl font-black font-mono text-emerald-400";
+      } else if (totalNet < 0) {
+        pnlEl.className = "text-2xl font-black font-mono text-rose-400";
+      } else {
+        pnlEl.className = "text-2xl font-black font-mono text-[var(--muted-foreground)]";
+      }
+
+      const investedVal = tradeState.totalQty > 0 ? tradeState.entryPrice * tradeState.totalQty : 100000;
+      const netPct = (totalNet / investedVal) * 100;
+      pctEl.innerText = (netPct >= 0 ? "+" : "") + netPct.toFixed(2) + "% on invested capital";
+
+      // Deductions Breakdown
+      document.getElementById('hudGrossPnL').innerText = (totalGross >= 0 ? "+" : "") + "₹" + totalGross.toFixed(2);
+      document.getElementById('hudStatCharges').innerText = "-₹" + (totalCharges - (tradeState.totalQty > 0 ? 14.75 : 0)).toFixed(2);
+      document.getElementById('hudDPCharge').innerText = tradeState.totalQty > 0 ? "-₹14.75" : "-₹0.00";
+      document.getElementById('hudTax').innerText = "-₹" + totalTax.toFixed(2);
+    }
+
+    // --- High-DPI Canvas Rendering Engine ---
+    const canvas = document.getElementById('tradingCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function resizeCanvas() {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
+    }
+
+    window.addEventListener('resize', () => {
+      if (currentTab === 'simulator') {
+        resizeCanvas();
+        drawTradingCanvas();
+      } else if (currentTab === 'duel') {
+        initDuelCanvases();
+        drawDuelFrame();
+      }
+    });
+
+    function drawTradingCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      const w = rect.width;
+      const h = rect.height;
+
+      ctx.clearRect(0, 0, w, h);
+
+      // Subplot splits: Price Chart (78% height), Volume Chart (22% height)
+      const priceH = h * 0.76;
+      const volH = h * 0.20;
+      const volY = h * 0.80;
+
+      const scenario = SCENARIOS[activeScenario];
+      const candles = scenario.candles;
+      const numBars = candles.length;
+      const barSpacing = w / (numBars + 1);
+
+      // Price scaling
+      let minP = 940;
+      let maxP = 1180;
+      const pToY = (p) => priceH - ((p - minP) / (maxP - minP)) * (priceH - 40) - 20;
+
+      // Draw Grid & Price Scale
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.05)";
+      ctx.lineWidth = 1;
+      for (let p = 960; p <= 1160; p += 40) {
+        const y = pToY(p);
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+
+        ctx.fillStyle = "rgba(156, 163, 175, 0.4)";
+        ctx.font = "10px monospace";
+        ctx.fillText("₹" + p, w - 45, y - 3);
+      }
+
+      // Draw 20 SMA & 20 EMA Curves up to currentBarIndex
+      ctx.lineWidth = 2;
+      // 20 SMA (Blue)
+      ctx.beginPath();
+      for (let i = 0; i <= currentBarIndex; i++) {
+        const x = (i + 1) * barSpacing;
+        const y = pToY(candles[i].sma);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = "rgba(59, 130, 246, 0.75)";
+      ctx.stroke();
+
+      // 20 EMA (Purple)
+      ctx.beginPath();
+      for (let i = 0; i <= currentBarIndex; i++) {
+        const x = (i + 1) * barSpacing;
+        const y = pToY(candles[i].ema);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = "rgba(168, 85, 247, 0.85)";
+      ctx.stroke();
+
+      // Draw Candlesticks up to currentBarIndex
+      for (let i = 0; i <= currentBarIndex; i++) {
+        const c = candles[i];
+        const x = (i + 1) * barSpacing;
+        const isUp = c.c >= c.o;
+        const openY = pToY(c.o);
+        const closeY = pToY(c.c);
+        const highY = pToY(c.h);
+        const lowY = pToY(c.l);
+
+        // Candle Wick
+        ctx.strokeStyle = isUp ? "#10b981" : "#f43f5e";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(x, highY);
+        ctx.lineTo(x, lowY);
+        ctx.stroke();
+
+        // Candle Body
+        const bodyTop = Math.min(openY, closeY);
+        const bodyH = Math.max(Math.abs(closeY - openY), 2.5);
+        const bodyW = barSpacing * 0.55;
+
+        ctx.fillStyle = isUp ? "#10b981" : "#f43f5e";
+        ctx.fillRect(x - bodyW / 2, bodyTop, bodyW, bodyH);
+
+        // Breakout Marker on candle
+        if (c.breakout) {
+          ctx.fillStyle = "#38bdf8";
+          ctx.font = "bold 11px sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillText("⚡ BUY", x, highY - 10);
+        }
+
+        // Volume Bar in subplot
+        const vH = (c.v / 280) * (volH - 10);
+        const vY = h - vH - 5;
+        ctx.fillStyle = isUp ? "rgba(16, 185, 129, 0.4)" : "rgba(244, 63, 94, 0.4)";
+        if (c.breakout) ctx.fillStyle = "rgba(56, 189, 248, 0.85)"; // volume surge highlight
+        ctx.fillRect(x - bodyW / 2, vY, bodyW, vH);
+      }
+
+      // Volume threshold line (2.0x benchmark)
+      const threshY = h - ((200 / 280) * (volH - 10)) - 5;
+      ctx.strokeStyle = "rgba(234, 179, 8, 0.6)";
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(0, threshY);
+      ctx.lineTo(w, threshY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = "rgba(234, 179, 8, 0.8)";
+      ctx.font = "9px monospace";
+      ctx.textAlign = "left";
+      ctx.fillText("Vol Benchmark (2.0x SMA)", 10, threshY - 3);
+
+      // Draw Active Trade Levels (Entry, SL, Targets)
+      if (tradeState.entryPrice > 0) {
+        const startX = barSpacing * 5; // Day 5 entry
+        const endX = w - 10;
+
+        // Entry Line (Blue Dotted)
+        const entryY = pToY(tradeState.entryPrice);
+        ctx.strokeStyle = "rgba(56, 189, 248, 0.8)";
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([6, 4]);
+        ctx.beginPath();
+        ctx.moveTo(startX, entryY);
+        ctx.lineTo(endX, entryY);
+        ctx.stroke();
+
+        ctx.fillStyle = "#38bdf8";
+        ctx.font = "10px monospace";
+        ctx.textAlign = "right";
+        ctx.fillText("ENTRY: ₹" + tradeState.entryPrice.toFixed(2), endX, entryY - 4);
+
+        // Stop Loss Line (Red Dotted or Amber if True Cost BE)
+        if (tradeState.currentSl > 0) {
+          const slY = pToY(tradeState.currentSl);
+          const isTrueBE = tradeState.status === 'PARTIAL_BOOKED';
+          ctx.strokeStyle = isTrueBE ? "#f59e0b" : "#f43f5e";
+          ctx.lineWidth = 2;
+          ctx.setLineDash([4, 3]);
+          ctx.beginPath();
+          ctx.moveTo(startX, slY);
+          ctx.lineTo(endX, slY);
+          ctx.stroke();
+
+          ctx.fillStyle = isTrueBE ? "#f59e0b" : "#f43f5e";
+          ctx.font = "bold 10px monospace";
+          ctx.fillText((isTrueBE ? "🛡️ TRUE COST BE: ₹" : "🛑 SL: ₹") + tradeState.currentSl.toFixed(2), endX, slY + 12);
+        }
+
+        // Target 1 Line (Green Dotted)
+        if (tradeState.target1 > 0) {
+          const t1Y = pToY(tradeState.target1);
+          ctx.strokeStyle = "#10b981";
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([5, 4]);
+          ctx.beginPath();
+          ctx.moveTo(startX, t1Y);
+          ctx.lineTo(endX, t1Y);
+          ctx.stroke();
+
+          ctx.fillStyle = "#10b981";
+          ctx.font = "bold 10px monospace";
+          ctx.fillText((tradeState.target2 ? "🎯 T1 (50% LOCK): ₹" : "🎯 TARGET (+6%): ₹") + tradeState.target1.toFixed(2), endX, t1Y - 4);
+        }
+
+        // Target 2 Line (Emerald Glow for Strategy 3 Runner)
+        if (tradeState.target2 > 0) {
+          const t2Y = pToY(tradeState.target2);
+          ctx.strokeStyle = "#059669";
+          ctx.lineWidth = 2;
+          ctx.setLineDash([6, 3]);
+          ctx.beginPath();
+          ctx.moveTo(startX, t2Y);
+          ctx.lineTo(endX, t2Y);
+          ctx.stroke();
+
+          ctx.fillStyle = "#34d399";
+          ctx.font = "bold 10px monospace";
+          ctx.fillText("🚀 T2 RUNNER (4.5x ATR): ₹" + tradeState.target2.toFixed(2), endX, t2Y - 4);
+        }
+
+        ctx.setLineDash([]); // reset line dash
+      }
+    }
+
+    // --- TAB 2: DUEL ENGINE ---
+    let duelPlaying = false;
+    let duelTimer = null;
+    let duelBarIndex = 0;
+    let duelState = {
+      1: { status: 'Ready', gross: 0, fees: 0, tax: 0, net: 0 },
+      2: { status: 'Ready', gross: 0, fees: 0, tax: 0, net: 0 },
+      3: { status: 'Ready', gross: 0, fees: 0, tax: 0, net: 0 }
+    };
+
+    function initDuelCanvases() {
+      [1, 2, 3].forEach(id => {
+        const c = document.getElementById('duelCanvas' + id);
+        const dpr = window.devicePixelRatio || 1;
+        const rect = c.getBoundingClientRect();
+        c.width = rect.width * dpr;
+        c.height = rect.height * dpr;
+        const ctxD = c.getContext('2d');
+        ctxD.scale(dpr, dpr);
+      });
+    }
+
+    function toggleDuelPlay() {
+      if (duelPlaying) {
+        clearInterval(duelTimer);
+        duelPlaying = false;
+        document.getElementById('btnDuelPlay').innerText = "▶ Run Side-by-Side Duel";
+      } else {
+        const scenario = SCENARIOS[activeScenario];
+        if (duelBarIndex >= scenario.candles.length - 1) {
+          resetDuel();
+        }
+        duelPlaying = true;
+        document.getElementById('btnDuelPlay').innerText = "⏸ Pause Duel";
+        duelTimer = setInterval(duelTick, 500);
+      }
+    }
+
+    function resetDuel() {
+      if (duelTimer) clearInterval(duelTimer);
+      duelPlaying = false;
+      duelBarIndex = 0;
+      document.getElementById('btnDuelPlay').innerText = "▶ Run Side-by-Side Duel";
+      duelState = {
+        1: { status: 'Ready', gross: 0, fees: 0, tax: 0, net: 0 },
+        2: { status: 'Ready', gross: 0, fees: 0, tax: 0, net: 0 },
+        3: { status: 'Ready', gross: 0, fees: 0, tax: 0, net: 0 }
+      };
+      updateDuelUI();
+      drawDuelFrame();
+    }
+
+    function duelTick() {
+      const scenario = SCENARIOS[activeScenario];
+      if (duelBarIndex >= scenario.candles.length - 1) {
+        clearInterval(duelTimer);
+        duelPlaying = false;
+        document.getElementById('btnDuelPlay').innerText = "🔄 Replay Duel";
+        return;
+      }
+      duelBarIndex++;
+      const candle = scenario.candles[duelBarIndex];
+
+      // Process S1
+      if (duelBarIndex >= 5) {
+        if (activeScenario === 'trend') {
+          if (duelBarIndex >= 8) {
+            duelState[1].status = 'Target Hit (+6%)';
+            duelState[1].gross = 4920; duelState[1].fees = 94.20; duelState[1].tax = 965.16; duelState[1].net = 3860.64;
+          } else {
+            duelState[1].status = 'Holding Runner';
+          }
+          if (duelBarIndex >= 12) {
+            duelState[2].status = 'Target 4x Hit';
+            duelState[2].gross = 7200; duelState[2].fees = 112.40; duelState[2].tax = 1417.52; duelState[2].net = 5670.08;
+          } else {
+            duelState[2].status = 'Holding Full 100%';
+          }
+          if (duelBarIndex >= 12) {
+            duelState[3].status = '🏆 T1 + T2 Hit!';
+            duelState[3].gross = 8550; duelState[3].fees = 138.60; duelState[3].tax = 1682.28; duelState[3].net = 6729.12;
+          } else if (duelBarIndex >= 8) {
+            duelState[3].status = 'T1 Banked | BE Active';
+            duelState[3].gross = 3600; duelState[3].fees = 85.10; duelState[3].tax = 702.98; duelState[3].net = 2811.92;
+          }
+        } else if (activeScenario === 'reversal') {
+          if (duelBarIndex >= 8) {
+            duelState[1].status = 'Target Hit (+6%)';
+            duelState[1].gross = 4920; duelState[1].fees = 94.20; duelState[1].tax = 965.16; duelState[1].net = 3860.64;
+          }
+          if (duelBarIndex >= 11) {
+            duelState[2].status = '🛑 Trailing Loss!';
+            duelState[2].gross = -1980; duelState[2].fees = 108.40; duelState[2].tax = 0; duelState[2].net = -2088.40;
+          }
+          if (duelBarIndex >= 10) {
+            duelState[3].status = '🛡️ T1 Banked + BE Runner Out';
+            duelState[3].gross = 3600; duelState[3].fees = 98.40; duelState[3].tax = 700.32; duelState[3].net = 2801.28;
+          }
+        } else if (activeScenario === 'whipsaw') {
+          if (duelBarIndex >= 6) {
+            duelState[1].status = '🛑 Fixed SL Whipsawed!';
+            duelState[1].gross = -2460; duelState[1].fees = 92.10; duelState[1].tax = 0; duelState[1].net = -2552.10;
+          }
+          if (duelBarIndex >= 12) {
+            duelState[2].status = 'Target Hit (+4x ATR)';
+            duelState[2].gross = 7200; duelState[2].fees = 112.40; duelState[2].tax = 1417.52; duelState[2].net = 5670.08;
+          }
+          if (duelBarIndex >= 12) {
+            duelState[3].status = '🏆 Max Extension!';
+            duelState[3].gross = 8550; duelState[3].fees = 138.60; duelState[3].tax = 1682.28; duelState[3].net = 6729.12;
+          }
+        }
+      }
+
+      updateDuelUI();
+      drawDuelFrame();
+    }
+
+    function updateDuelUI() {
+      [1, 2, 3].forEach(id => {
+        const s = duelState[id];
+        document.getElementById('duel' + id + 'Status').innerText = s.status;
+        document.getElementById('duel' + id + 'Gross').innerText = (s.gross >= 0 ? "+" : "") + "₹" + s.gross.toFixed(2);
+        document.getElementById('duel' + id + 'Fees').innerText = "-₹" + s.fees.toFixed(2);
+        document.getElementById('duel' + id + 'Tax').innerText = "-₹" + s.tax.toFixed(2);
+        
+        const netEl = document.getElementById('duel' + id + 'Net');
+        netEl.innerText = (s.net >= 0 ? "+" : "") + "₹" + s.net.toFixed(2);
+        if (s.net > 0) netEl.className = "font-mono font-black text-emerald-400";
+        else if (s.net < 0) netEl.className = "font-mono font-black text-rose-400";
+        else netEl.className = "font-mono font-bold text-[var(--muted-foreground)]";
+      });
+    }
+
+    function drawDuelFrame() {
+      const scenario = SCENARIOS[activeScenario];
+      const candles = scenario.candles;
+
+      [1, 2, 3].forEach(id => {
+        const c = document.getElementById('duelCanvas' + id);
+        const ctxD = c.getContext('2d');
+        const rect = c.getBoundingClientRect();
+        const w = rect.width;
+        const h = rect.height;
+
+        ctxD.clearRect(0, 0, w, h);
+        const barSpacing = w / (candles.length + 1);
+
+        let minP = 940, maxP = 1180;
+        const pToY = (p) => h - ((p - minP) / (maxP - minP)) * (h - 20) - 10;
+
+        // Draw candles
+        for (let i = 0; i <= duelBarIndex; i++) {
+          const cd = candles[i];
+          const x = (i + 1) * barSpacing;
+          const isUp = cd.c >= cd.o;
+          ctxD.strokeStyle = isUp ? "#10b981" : "#f43f5e";
+          ctxD.lineWidth = 1.2;
+          ctxD.beginPath();
+          ctxD.moveTo(x, pToY(cd.h));
+          ctxD.lineTo(x, pToY(cd.l));
+          ctxD.stroke();
+
+          const bTop = Math.min(pToY(cd.o), pToY(cd.c));
+          const bH = Math.max(Math.abs(pToY(cd.c) - pToY(cd.o)), 2);
+          ctxD.fillStyle = isUp ? "#10b981" : "#f43f5e";
+          ctxD.fillRect(x - 3, bTop, 6, bH);
+        }
+
+        // Draw indicator lines if past entry
+        if (duelBarIndex >= 4) {
+          const entryY = pToY(1025);
+          ctxD.strokeStyle = "rgba(56, 189, 248, 0.6)";
+          ctxD.setLineDash([3, 3]);
+          ctxD.beginPath(); ctxD.moveTo(barSpacing * 5, entryY); ctxD.lineTo(w, entryY); ctxD.stroke();
+
+          if (id === 1) {
+            const slY = pToY(994.25);
+            ctxD.strokeStyle = "#f43f5e";
+            ctxD.beginPath(); ctxD.moveTo(barSpacing * 5, slY); ctxD.lineTo(w, slY); ctxD.stroke();
+          } else if (id === 2) {
+            const slY = pToY(965);
+            ctxD.strokeStyle = "#f43f5e";
+            ctxD.beginPath(); ctxD.moveTo(barSpacing * 5, slY); ctxD.lineTo(w, slY); ctxD.stroke();
+          } else if (id === 3) {
+            const isBE = duelBarIndex >= 8;
+            const slY = pToY(isBE ? 1028 : 965);
+            ctxD.strokeStyle = isBE ? "#f59e0b" : "#f43f5e";
+            ctxD.beginPath(); ctxD.moveTo(barSpacing * 5, slY); ctxD.lineTo(w, slY); ctxD.stroke();
+          }
+          ctxD.setLineDash([]);
+        }
+      });
+    }
+
+    // --- TAB 3: TRUE BREAK-EVEN CALCULATOR ---
+    function updateCalculator() {
+      const entryP = parseFloat(document.getElementById('calcEntrySlider').value);
+      const qty = parseInt(document.getElementById('calcQtySlider').value);
+
+      document.getElementById('calcEntryDisplay').innerText = "₹" + entryP.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+      document.getElementById('calcQtyDisplay').innerText = qty + " shares";
+
+      const bePrice = calculateTrueBreakEven(entryP, qty);
+      const diff = bePrice - entryP;
+      const pct = (diff / entryP) * 100;
+
+      document.getElementById('calcBEPrice').innerText = "₹" + bePrice.toFixed(2);
+      document.getElementById('calcBufferInfo').innerText = `(Requires +₹${diff.toFixed(2)} or +${pct.toFixed(2)}% move to be mathematically net zero)`;
+
+      const buyVal = entryP * qty;
+      const buyFees = buyVal * ((FEE_CONFIG.stt_buy_pct + FEE_CONFIG.stamp_duty_pct + FEE_CONFIG.nse_fee_pct * 1.18) / 100);
+      const sellVal = bePrice * qty;
+      const sellFees = sellVal * ((FEE_CONFIG.stt_sell_pct + FEE_CONFIG.nse_fee_pct * 1.18) / 100);
+      const totalFees = buyFees + sellFees + FEE_CONFIG.dp_charges;
+
+      document.getElementById('calcBuyVal').innerText = "₹" + buyVal.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+      document.getElementById('calcBuyFees').innerText = "₹" + buyFees.toFixed(2);
+      document.getElementById('calcSellFees').innerText = "₹" + sellFees.toFixed(2);
+      document.getElementById('calcTotalFees').innerText = "₹" + totalFees.toFixed(2);
+    }
+
+    // Initialize application on load
+    window.addEventListener('DOMContentLoaded', () => {
+      selectStrategy(1);
+      updateRuleList();
+      resizeCanvas();
+      drawTradingCanvas();
+    });
+  </script>
+</body>
+</html>

@@ -56,14 +56,34 @@ def get_stock_sector(ticker: str) -> str:
         sym = f"{sym}.NS"
     return COMPANY_METADATA.get(sym, {}).get("sector", COMPANY_METADATA.get(ticker, {}).get("sector", "Diversified"))
 
-def get_stock_company(ticker: str) -> str:
-    sym = ticker.strip().upper()
-    if not sym.endswith(".NS"):
-        sym = f"{sym}.NS"
-    return COMPANY_METADATA.get(sym, {}).get("company", COMPANY_METADATA.get(ticker, {}).get("company", ticker.replace(".NS", "")))
+_company_cache = None
 
 def get_company_name(ticker: str) -> str:
-    return get_stock_company(ticker)
+    """Returns the official company name for an NSE ticker symbol."""
+    global _company_cache
+    if _company_cache is None:
+        cache_path = os.path.join(PROJECT_ROOT, "nse_company_names.json")
+        if os.path.exists(cache_path):
+            try:
+                with open(cache_path, "r", encoding="utf-8") as f:
+                    _company_cache = json.load(f)
+            except Exception:
+                _company_cache = {}
+        else:
+            _company_cache = {}
+    sym = str(ticker).strip().upper()
+    clean_sym = sym.replace(".NS", "")
+    with_ns = f"{clean_sym}.NS"
+    return (
+        _company_cache.get(with_ns)
+        or _company_cache.get(clean_sym)
+        or COMPANY_METADATA.get(with_ns, {}).get("company")
+        or COMPANY_METADATA.get(clean_sym, {}).get("company")
+        or clean_sym
+    )
+
+def get_stock_company(ticker: str) -> str:
+    return get_company_name(ticker)
 
 def get_nifty_250_tickers() -> List[str]:
     pool_setting = os.environ.get("ACTIVE_STOCK_POOL", "curated_pool_top_50.csv")
