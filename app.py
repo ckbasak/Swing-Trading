@@ -22,6 +22,7 @@ import pandas as pd
 import yfinance as yf
 import plotly.express as px
 import portfolio_manager
+import screener
 import subprocess
 import sys
 
@@ -315,8 +316,9 @@ if account is not None and holdings is not None:
             else:
                 open_df["Entry Value"] = clean_numeric_col(open_df["Entry Value"])
                 
+            open_df["Company Name"] = open_df["Ticker"].map(screener.get_company_name)
             display_columns = [
-                "Ticker", "Entry Date", "Entry Price", "Quantity", "Entry Value",
+                "Ticker", "Company Name", "Entry Date", "Entry Price", "Quantity", "Entry Value",
                 "Current Price", "Current SL", "Target", "Unrealized PnL", "PnL %"
             ]
             st.dataframe(
@@ -351,6 +353,7 @@ if account is not None and holdings is not None:
             closed_df["Exit Price"] = clean_numeric_col(closed_df["Exit Price"])
             closed_df["Quantity"] = clean_numeric_col(closed_df["Quantity"])
             closed_df["Entry Value"] = closed_df["Entry Price"] * closed_df["Quantity"]
+            closed_df["Company Name"] = closed_df["Ticker"].map(screener.get_company_name)
             
             if "Exit Value" not in closed_df.columns or closed_df["Exit Value"].isna().all():
                 if "Sell Value" in closed_df.columns and not closed_df["Sell Value"].isna().all():
@@ -377,7 +380,7 @@ if account is not None and holdings is not None:
             st.divider()
             
             display_closed = [
-                "Ticker", "Entry Date", "Entry Price", "Quantity", "Entry Value",
+                "Ticker", "Company Name", "Entry Date", "Entry Price", "Quantity", "Entry Value",
                 "Exit Date", "Exit Price", "Exit Value", "PnL", "PnL %", "Exit Reason"
             ]
             st.dataframe(

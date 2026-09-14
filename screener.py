@@ -80,14 +80,28 @@ COMPANY_NAME_CACHE: Dict[str, str] = {
     "WIPRO.NS": "Wipro Ltd."
 }
 
+_company_cache = None
+
 def get_company_name(ticker: str) -> str:
     """
     Returns the official company name for an NSE ticker symbol.
     """
+    global _company_cache
+    if _company_cache is None:
+        cache_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "nse_company_names.json")
+        if os.path.exists(cache_path):
+            try:
+                import json
+                with open(cache_path, "r", encoding="utf-8") as f:
+                    _company_cache = json.load(f)
+            except Exception:
+                _company_cache = {}
+        else:
+            _company_cache = {}
     sym = ticker.strip().upper()
     if not sym.endswith(".NS"):
         sym = f"{sym}.NS"
-    return COMPANY_NAME_CACHE.get(sym, sym.replace(".NS", ""))
+    return _company_cache.get(sym) or _company_cache.get(sym.replace(".NS", "")) or COMPANY_NAME_CACHE.get(sym, sym.replace(".NS", ""))
 
 def get_nifty_250_tickers() -> List[str]:
     """

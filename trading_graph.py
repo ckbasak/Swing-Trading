@@ -42,18 +42,23 @@ def sync_portfolio_node(state: TradingState) -> Dict[str, Any]:
         account = portfolio_manager.get_account_details(sh)
         portfolio_value = account["Total Portfolio Value"]
         cash_balance = account["Cash Balance"]
-        risk_pct = account["Risk Percent"]
-        
+        risk_pct = account.get("Risk Percent", 0.05)
+        if isinstance(risk_pct, str):
+            risk_pct = float(risk_pct.replace("%", "").strip()) / 100.0
+        elif risk_pct > 1.0:
+            risk_pct = risk_pct / 100.0
+            
         open_positions = portfolio_manager.get_open_positions(sh)
         
         logs.append(f"Portfolio Value: INR {portfolio_value:,.2f}")
         logs.append(f"Cash Balance: INR {cash_balance:,.2f}")
-        logs.append(f"Risk per trade: {risk_pct * 100}% (INR {portfolio_value * risk_pct:,.2f})")
+        logs.append(f"Risk per trade: {risk_pct * 100:.1f}% (INR {portfolio_value * risk_pct:,.2f})")
         
         return {
             "open_positions": open_positions,
             "portfolio_value": portfolio_value,
             "cash_balance": cash_balance,
+            "risk_pct": risk_pct,
             "risk_per_trade": portfolio_value * risk_pct,
             "macro_sentiment": macro_data,
             "logs": logs
@@ -148,8 +153,9 @@ def calculate_positions_node(state: TradingState) -> Dict[str, Any]:
             risk_per_share = entry_price - initial_sl
             logs.append(f"SL adjusted to 3% limit for {ticker} (Initial SL was too tight: {c['sma_20']:.2f})")
             
-        # 1% Risk Sizing Rule: Quantity = Risk Per Trade / Risk Per Share
-        qty = math.floor(risk_per_trade / risk_per_share)
+        # Sizing Rule: Quantity = Risk Per Trade / Entry Price (matching Strategy 2 & 3)
+        target_cost = state.get("risk_per_trade", portfolio_value * 0.05)
+        qty = math.floor(target_cost / entry_price)
         
         if qty <= 0:
             logs.append(f"Skipping {ticker}: Calculated quantity is 0.")
