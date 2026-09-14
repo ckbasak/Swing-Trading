@@ -3,9 +3,8 @@ title: AI Swing Trade 1
 emoji: 📈
 colorFrom: blue
 colorTo: green
-sdk: streamlit
-sdk_version: 1.35.0
-app_file: app.py
+sdk: docker
+app_port: 7860
 pinned: false
 ---
 
