@@ -112,22 +112,31 @@ def analyze_holding(item: Dict[str, Any]) -> Dict[str, Any]:
         pnl_pct = analysis["pnlPercentage"]
         rationale = []
         
-        # Decision Logic Matrix
+        # Dynamic Market Thresholds (Configurable via Environment Variables)
+        target_pct_limit = float(os.environ.get("PROFIT_TARGET_PCT", "10.0"))
+        stop_loss_pct_limit = float(os.environ.get("STOP_LOSS_PCT", "-7.0"))
+        rsi_overbought_limit = float(os.environ.get("RSI_OVERBOUGHT", "70.0"))
+        rsi_breakdown_limit = float(os.environ.get("RSI_OVERSOLD_EXIT", "38.0"))
+        rsi_pullback_max = float(os.environ.get("RSI_PULLBACK_MAX", "46.0"))
+        
+        # Decision Logic Matrix (Market-Optimized Criteria)
         
         # 1. SELL Conditions
-        is_target_met = pnl_pct >= 14.0 or ltp >= (buy_price * 1.15)
-        is_stop_breached = ltp < (buy_price * 0.91) or ltp < sma200
-        is_rsi_breakdown = rsi14 < 35 and ltp < ema20
-        is_stagnant = pnl_pct < 0 and ltp < sma50 and rsi14 < 45
+        is_target_met = pnl_pct >= target_pct_limit or ltp >= (buy_price * (1 + target_pct_limit / 100.0)) or rsi14 >= rsi_overbought_limit
+        is_stop_breached = pnl_pct <= stop_loss_pct_limit or ltp < (buy_price * (1 + stop_loss_pct_limit / 100.0)) or ltp < sma200
+        is_rsi_breakdown = rsi14 < rsi_breakdown_limit and ltp < ema20
         
         if is_target_met:
             analysis["recommendation"] = "SELL"
             analysis["actionStrength"] = "HIGH (PROFIT EXIT)"
             analysis["freedCapitalPotential"] = analysis["currentValue"]
             analysis["targetPrice"] = round(ltp, 2)
-            analysis["stopLoss"] = round(ltp * 0.95, 2)
+            analysis["stopLoss"] = round(ltp * 0.96, 2)
             analysis["riskReward"] = 3.5
-            rationale.append(f"Target profit threshold achieved (+{pnl_pct:.1f}% gain). Lock in profits to recycle capital.")
+            if rsi14 >= rsi_overbought_limit:
+                rationale.append(f"RSI overbought ({rsi14:.1f} ≥ {rsi_overbought_limit:.0f}). Lock in profits at peak momentum.")
+            else:
+                rationale.append(f"Target profit threshold achieved (+{pnl_pct:.1f}% gain ≥ {target_pct_limit:.0f}%). Lock in profits to recycle capital.")
             
         elif is_stop_breached:
             analysis["recommendation"] = "SELL"
@@ -139,36 +148,36 @@ def analyze_holding(item: Dict[str, Any]) -> Dict[str, Any]:
             if ltp < sma200:
                 rationale.append(f"Price ({ltp:.2f}) broke below key 200-SMA support ({sma200:.2f}). Exit to preserve capital.")
             else:
-                rationale.append(f"Position breached maximum swing risk threshold (-{abs(pnl_pct):.1f}% loss). Exit to cut losses.")
+                rationale.append(f"Position breached maximum swing risk threshold (-{abs(pnl_pct):.1f}% loss ≤ {stop_loss_pct_limit:.0f}%). Exit to cut losses.")
                 
         elif is_rsi_breakdown:
             analysis["recommendation"] = "SELL"
             analysis["actionStrength"] = "MODERATE (RSI BREAKDOWN)"
             analysis["freedCapitalPotential"] = analysis["currentValue"]
-            analysis["targetPrice"] = round(buy_price * 1.10, 2)
+            analysis["targetPrice"] = round(buy_price * 1.08, 2)
             analysis["stopLoss"] = round(ltp, 2)
             analysis["riskReward"] = 1.0
-            rationale.append(f"Weak momentum with RSI at {rsi14:.1f} trading below 20-EMA ({ema20:.2f}). Sell to redeploy.")
+            rationale.append(f"Weak momentum with RSI at {rsi14:.1f} (< {rsi_breakdown_limit:.0f}) trading below 20-EMA ({ema20:.2f}). Sell to redeploy.")
 
         # 2. AVERAGE / ADD Conditions
-        elif ltp > sma200 and rsi14 < 42 and abs((ltp - ema20) / ema20) < 0.035:
+        elif ltp > sma200 and rsi14 <= rsi_pullback_max and abs((ltp - ema20) / ema20) <= 0.04:
             analysis["recommendation"] = "AVERAGE"
             analysis["actionStrength"] = "HIGH (ACCUMULATE PULLBACK)"
-            target = round(max(high52w * 0.98, ltp * 1.15), 2)
-            sl = round(min(sma200 * 0.97, ltp * 0.93), 2)
+            target = round(max(high52w * 0.98, ltp * 1.12), 2)
+            sl = round(min(sma200 * 0.97, ltp * 0.94), 2)
             risk = max(ltp - sl, 1.0)
             reward = target - ltp
             analysis["targetPrice"] = target
             analysis["stopLoss"] = sl
             analysis["riskReward"] = round(reward / risk, 2)
-            rationale.append(f"Healthy pullback in uptrend (above 200-SMA) near 20-EMA with oversold RSI ({rsi14:.1f}). Excellent R:R for averaging.")
+            rationale.append(f"Healthy pullback in uptrend (above 200-SMA) near 20-EMA with RSI at {rsi14:.1f} (≤ {rsi_pullback_max:.0f}). Excellent R:R for averaging.")
 
         # 3. HOLD Conditions
         else:
             analysis["recommendation"] = "HOLD"
             analysis["actionStrength"] = "STABLE"
-            target = round(buy_price * 1.15, 2)
-            sl = round(max(sma200, buy_price * 0.92), 2)
+            target = round(buy_price * (1 + target_pct_limit / 100.0), 2)
+            sl = round(max(sma200, buy_price * (1 + stop_loss_pct_limit / 100.0)), 2)
             analysis["targetPrice"] = target
             analysis["stopLoss"] = sl
             risk = max(ltp - sl, 1.0)
