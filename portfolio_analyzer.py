@@ -22,7 +22,7 @@ def build_one_tap_order_url(symbol: str, recommendation: str, qty: float, price:
     return "https://web.dhan.co"
 
 
-def analyze_holding(item: Dict[str, Any]) -> Dict[str, Any]:
+def analyze_holding(item: Dict[str, Any], overrides: Optional[Dict[str, float]] = None) -> Dict[str, Any]:
     """
     Performs comprehensive technical analysis for a single stock or ETF holding.
     Generates decision: SELL, AVERAGE, or HOLD along with stop loss, target, R:R, and rationale.
@@ -112,12 +112,13 @@ def analyze_holding(item: Dict[str, Any]) -> Dict[str, Any]:
         pnl_pct = analysis["pnlPercentage"]
         rationale = []
         
-        # Dynamic Market Thresholds (Configurable via Environment Variables)
-        target_pct_limit = float(os.environ.get("PROFIT_TARGET_PCT", "10.0"))
-        stop_loss_pct_limit = float(os.environ.get("STOP_LOSS_PCT", "-7.0"))
-        rsi_overbought_limit = float(os.environ.get("RSI_OVERBOUGHT", "70.0"))
-        rsi_breakdown_limit = float(os.environ.get("RSI_OVERSOLD_EXIT", "38.0"))
-        rsi_pullback_max = float(os.environ.get("RSI_PULLBACK_MAX", "46.0"))
+        # Dynamic Market Thresholds (Configurable via Overrides or Environment Variables)
+        ov = overrides or {}
+        target_pct_limit = float(ov.get("PROFIT_TARGET_PCT", os.environ.get("PROFIT_TARGET_PCT", "10.0")))
+        stop_loss_pct_limit = float(ov.get("STOP_LOSS_PCT", os.environ.get("STOP_LOSS_PCT", "-7.0")))
+        rsi_overbought_limit = float(ov.get("RSI_OVERBOUGHT", os.environ.get("RSI_OVERBOUGHT", "70.0")))
+        rsi_breakdown_limit = float(ov.get("RSI_OVERSOLD_EXIT", os.environ.get("RSI_OVERSOLD_EXIT", "38.0")))
+        rsi_pullback_max = float(ov.get("RSI_PULLBACK_MAX", os.environ.get("RSI_PULLBACK_MAX", "46.0")))
         
         # Decision Logic Matrix (Market-Optimized Criteria)
         
@@ -197,7 +198,7 @@ def analyze_holding(item: Dict[str, Any]) -> Dict[str, Any]:
 
     return analysis
 
-def analyze_full_dhan_portfolio() -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
+def analyze_full_dhan_portfolio(overrides: Optional[Dict[str, float]] = None) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
     """
     Scans full Dhan portfolio, executes technical analysis on all holdings,
     and calculates portfolio metrics and capital recycling allocations.
@@ -215,7 +216,7 @@ def analyze_full_dhan_portfolio() -> Tuple[List[Dict[str, Any]], Dict[str, Any]]
     total_freed_capital = 0.0
     
     for h in holdings:
-        res = analyze_holding(h)
+        res = analyze_holding(h, overrides=overrides)
         analyzed_holdings.append(res)
         
         total_investment += res["investmentValue"]

@@ -78,18 +78,33 @@ with st.sidebar:
         
     st.divider()
     
+    with st.expander("🎛️ Indicator Threshold Tuning", expanded=True):
+        st.caption("Adjust technical analysis thresholds live:")
+        target_pct = st.slider("Target Profit Gain %", min_value=5.0, max_value=30.0, value=10.0, step=0.5, help="Target gain percentage to trigger SELL signal")
+        stop_loss_pct = st.slider("Stop-Loss Risk Limit %", min_value=-20.0, max_value=-2.0, value=-7.0, step=0.5, help="Maximum allowed position drawdown before exit")
+        rsi_ob = st.slider("RSI Overbought Exit", min_value=60.0, max_value=85.0, value=70.0, step=1.0)
+        rsi_exit = st.slider("RSI Breakdown Exit", min_value=25.0, max_value=50.0, value=38.0, step=1.0)
+        rsi_pb = st.slider("RSI Pullback Max (BUY)", min_value=30.0, max_value=55.0, value=46.0, step=1.0)
+        
     if st.button("🔄 Refresh Technical Analysis", width="stretch", type="primary"):
         st.cache_data.clear()
         st.rerun()
 
 # Fetch Analysis Data
 @st.cache_data(ttl=300)
-def get_portfolio_data():
-    holdings, summary = portfolio_analyzer.analyze_full_dhan_portfolio()
+def get_portfolio_data(target_pct: float, stop_loss_pct: float, rsi_ob: float, rsi_exit: float, rsi_pb: float):
+    overrides = {
+        "PROFIT_TARGET_PCT": target_pct,
+        "STOP_LOSS_PCT": stop_loss_pct,
+        "RSI_OVERBOUGHT": rsi_ob,
+        "RSI_OVERSOLD_EXIT": rsi_exit,
+        "RSI_PULLBACK_MAX": rsi_pb
+    }
+    holdings, summary = portfolio_analyzer.analyze_full_dhan_portfolio(overrides=overrides)
     portfolio_manager.sync_analysis_to_sheets(holdings, summary)
     return holdings, summary
 
-holdings, summary = get_portfolio_data()
+holdings, summary = get_portfolio_data(target_pct, stop_loss_pct, rsi_ob, rsi_exit, rsi_pb)
 
 # Top KPI Metric Cards
 col1, col2, col3, col4, col5 = st.columns(5)
