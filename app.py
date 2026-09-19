@@ -52,6 +52,18 @@ _ensure_bot_running()
 st.title("📈 Manage-Dhan-Portfolio: Swing Trade Advisor")
 st.caption("Autonomous Dhan Portfolio Analyzer, Swing Signal Matrix, Paper Trading & Capital Recycling Planner")
 
+# Session State Initialization for Threshold Sliders
+if "target_pct_val" not in st.session_state:
+    st.session_state.target_pct_val = 10.0
+if "stop_loss_pct_val" not in st.session_state:
+    st.session_state.stop_loss_pct_val = -7.0
+if "rsi_ob_val" not in st.session_state:
+    st.session_state.rsi_ob_val = 70.0
+if "rsi_exit_val" not in st.session_state:
+    st.session_state.rsi_exit_val = 38.0
+if "rsi_pb_val" not in st.session_state:
+    st.session_state.rsi_pb_val = 46.0
+
 # Sidebar Configuration
 with st.sidebar:
     st.header("⚙️ System Control & Sync")
@@ -78,15 +90,51 @@ with st.sidebar:
         
     st.divider()
     
-    with st.expander("🎛️ Indicator Threshold Tuning", expanded=True):
-        st.caption("Adjust technical analysis thresholds live:")
-        target_pct = st.slider("Target Profit Gain %", min_value=5.0, max_value=30.0, value=10.0, step=0.5, help="Target gain percentage to trigger SELL signal")
-        stop_loss_pct = st.slider("Stop-Loss Risk Limit %", min_value=-20.0, max_value=-2.0, value=-7.0, step=0.5, help="Maximum allowed position drawdown before exit")
-        rsi_ob = st.slider("RSI Overbought Exit", min_value=60.0, max_value=85.0, value=70.0, step=1.0)
-        rsi_exit = st.slider("RSI Breakdown Exit", min_value=25.0, max_value=50.0, value=38.0, step=1.0)
-        rsi_pb = st.slider("RSI Pullback Max (BUY)", min_value=30.0, max_value=55.0, value=46.0, step=1.0)
+    with st.expander("🎯 Auto-Optimize Thresholds & Presets", expanded=True):
+        st.caption("Select market goal & auto-tune indicator criteria:")
+        opt_preset = st.selectbox(
+            "Optimization Goal",
+            options=[
+                "🛡️ Capital Preservation & Risk Reduction (Conservative)",
+                "⚖️ Balanced Market Sentiment (Optimal)",
+                "🚀 Maximum Return & Profit Pursuit (Aggressive)"
+            ],
+            index=1
+        )
         
-    if st.button("🔄 Refresh Technical Analysis", width="stretch", type="primary"):
+        if st.button("⚡ Auto-Optimize Thresholds Now", width="stretch", type="primary"):
+            if "Capital Preservation" in opt_preset:
+                st.session_state.target_pct_val = 9.5
+                st.session_state.stop_loss_pct_val = -5.5
+                st.session_state.rsi_ob_val = 68.0
+                st.session_state.rsi_exit_val = 40.0
+                st.session_state.rsi_pb_val = 44.0
+                st.toast("🛡️ Thresholds auto-optimized for Capital Preservation & Risk Reduction!", icon="🛡️")
+            elif "Maximum Return" in opt_preset:
+                st.session_state.target_pct_val = 14.0
+                st.session_state.stop_loss_pct_val = -8.5
+                st.session_state.rsi_ob_val = 75.0
+                st.session_state.rsi_exit_val = 35.0
+                st.session_state.rsi_pb_val = 48.0
+                st.toast("🚀 Thresholds auto-optimized for Maximum Return!", icon="🚀")
+            else:
+                st.session_state.target_pct_val = 11.5
+                st.session_state.stop_loss_pct_val = -7.0
+                st.session_state.rsi_ob_val = 70.0
+                st.session_state.rsi_exit_val = 38.0
+                st.session_state.rsi_pb_val = 46.0
+                st.toast("⚖️ Thresholds auto-optimized for Balanced Market Sentiment!", icon="⚡")
+            st.rerun()
+
+        st.divider()
+        st.caption("Manual Indicator Slider Controls:")
+        target_pct = st.slider("Target Profit Gain %", min_value=5.0, max_value=30.0, key="target_pct_val", step=0.5, help="Target gain percentage to trigger SELL signal")
+        stop_loss_pct = st.slider("Stop-Loss Risk Limit %", min_value=-20.0, max_value=-2.0, key="stop_loss_pct_val", step=0.5, help="Maximum allowed position drawdown before exit")
+        rsi_ob = st.slider("RSI Overbought Exit", min_value=60.0, max_value=85.0, key="rsi_ob_val", step=1.0)
+        rsi_exit = st.slider("RSI Breakdown Exit", min_value=25.0, max_value=50.0, key="rsi_exit_val", step=1.0)
+        rsi_pb = st.slider("RSI Pullback Max (BUY)", min_value=30.0, max_value=55.0, key="rsi_pb_val", step=1.0)
+        
+    if st.button("🔄 Refresh Technical Analysis", width="stretch"):
         st.cache_data.clear()
         st.rerun()
 
