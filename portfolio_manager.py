@@ -55,7 +55,10 @@ def get_gspread_client() -> Optional[gspread.Client]:
     env_json = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON")
     if env_json:
         try:
-            creds_dict = json.loads(env_json)
+            cleaned_json = env_json.strip()
+            if '""' in cleaned_json and '":"' not in cleaned_json:
+                cleaned_json = cleaned_json.replace('""', '"')
+            creds_dict = json.loads(cleaned_json)
             creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
             return gspread.authorize(creds)
         except Exception as e:

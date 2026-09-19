@@ -19,3 +19,5 @@ services:
         sync: false
       - key: SPREADSHEET_NAME
         value: NSE_Dhan_Portfolio_Manager
+      - key: GOOGLE_SERVICE_ACCOUNT_JSON
+        sync: false

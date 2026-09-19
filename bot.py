@@ -226,7 +226,7 @@ async def process_recommendations_request(message):
         ltp = a["ltp"]
         exec_buttons.append([InlineKeyboardButton(f"⚡ Execute BUY {qty} {sym} @ ₹{ltp:,.2f}", callback_data=f"ord_ask|BUY|{sym}|{qty}|{ltp:.2f}")])
         
-    main_kb = build_main_keyboard().inline_keyboard
+    main_kb = [list(row) for row in build_main_keyboard().inline_keyboard]
     combined_kb = InlineKeyboardMarkup(exec_buttons + main_kb)
     
     await send_chunked_message(message, full_text, reply_markup=combined_kb)
