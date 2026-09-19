@@ -375,13 +375,33 @@ with tab3:
 
 # TAB 4: PAPER TRADE SIMULATOR
 with tab4:
-    st.subheader("📝 Simulated Paper Trade Execution Engine")
+    st.subheader("📝 Simulated Paper Trade Execution Engine & Performance Metrics")
     st.info("🔒 Zero real orders are placed on Dhan. All trades operate strictly in simulated paper mode.")
     
-    sim_col1, sim_col2 = st.columns(2)
+    trades_log = portfolio_manager.load_paper_trades()
+    total_trades = len(trades_log)
+    sells_log = [t for t in trades_log if t.get("Action") == "SELL"]
+    buys_log = [t for t in trades_log if t.get("Action") in ["BUY", "AVERAGE"]]
+    
+    total_sim_freed = sum(float(t.get("Total Value", 0)) for t in sells_log)
+    total_sim_invested = sum(float(t.get("Total Value", 0)) for t in buys_log)
+    
+    pcol1, pcol2, pcol3, pcol4 = st.columns(4)
+    with pcol1:
+        st.metric("Total Paper Trades Executed", f"{total_trades}")
+    with pcol2:
+        st.metric("Paper Exits Executed", f"{len(sells_log)}")
+    with pcol3:
+        st.metric("Freed Capital (Paper Exits)", f"₹{total_sim_freed:,.2f}")
+    with pcol4:
+        st.metric("Capital Reinvested (Paper Buys)", f"₹{total_sim_invested:,.2f}")
+        
+    st.divider()
+    
+    sim_col1, sim_col2, sim_col3 = st.columns(3)
     
     with sim_col1:
-        st.markdown("### 🔴 Execute Paper Sell")
+        st.markdown("### 🔴 Paper Exit (SELL)")
         sell_candidates = [h for h in holdings if h["recommendation"] == "SELL"] or holdings
         selected_sell_sym = st.selectbox("Select Holding to Paper Sell", [h["tradingSymbol"] for h in sell_candidates], key="paper_sell_sym")
         
@@ -392,7 +412,7 @@ with tab4:
             st.write(f"• **Estimated Capital Freed**: `₹{target_sell_item['currentValue']:,.2f}`")
             
             if st.button("🔥 Execute Paper Sell Transaction", type="primary", key="btn_exec_sell"):
-                success = portfolio_manager.record_paper_trade(
+                portfolio_manager.record_paper_trade(
                     symbol=selected_sell_sym,
                     action="SELL",
                     qty=target_sell_item["qty"],
@@ -400,13 +420,11 @@ with tab4:
                     total_val=target_sell_item["currentValue"],
                     rationale="Paper sell executed via dashboard"
                 )
-                if success:
-                    st.success(f"Successfully recorded paper sell for {selected_sell_sym}! Liquid funds updated.")
-                else:
-                    st.success(f"Paper sell for {selected_sell_sym} simulated locally.")
+                st.toast(f"Successfully recorded paper sell for {selected_sell_sym}!", icon="🔥")
+                st.rerun()
 
     with sim_col2:
-        st.markdown("### 🟢 Execute Paper Average / Buy")
+        st.markdown("### 🟢 Paper Accumulate (AVERAGE)")
         buy_candidates = [h for h in holdings if h["recommendation"] == "AVERAGE"] or holdings
         selected_buy_sym = st.selectbox("Select Holding to Paper Average", [h["tradingSymbol"] for h in buy_candidates], key="paper_buy_sym")
         
@@ -418,7 +436,7 @@ with tab4:
             st.write(f"• **Total Estimated Cost**: `₹{est_cost:,.2f}`")
             
             if st.button("➕ Execute Paper Average Transaction", key="btn_exec_buy"):
-                success = portfolio_manager.record_paper_trade(
+                portfolio_manager.record_paper_trade(
                     symbol=selected_buy_sym,
                     action="AVERAGE",
                     qty=add_qty,
@@ -426,18 +444,45 @@ with tab4:
                     total_val=est_cost,
                     rationale="Paper average executed via dashboard"
                 )
-                if success:
-                    st.success(f"Successfully recorded paper average for {selected_buy_sym}!")
-                else:
-                    st.success(f"Paper average for {selected_buy_sym} simulated locally.")
+                st.toast(f"Successfully recorded paper average for {selected_buy_sym}!", icon="🟢")
+                st.rerun()
+
+    with sim_col3:
+        st.markdown("### ⚡ Custom Paper Order")
+        custom_ticker = st.text_input("NSE Ticker (e.g. TATAMOTORS)", value="TATAMOTORS", key="custom_paper_ticker").upper().strip()
+        custom_action = st.selectbox("Action", ["BUY", "SELL", "AVERAGE"], key="custom_paper_action")
+        custom_qty = st.number_input("Quantity", min_value=1, value=10, key="custom_paper_qty")
+        custom_price = st.number_input("Execution Price (₹)", min_value=0.1, value=500.0, step=0.5, key="custom_paper_price")
+        
+        if st.button("🚀 Submit Custom Paper Trade", type="primary", key="btn_exec_custom"):
+            tot_val = custom_qty * custom_price
+            portfolio_manager.record_paper_trade(
+                symbol=custom_ticker,
+                action=custom_action,
+                qty=custom_qty,
+                price=custom_price,
+                total_val=tot_val,
+                rationale=f"Custom {custom_action} simulation trade"
+            )
+            st.toast(f"Executed Custom Paper {custom_action} for {custom_qty} {custom_ticker} @ ₹{custom_price:,.2f}!", icon="🚀")
+            st.rerun()
 
     st.divider()
-    st.markdown("### 📄 Recent Paper Trades Log")
-    trades_log = portfolio_manager.load_paper_trades()
+    
+    log_col1, log_col2 = st.columns([0.8, 0.2])
+    with log_col1:
+        st.markdown("### 📄 Paper Trade Execution History & Audit Log")
+    with log_col2:
+        if st.button("🗑️ Reset Paper Log", key="btn_clear_paper"):
+            portfolio_manager.clear_paper_trades()
+            st.toast("Paper trades log reset successfully!", icon="🧹")
+            st.rerun()
+            
     if trades_log:
-        st.dataframe(pd.DataFrame(trades_log), width="stretch")
+        df_log = pd.DataFrame(trades_log)
+        st.dataframe(df_log, width="stretch")
     else:
-        st.caption("No paper trades logged yet.")
+        st.caption("No paper trades logged yet. Execute paper trades above to build your simulation log.")
 
 # TAB 5: CAPITAL RECYCLING PLANNER
 with tab5:

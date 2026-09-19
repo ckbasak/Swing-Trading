@@ -207,31 +207,84 @@ def sync_analysis_to_sheets(analyzed_holdings: List[Dict[str, Any]], summary: Di
         logger.error(f"Error syncing to Google Sheets: {e}")
         return False
 
+PAPER_TRADES_CACHE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cached_paper_trades.json")
+
 def record_paper_trade(symbol: str, action: str, qty: float, price: float, total_val: float, rationale: str) -> bool:
-    """Logs a simulated paper trade to Google Sheets."""
+    """Logs a simulated paper trade to Google Sheets and local cache file."""
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    trade_entry = {
+        "Timestamp": now_str,
+        "Symbol": symbol,
+        "Action": action,
+        "Qty": qty,
+        "Execution Price": price,
+        "Total Value": total_val,
+        "Rationale": rationale
+    }
+    
+    # Always save to local cache
+    try:
+        existing = []
+        if os.path.exists(PAPER_TRADES_CACHE_FILE):
+            with open(PAPER_TRADES_CACHE_FILE, "r", encoding="utf-8") as f:
+                existing = json.load(f)
+        existing.append(trade_entry)
+        with open(PAPER_TRADES_CACHE_FILE, "w", encoding="utf-8") as f:
+            json.dump(existing, f, indent=2)
+    except Exception as ie:
+        logger.error(f"Error saving paper trade to local cache: {ie}")
+
+    # Save to Google Sheets if available
     sh = get_or_create_spreadsheet()
     if not sh:
-        return False
+        return True
     try:
         headers = ["Timestamp", "Symbol", "Action", "Qty", "Execution Price", "Total Value", "Rationale"]
         ws = get_or_create_worksheet(sh, "Paper_Trades", headers)
-        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         retry_gspread(ws.append_row, [now_str, symbol, action, qty, price, total_val, rationale])
         return True
     except Exception as e:
-        logger.error(f"Error recording paper trade: {e}")
-        return False
+        logger.error(f"Error recording paper trade to Google Sheets: {e}")
+        return True
 
 def load_paper_trades() -> List[Dict[str, Any]]:
-    """Loads recorded paper trades from Google Sheets."""
+    """Loads recorded paper trades from Google Sheets or local cache fallback."""
     sh = get_or_create_spreadsheet()
-    if not sh:
-        return []
-    try:
-        headers = ["Timestamp", "Symbol", "Action", "Qty", "Execution Price", "Total Value", "Rationale"]
-        ws = get_or_create_worksheet(sh, "Paper_Trades", headers)
-        records = retry_gspread(ws.get_all_records)
-        return records
-    except Exception as e:
-        logger.error(f"Error loading paper trades: {e}")
-        return []
+    if sh:
+        try:
+            headers = ["Timestamp", "Symbol", "Action", "Qty", "Execution Price", "Total Value", "Rationale"]
+            ws = get_or_create_worksheet(sh, "Paper_Trades", headers)
+            records = retry_gspread(ws.get_all_records)
+            if records:
+                return records
+        except Exception as e:
+            logger.error(f"Error loading paper trades from Google Sheets: {e}")
+
+    # Fallback to local cache
+    if os.path.exists(PAPER_TRADES_CACHE_FILE):
+        try:
+            with open(PAPER_TRADES_CACHE_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception as e:
+            logger.error(f"Error reading paper trades local cache: {e}")
+    return []
+
+def clear_paper_trades() -> bool:
+    """Clears all paper trades from local cache and Google Sheets."""
+    if os.path.exists(PAPER_TRADES_CACHE_FILE):
+        try:
+            os.remove(PAPER_TRADES_CACHE_FILE)
+        except Exception:
+            pass
+            
+    sh = get_or_create_spreadsheet()
+    if sh:
+        try:
+            headers = ["Timestamp", "Symbol", "Action", "Qty", "Execution Price", "Total Value", "Rationale"]
+            ws = get_or_create_worksheet(sh, "Paper_Trades", headers)
+            retry_gspread(ws.clear)
+            retry_gspread(ws.append_row, headers)
+            return True
+        except Exception as e:
+            logger.error(f"Error clearing paper trades worksheet: {e}")
+    return True
