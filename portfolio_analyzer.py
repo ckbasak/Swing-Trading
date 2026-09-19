@@ -3,7 +3,7 @@ import logging
 import pandas as pd
 import numpy as np
 import yfinance as yf
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Optional
 import dhan_client
 
 logger = logging.getLogger(__name__)
