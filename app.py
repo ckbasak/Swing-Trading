@@ -27,14 +27,11 @@ st.set_page_config(
 # Failsafe background bot supervisor
 def _ensure_bot_running():
     try:
-        # Check if running on Render / Linux server
-        if os.environ.get("RENDER") or os.environ.get("BOT_STARTED_BY_SCRIPT"):
-            return
         import psutil
         for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
             try:
                 cmdline = proc.info.get('cmdline') or []
-                if any('bot.py' in arg for arg in cmdline) and proc.pid != os.getpid():
+                if any('bot.py' in str(arg) for arg in cmdline) and proc.pid != os.getpid():
                     return
             except Exception:
                 continue
@@ -44,7 +41,7 @@ def _ensure_bot_running():
         cmd = [sys.executable, "-u", "bot.py"]
         subprocess.Popen(cmd, cwd=os.path.dirname(os.path.abspath(__file__)))
     except Exception as e:
-        st.warning(f"Could not launch bot daemon: {e}")
+        print(f"Could not launch bot daemon: {e}")
 
 _ensure_bot_running()
 
