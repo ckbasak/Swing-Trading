@@ -154,6 +154,18 @@ def get_portfolio_data(target_pct: float, stop_loss_pct: float, rsi_ob: float, r
 
 holdings, summary = get_portfolio_data(target_pct, stop_loss_pct, rsi_ob, rsi_exit, rsi_pb)
 
+# Macro Market Sentiment Banner
+macro = summary.get("macroRegime", {})
+macro_label = macro.get("label", "⚖️ Market Sentiment: Balanced Volatility")
+macro_status = macro.get("status", "BALANCED")
+
+if macro_status == "HIGH_VOLATILITY":
+    st.error(f"{macro_label} | **Defensive Risk Active (35% Low-Beta ETF Split)**")
+elif macro_status == "LOW_VOLATILITY":
+    st.success(f"{macro_label} | **Bullish Uptrend Active (Growth Swing Allocations)**")
+else:
+    st.info(f"{macro_label} | **Standard Balanced Allocations Active**")
+
 # Top KPI Metric Cards
 col1, col2, col3, col4, col5 = st.columns(5)
 with col1:
