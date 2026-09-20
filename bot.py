@@ -556,7 +556,7 @@ async def setup_bot_commands(application: Application):
             BotCommand("renew", "Verify/Renew Dhan access token"),
             BotCommand("status", "System health & engine status"),
         ]
-        await application.bot.set_my_commands(commands)
+        await asyncio.wait_for(application.bot.set_my_commands(commands), timeout=5.0)
     except Exception as e:
         logger.error(f"Failed to set bot commands: {e}")
     try:
@@ -615,12 +615,13 @@ async def global_error_handler(update: object, context: ContextTypes.DEFAULT_TYP
 
 def main():
     """Main Telegram bot runner."""
-    token = os.environ.get("TELEGRAM_BOT_TOKEN") or TELEGRAM_BOT_TOKEN
+    raw_token = os.environ.get("TELEGRAM_BOT_TOKEN") or TELEGRAM_BOT_TOKEN or ""
+    token = raw_token.strip().strip("'").strip('"')
     if not token:
         logger.error("No Telegram Bot Token available. Exiting.")
         sys.exit(1)
         
-    logger.info("Starting Manage-Dhan-Portfolio Telegram Bot...")
+    logger.info(f"Starting Manage-Dhan-Portfolio Telegram Bot (Token ending in ...{token[-6:]})...")
     app = Application.builder().token(token).post_init(setup_bot_commands).build()
     
     app.add_handler(CommandHandler(["start", "menu"], cmd_start))
