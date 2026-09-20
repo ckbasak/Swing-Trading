@@ -595,6 +595,18 @@ async def handle_text_messages(update: Update, context: ContextTypes.DEFAULT_TYP
                 reply_markup=build_main_keyboard()
             )
 
+async def global_error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Logs errors and notifies user gracefully instead of failing silently."""
+    logger.error(f"Exception while handling update: {context.error}", exc_info=context.error)
+    if isinstance(update, Update) and update.effective_message:
+        try:
+            await update.effective_message.reply_text(
+                "⚠️ *Temporary error processing command.* Please try again or tap /start to refresh menu.",
+                parse_mode="Markdown"
+            )
+        except Exception:
+            pass
+
 def main():
     """Main Telegram bot runner."""
     if not TELEGRAM_BOT_TOKEN:
@@ -614,7 +626,9 @@ def main():
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text_messages))
     app.add_handler(CallbackQueryHandler(callback_handler))
     
-    app.run_polling(drop_pending_updates=True)
+    app.add_error_handler(global_error_handler)
+    
+    app.run_polling(drop_pending_updates=False)
 
 if __name__ == "__main__":
     main()
