@@ -5,6 +5,7 @@ import datetime
 import logging
 from logging.handlers import RotatingFileHandler
 import asyncio
+from typing import Dict, List, Optional, Any, Tuple
 from telegram import Update, BotCommand, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
 
