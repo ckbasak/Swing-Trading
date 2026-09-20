@@ -51,6 +51,144 @@ _load_env()
 
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
+SAVED_CHAT_ID_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cached_chat_id.txt")
+ALERTED_SIGNALS = {}
+
+def save_chat_id(chat_id: int):
+    """Saves active Telegram Chat ID for automated market alert notifications."""
+    try:
+        with open(SAVED_CHAT_ID_FILE, "w", encoding="utf-8") as f:
+            f.write(str(chat_id))
+    except Exception as e:
+        logger.error(f"Error saving chat ID: {e}")
+
+def get_saved_chat_id() -> Optional[int]:
+    """Retrieves saved Telegram Chat ID."""
+    env_cid = os.environ.get("TELEGRAM_CHAT_ID")
+    if env_cid:
+        try:
+            return int(env_cid)
+        except ValueError:
+            pass
+    if os.path.exists(SAVED_CHAT_ID_FILE):
+        try:
+            with open(SAVED_CHAT_ID_FILE, "r", encoding="utf-8") as f:
+                content = f.read().strip()
+                if content:
+                    return int(content)
+        except Exception:
+            pass
+    return None
+
+def is_nse_market_hours() -> bool:
+    """Checks if current time is within NSE market hours (Mon-Fri 09:15 to 15:30 IST)."""
+    now_utc = datetime.datetime.now(datetime.timezone.utc)
+    ist_tz = datetime.timezone(datetime.timedelta(hours=5, minutes=30))
+    now_ist = now_utc.astimezone(ist_tz)
+    
+    if now_ist.weekday() >= 5:
+        return False
+        
+    start_time = datetime.time(9, 15)
+    end_time = datetime.time(15, 30)
+    current_time = now_ist.time()
+    
+    return start_time <= current_time <= end_time
+
+async def market_hours_monitor_task(application: Application):
+    """
+    Background worker task running every 15 minutes during NSE market hours.
+    Scans portfolio, evaluates signals, and sends spontaneous Telegram alerts.
+    """
+    logger.info("Market hours monitor background task initialized.")
+    while True:
+        try:
+            await asyncio.sleep(900)
+            
+            if not is_nse_market_hours():
+                continue
+                
+            chat_id = get_saved_chat_id()
+            if not chat_id:
+                logger.info("Market monitor active, but no chat ID saved yet. Waiting for user interaction.")
+                continue
+                
+            logger.info("NSE Market Hours active. Running 15-minute background portfolio scan...")
+            holdings, summary = portfolio_analyzer.analyze_full_dhan_portfolio()
+            portfolio_manager.sync_analysis_to_sheets(holdings, summary)
+            
+            urgent_signals = [h for h in holdings if h["recommendation"] in ["SELL", "AVERAGE"]]
+            
+            new_alerts = []
+            now_ts = time.time()
+            
+            for s in urgent_signals:
+                sym = s["tradingSymbol"]
+                rec = s["recommendation"]
+                key = f"{sym}_{rec}"
+                
+                last_alerted = ALERTED_SIGNALS.get(key, 0)
+                if now_ts - last_alerted > 14400:
+                    ALERTED_SIGNALS[key] = now_ts
+                    new_alerts.append(s)
+                    
+            if new_alerts:
+                sells = [h for h in new_alerts if h["recommendation"] == "SELL"]
+                averages = [h for h in new_alerts if h["recommendation"] == "AVERAGE"]
+                
+                lines = [
+                    "🔔 *AUTOMATED MARKET HOURS ALERT* 📈",
+                    "--------------------------------------",
+                    f"⏰ *Scan Time*: `{datetime.datetime.now().strftime('%H:%M IST')}`\n"
+                ]
+                
+                if sells:
+                    lines.append(f"🔴 *URGENT SELL EXIT SIGNALS ({len(sells)})*:")
+                    for s in sells:
+                        lines.append(
+                            f"• *{s['tradingSymbol']}*: Sell {s['qty']} @ `₹{s['ltp']:,.2f}`\n"
+                            f"  _Reason_: {' '.join(s['rationale'])}\n"
+                        )
+                        
+                if averages:
+                    lines.append(f"🟢 *ACCUMULATE / AVERAGE SIGNALS ({len(averages)})*:")
+                    for a in averages:
+                        lines.append(
+                            f"• *{a['tradingSymbol']}*: Add @ `₹{a['ltp']:,.2f}` | Target: `₹{a['targetPrice']:,.2f}`\n"
+                            f"  _Reason_: {' '.join(a['rationale'])}\n"
+                        )
+                        
+                full_text = "\n".join(lines)
+                
+                exec_buttons = []
+                for s in sells[:4]:
+                    sym = s["tradingSymbol"]
+                    qty = int(s["qty"])
+                    ltp = s["ltp"]
+                    exec_buttons.append([InlineKeyboardButton(f"⚡ Execute SELL {qty} {sym} @ ₹{ltp:,.2f}", callback_data=f"ord_ask|SELL|{sym}|{qty}|{ltp:.2f}")])
+                for a in averages[:3]:
+                    sym = a["tradingSymbol"]
+                    qty = int(a["qty"])
+                    ltp = a["ltp"]
+                    exec_buttons.append([InlineKeyboardButton(f"⚡ Execute BUY {qty} {sym} @ ₹{ltp:,.2f}", callback_data=f"ord_ask|BUY|{sym}|{qty}|{ltp:.2f}")])
+                    
+                main_kb = [list(row) for row in build_main_keyboard().inline_keyboard]
+                combined_kb = InlineKeyboardMarkup(exec_buttons + main_kb)
+                
+                try:
+                    await application.bot.send_message(
+                        chat_id=chat_id,
+                        text=full_text,
+                        parse_mode="Markdown",
+                        reply_markup=combined_kb,
+                        disable_web_page_preview=True
+                    )
+                    logger.info(f"Pushed automated market hours alert for {len(new_alerts)} signals to chat {chat_id}.")
+                except Exception as send_err:
+                    logger.error(f"Failed to push market alert to Telegram: {send_err}")
+                    
+        except Exception as e:
+            logger.error(f"Error in market hours monitor task: {e}")
 
 def build_main_keyboard() -> InlineKeyboardMarkup:
     """Creates interactive Telegram inline keyboard."""
@@ -105,11 +243,14 @@ async def send_chunked_message(message, text: str, reply_markup=None, parse_mode
 
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handler for /start and /menu commands."""
+    if update and update.effective_chat:
+        save_chat_id(update.effective_chat.id)
     welcome_text = (
         "📈 *Manage-Dhan-Portfolio Advisor* 🤖\n"
         "--------------------------------------\n"
         "Welcome! I am your autonomous Dhan Portfolio Swing Trade Manager.\n\n"
-        "⚡ *1-Click Dhan Order Execution*: Use inline buttons to submit orders directly to Dhan with automatic TOTP authentication.\n\n"
+        "⚡ *1-Click Dhan Order Execution*: Use inline buttons to submit orders directly to Dhan with automatic TOTP authentication.\n"
+        "🔔 *Automated Market-Hours Alerts*: Continuously scans live prices (Mon-Fri 09:15-15:30 IST) & pushes instant Telegram alerts!\n\n"
         "Use the menu below or slash commands:\n"
         "• /portfolio - Executive Portfolio Overview\n"
         "• /rebalance - Actionable SELL / AVERAGE signals + 1-Click Order Buttons\n"
@@ -264,6 +405,7 @@ async def process_status_request(message):
         "--------------------------------------\n"
         f"📡 *Data Engine*: {dhan_status}\n"
         f"📊 *Google Sheets Sync*: {sheets_status}\n"
+        f"🔔 *Market Alert Engine*: 🟢 Active (Mon-Fri 09:15-15:30 IST)\n"
         f"⚡ *Execution Engine*: `1-Click Dhan API (TOTP Auto-Auth)`\n"
         f"🕒 *System Time*: `{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}`"
     )
@@ -325,6 +467,8 @@ async def process_renew_request(message):
 async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handles inline keyboard button clicks."""
     query = update.callback_query
+    if query and query.message and query.message.chat:
+        save_chat_id(query.message.chat.id)
     await query.answer()
     
     data = query.data
@@ -401,7 +545,7 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text("❌ *Order execution cancelled. No real trades were placed.*", parse_mode="Markdown", reply_markup=build_main_keyboard())
 
 async def setup_bot_commands(application: Application):
-    """Registers bot slash commands menu."""
+    """Registers bot slash commands menu and launches background market monitor."""
     commands = [
         BotCommand("start", "Launch main menu"),
         BotCommand("portfolio", "Executive portfolio overview"),
@@ -412,6 +556,7 @@ async def setup_bot_commands(application: Application):
         BotCommand("status", "System health & engine status"),
     ]
     await application.bot.set_my_commands(commands)
+    asyncio.create_task(market_hours_monitor_task(application))
 
 async def handle_text_messages(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handles pasted token text messages in Telegram chat."""
