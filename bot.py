@@ -546,17 +546,23 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def setup_bot_commands(application: Application):
     """Registers bot slash commands menu and launches background market monitor."""
-    commands = [
-        BotCommand("start", "Launch main menu"),
-        BotCommand("portfolio", "Executive portfolio overview"),
-        BotCommand("rebalance", "Actionable SELL / AVERAGE signals"),
-        BotCommand("recycle", "Capital Recycling allocation plan"),
-        BotCommand("analyze", "Run 30-position technical scan"),
-        BotCommand("renew", "Verify/Renew Dhan access token"),
-        BotCommand("status", "System health & engine status"),
-    ]
-    await application.bot.set_my_commands(commands)
-    asyncio.create_task(market_hours_monitor_task(application))
+    try:
+        commands = [
+            BotCommand("start", "Launch main menu"),
+            BotCommand("portfolio", "Executive portfolio overview"),
+            BotCommand("rebalance", "Actionable SELL / AVERAGE signals"),
+            BotCommand("recycle", "Capital Recycling allocation plan"),
+            BotCommand("analyze", "Run 30-position technical scan"),
+            BotCommand("renew", "Verify/Renew Dhan access token"),
+            BotCommand("status", "System health & engine status"),
+        ]
+        await application.bot.set_my_commands(commands)
+    except Exception as e:
+        logger.error(f"Failed to set bot commands: {e}")
+    try:
+        asyncio.create_task(market_hours_monitor_task(application))
+    except Exception as e:
+        logger.error(f"Failed to launch market hours monitor task: {e}")
 
 async def handle_text_messages(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handles pasted token text messages in Telegram chat."""
@@ -609,12 +615,13 @@ async def global_error_handler(update: object, context: ContextTypes.DEFAULT_TYP
 
 def main():
     """Main Telegram bot runner."""
-    if not TELEGRAM_BOT_TOKEN:
+    token = os.environ.get("TELEGRAM_BOT_TOKEN") or TELEGRAM_BOT_TOKEN
+    if not token:
         logger.error("No Telegram Bot Token available. Exiting.")
         sys.exit(1)
         
     logger.info("Starting Manage-Dhan-Portfolio Telegram Bot...")
-    app = Application.builder().token(TELEGRAM_BOT_TOKEN).post_init(setup_bot_commands).build()
+    app = Application.builder().token(token).post_init(setup_bot_commands).build()
     
     app.add_handler(CommandHandler(["start", "menu"], cmd_start))
     app.add_handler(CommandHandler(["portfolio", "summary", "holdings"], cmd_summary))

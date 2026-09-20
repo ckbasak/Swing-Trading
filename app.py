@@ -25,23 +25,43 @@ st.set_page_config(
 )
 
 # Failsafe background bot supervisor
-def _ensure_bot_running():
+def get_bot_status() -> dict:
+    """Checks bot process status and reads recent bot log entries."""
+    running = False
+    pid = None
     try:
         import psutil
         for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
             try:
                 cmdline = proc.info.get('cmdline') or []
                 if any('bot.py' in str(arg) for arg in cmdline) and proc.pid != os.getpid():
-                    return
+                    running = True
+                    pid = proc.pid
+                    break
             except Exception:
                 continue
     except Exception:
         pass
-    try:
-        cmd = [sys.executable, "-u", "bot.py"]
-        subprocess.Popen(cmd, cwd=os.path.dirname(os.path.abspath(__file__)))
-    except Exception as e:
-        print(f"Could not launch bot daemon: {e}")
+        
+    logs = ""
+    log_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bot.log")
+    if os.path.exists(log_file):
+        try:
+            with open(log_file, "r", encoding="utf-8", errors="ignore") as f:
+                logs = "".join(f.readlines()[-20:])
+        except Exception:
+            pass
+            
+    return {"running": running, "pid": pid, "logs": logs}
+
+def _ensure_bot_running():
+    status = get_bot_status()
+    if not status["running"]:
+        try:
+            cmd = [sys.executable, "-u", "bot.py"]
+            subprocess.Popen(cmd, cwd=os.path.dirname(os.path.abspath(__file__)))
+        except Exception as e:
+            print(f"Could not launch bot daemon: {e}")
 
 _ensure_bot_running()
 
@@ -84,7 +104,38 @@ with st.sidebar:
                 "`sheets-editor@swing-trade-system-506815.iam.gserviceaccount.com`\n\n"
                 "**3.** Grant **Editor** access & save."
             )
-        
+
+    # Telegram Bot Control Expander
+    bot_info = get_bot_status()
+    with st.expander("🤖 Telegram Bot Supervisor", expanded=not bot_info["running"]):
+        if bot_info["running"]:
+            st.success(f"🟢 Telegram Bot Active (PID: {bot_info['pid']})")
+        else:
+            st.error("🔴 Telegram Bot Inactive")
+            
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("🚀 Restart Bot", width="stretch"):
+                try:
+                    import psutil
+                    for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+                        cmdline = proc.info.get('cmdline') or []
+                        if any('bot.py' in str(arg) for arg in cmdline) and proc.pid != os.getpid():
+                            proc.kill()
+                except Exception:
+                    pass
+                cmd = [sys.executable, "-u", "bot.py"]
+                subprocess.Popen(cmd, cwd=os.path.dirname(os.path.abspath(__file__)))
+                st.toast("Telegram Bot process restarted!", icon="🚀")
+                st.rerun()
+        with col2:
+            if st.button("🔄 Refresh", width="stretch"):
+                st.rerun()
+                
+        if bot_info["logs"]:
+            st.caption("Recent Bot Logs:")
+            st.code(bot_info["logs"], language="log")
+
     st.divider()
     
     with st.expander("🎯 Auto-Optimize Thresholds & Presets", expanded=True):
