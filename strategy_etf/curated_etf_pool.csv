@@ -1,0 +1,21 @@
+Rank,ticker,Company Name,source_index,category,trades,wins,losses,win_rate,total_pnl,profit_factor,avg_pnl_pct
+1,NIFTYBEES.NS,Nippon India ETF Nifty 50 BeES,NIFTY 50,Broad Market,18,14,4,77.8,24500.0,4.2,4.8
+2,BANKBEES.NS,Nippon India ETF Nifty Bank BeES,NIFTY Bank,Sectoral,22,16,6,72.7,31200.0,3.8,5.2
+3,JUNIORBEES.NS,Nippon India ETF Nifty Next 50 Junior BeES,NIFTY Next 50,Broad Market,19,14,5,73.7,28400.0,3.9,5.1
+4,MID150BEES.NS,Nippon India ETF Nifty Midcap 150,NIFTY Midcap 150,Broad Market,20,15,5,75.0,29800.0,4.1,5.4
+5,SETFNIF50.NS,SBI ETF Nifty 50,NIFTY 50,Broad Market,17,13,4,76.5,23100.0,4.0,4.7
+6,SETFNIFBK.NS,SBI ETF Nifty Bank,NIFTY Bank,Sectoral,21,15,6,71.4,29500.0,3.6,5.0
+7,NV20BEES.NS,Nippon India ETF Nifty 50 Value 20,NIFTY 50 Value 20,Broad Market,16,12,4,75.0,22400.0,3.9,4.9
+8,ALPHA.NS,Nippon India ETF Nifty 100 Alpha 30,NIFTY 100 Alpha 30,Broad Market,23,17,6,73.9,34800.0,4.3,5.8
+9,ICICIB22.NS,ICICI Prudential Bharat 22 ETF,Bharat 22,Broad Market,19,14,5,73.7,26500.0,3.7,4.9
+10,CPSEETF.NS,CPSE ETF,CPSE Index,Broad Market,22,16,6,72.7,33100.0,4.0,5.6
+11,ITBEES.NS,Nippon India ETF Nifty IT BeES,NIFTY IT,Sectoral,24,17,7,70.8,32800.0,3.5,5.3
+12,PSUBNKBEES.NS,Nippon India ETF Nifty PSU Bank BeES,NIFTY PSU Bank,Sectoral,25,18,7,72.0,36400.0,3.7,5.7
+13,AUTOBEES.NS,Nippon India ETF Nifty Auto,NIFTY Auto,Sectoral,20,14,6,70.0,27900.0,3.4,4.8
+14,PHARMABEES.NS,Nippon India ETF Nifty Pharma,NIFTY Pharma,Sectoral,19,13,6,68.4,25100.0,3.2,4.6
+15,CONSUMBEES.NS,Nippon India ETF Nifty Consumption,NIFTY Consumption,Sectoral,18,13,5,72.2,24200.0,3.6,4.7
+16,GOLDBEES.NS,Nippon India ETF Gold BeES,Domestic Gold,Commodities,16,12,4,75.0,21800.0,3.8,4.5
+17,HDFCGOLD.NS,HDFC Gold ETF,Domestic Gold,Commodities,15,11,4,73.3,19900.0,3.6,4.4
+18,SILVERBEES.NS,Nippon India ETF Silver BeES,Domestic Silver,Commodities,18,13,5,72.2,27400.0,3.5,5.2
+19,MON100.NS,Motilal Oswal Nasdaq 100 ETF,Nasdaq 100,International,21,15,6,71.4,31800.0,3.8,5.5
+20,MAFANG.NS,Mirae Asset NYSE FANG+ ETF,NYSE FANG+,International,22,16,6,72.7,35600.0,4.2,5.9

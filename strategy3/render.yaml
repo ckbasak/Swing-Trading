@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: swing-trading-strategy-3
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: chmod +x start.sh && ./start.sh
+    autoDeploy: true

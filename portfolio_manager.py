@@ -11,7 +11,7 @@ import sentiment_analyzer
 import dhan_client
 import screener
 from google.oauth2.service_account import Credentials
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Optional
 
 # Auto-load .env if available
 def _load_env():
@@ -32,15 +32,16 @@ _load_env()
 
 def retry_gspread(func, *args, **kwargs):
     """
-    Executes a gspread operation with automatic 2-second sleep retry on 429 rate limits.
+    Executes a gspread operation with exponential backoff on 429 rate limits.
     """
-    for i in range(3):
+    delays = [2, 4, 8, 12, 16]
+    for attempt, delay in enumerate(delays):
         try:
             return func(*args, **kwargs)
         except Exception as e:
             err_str = str(e)
-            if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str:
-                time.sleep(2)
+            if ("429" in err_str or "RESOURCE_EXHAUSTED" in err_str or "Quota exceeded" in err_str or "Quota" in err_str) and attempt < len(delays) - 1:
+                time.sleep(delay)
             else:
                 raise e
     return func(*args, **kwargs)
@@ -50,7 +51,7 @@ SCOPES = [
     "https://www.googleapis.com/auth/drive"
 ]
 
-def get_gspread_client() -> gspread.Client:
+def get_gspread_client() -> Optional[gspread.Client]:
     """
     Creates and returns a gspread client using environment variables or a local key file.
     """
@@ -63,7 +64,6 @@ def get_gspread_client() -> gspread.Client:
             info = json.loads(s)
             if "private_key" in info and "\\n" in info["private_key"]:
                 info["private_key"] = info["private_key"].replace("\\n", "\n")
-            print(f"Loaded service account key_id: {info.get('private_key_id')}")
             creds = Credentials.from_service_account_info(info, scopes=SCOPES)
             return gspread.authorize(creds)
         except Exception as e:
@@ -77,34 +77,53 @@ def get_gspread_client() -> gspread.Client:
         except Exception as e:
             print(f"Error reading local service_account.json: {e}")
             
-    raise ValueError("Google Service Account credentials not found in env var or local file.")
+    return None
 
-DEFAULT_SPREADSHEET_NAME = os.environ.get("SPREADSHEET_NAME", "NSE_Swing_Trading_Portfolio_2")
+_company_cache: Optional[Dict[str, str]] = None
+
+def get_company_name(ticker: str) -> str:
+    """Returns the official registered company name for an NSE ticker symbol."""
+    global _company_cache
+    if _company_cache is None:
+        cache_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "nse_company_names.json")
+        if os.path.exists(cache_path):
+            try:
+                with open(cache_path, "r", encoding="utf-8") as f:
+                    _company_cache = json.load(f)
+            except Exception:
+                _company_cache = {}
+        else:
+            _company_cache = {}
+    clean = str(ticker).strip().upper()
+    return _company_cache.get(clean) or _company_cache.get(clean.replace(".NS", "")) or clean.replace(".NS", "")
+
+DEFAULT_SPREADSHEET_NAME = "NSE_Swing_Trading_Portfolio_2"
 
 def get_worksheet_names(sh: gspread.Spreadsheet) -> Tuple[str, str, str]:
     """
-    Returns (holdings_tab_name, account_tab_name, chats_tab_name) based on sheet title.
-    If using dedicated sheet 'NSE_Swing_Trading_Portfolio_2', uses ('Holdings', 'Account', 'TelegramChats').
-    If fallback to shared sheet 'NSE_Swing_Trading_Portfolio', uses ('Holdings_v2', 'Account_v2', 'TelegramChats_v2').
+    Returns standard tab names: ('Holdings', 'Account', 'TelegramChats').
+    Strategy 2 uses its dedicated Google Sheet 'NSE_Swing_Trading_Portfolio_2'.
     """
-    if "2" in sh.title:
-        return ("Holdings", "Account", "TelegramChats")
-    return ("Holdings_v2", "Account_v2", "TelegramChats_v2")
+    return ("Holdings", "Account", "TelegramChats")
 
-def get_or_create_portfolio_sheet(client: gspread.Client, sheet_name: str = None) -> gspread.Spreadsheet:
+def get_or_create_portfolio_sheet(client: Optional[gspread.Client], sheet_name: str = None) -> Optional[gspread.Spreadsheet]:
     """
-    Opens the spreadsheet by name, or falls back to the shared portfolio with _v2 tabs.
+    Opens the dedicated Strategy 2 spreadsheet ('NSE_Swing_Trading_Portfolio_2').
     """
-    target_name = sheet_name or os.environ.get("SPREADSHEET_NAME", DEFAULT_SPREADSHEET_NAME)
+    if not client:
+        return None
+    target_name = sheet_name or os.environ.get("SPREADSHEET_NAME_2") or os.environ.get("SPREADSHEET_NAME") or DEFAULT_SPREADSHEET_NAME
+    # If SPREADSHEET_NAME was inherited from Strategy 1 in a shared process, enforce Portfolio 2
+    if target_name in ("NSE_Swing_Trading_Portfolio_1", "NSE_Swing_Trading_Portfolio"):
+        target_name = DEFAULT_SPREADSHEET_NAME
     try:
         sh = client.open(target_name)
     except Exception:
-        # Fallback to shared main spreadsheet
         try:
-            sh = client.open("NSE_Swing_Trading_Portfolio")
-            print(f"Notice: Using shared Google Sheet 'NSE_Swing_Trading_Portfolio' with dedicated Strategy #2 worksheets.")
+            sh = client.open(DEFAULT_SPREADSHEET_NAME)
         except Exception as e:
-            raise ValueError(f"Could not open Google Sheets database: {e}")
+            print(f"Could not open Google Sheets database {target_name}: {e}")
+            return None
         
     holdings_name, account_name, chats_name = get_worksheet_names(sh)
     
@@ -112,11 +131,11 @@ def get_or_create_portfolio_sheet(client: gspread.Client, sheet_name: str = None
     try:
         holdings_ws = sh.worksheet(holdings_name)
     except gspread.WorksheetNotFound:
-        holdings_ws = sh.add_worksheet(title=holdings_name, rows="1000", cols="14")
+        holdings_ws = sh.add_worksheet(title=holdings_name, rows="1000", cols="19")
         headers = [
-            "Ticker", "Entry Date", "Entry Price", "Quantity", "Entry Value",
+            "Ticker", "Company Name", "Entry Date", "Entry Price", "Quantity", "Entry Value",
             "Initial SL", "Current SL", "Target", "Status", "Exit Date", 
-            "Exit Price", "Exit Value", "PnL", "Exit Reason"
+            "Exit Price", "Exit Value", "Gross PnL", "Exit Reason", "Total Charges", "Net PnL", "Est. Tax (20%)", "Net Return %"
         ]
         holdings_ws.append_row(headers)
         
@@ -145,11 +164,9 @@ def get_or_create_portfolio_sheet(client: gspread.Client, sheet_name: str = None
 
 def get_schedules_tab_name(sh: gspread.Spreadsheet) -> str:
     """
-    Returns the appropriate schedules tab name ('Schedules' or 'Schedules_v2').
+    Returns standard schedules tab name 'Schedules'.
     """
-    if "2" in sh.title:
-        return "Schedules"
-    return "Schedules_v2"
+    return "Schedules"
 
 def get_schedules_worksheet(sh: gspread.Spreadsheet) -> gspread.Worksheet:
     """
@@ -598,31 +615,45 @@ def add_position(sh: gspread.Spreadsheet, ticker: str, entry_price: float, quant
     current_sl = initial_sl
     status = "OPEN"
     
-    row_data = [
-        ticker, date_str, round(entry_price, 2), quantity, round(entry_price * quantity, 2),
-        round(initial_sl, 2), round(current_sl, 2), round(target, 2), status, "", "", "", "", "",
-        "", "", "", ""
-    ]
+    headers = ws.row_values(1)
+    has_comp = "Company Name" in headers
+    comp_name = get_company_name(ticker)
+    
+    if has_comp:
+        row_data = [
+            ticker, comp_name, date_str, round(entry_price, 2), quantity, round(entry_price * quantity, 2),
+            round(initial_sl, 2), round(current_sl, 2), round(target, 2), status, "", "", "", "", "",
+            "", "", "", ""
+        ]
+    else:
+        row_data = [
+            ticker, date_str, round(entry_price, 2), quantity, round(entry_price * quantity, 2),
+            round(initial_sl, 2), round(current_sl, 2), round(target, 2), status, "", "", "", "", "",
+            "", "", "", ""
+        ]
     
     retry_gspread(ws.append_row, row_data)
     
     new_cash = round(account["Cash Balance"] - cost, 2)
     update_account_details(sh, {"Cash Balance": new_cash})
-    return f"Successfully added {ticker} x {quantity} @ {entry_price:.2f}. New cash: {new_cash:.2f}"
+    return f"Successfully added {ticker} ({comp_name}) x {quantity} @ {entry_price:.2f}. New cash: {new_cash:.2f}"
 
 def close_position(sh: gspread.Spreadsheet, row_idx: int, exit_price: float, exit_reason: str) -> str:
     """
-    Closes a position in the standard 18-column Holdings worksheet, calculates charges & STCG tax, and credits net proceeds.
+    Closes a position in the standard Holdings worksheet, calculates charges & STCG tax, and credits net proceeds.
+    Dynamically aligns columns whether Company Name is present or not.
     """
     holdings_name, _, _ = get_worksheet_names(sh)
     ws = sh.worksheet(holdings_name)
     account = get_account_details(sh)
+    headers = ws.row_values(1)
+    has_comp = "Company Name" in headers
     
     row_values = ws.row_values(row_idx)
     ticker = row_values[0]
-    entry_price = _parse_num(row_values[2])
-    qty = int(_parse_num(row_values[3]))
-    entry_val = _parse_num(row_values[4])
+    entry_price = _parse_num(row_values[3 if has_comp else 2])
+    qty = int(_parse_num(row_values[4 if has_comp else 3]))
+    entry_val = _parse_num(row_values[5 if has_comp else 4])
     
     exit_val = round(exit_price * qty, 2)
     cfg = get_fee_and_tax_config(account)
@@ -635,17 +666,20 @@ def close_position(sh: gspread.Spreadsheet, row_idx: int, exit_price: float, exi
     
     date_str = datetime.now().strftime("%d-%b-%Y")
     
+    col_start = "J" if has_comp else "I"
+    col_idx_start = ord(col_start)
+    
     update_data = [
-        {"range": f"I{row_idx}", "values": [["CLOSED"]]},
-        {"range": f"J{row_idx}", "values": [[date_str]]},
-        {"range": f"K{row_idx}", "values": [[round(exit_price, 2)]]},
-        {"range": f"L{row_idx}", "values": [[round(exit_val, 2)]]},
-        {"range": f"M{row_idx}", "values": [[round(gross_pnl, 2)]]},
-        {"range": f"N{row_idx}", "values": [[exit_reason]]},
-        {"range": f"O{row_idx}", "values": [[round(total_charges, 2)]]},
-        {"range": f"P{row_idx}", "values": [[round(net_pnl, 2)]]},
-        {"range": f"Q{row_idx}", "values": [[round(est_tax, 2)]]},
-        {"range": f"R{row_idx}", "values": [[round(net_return_pct / 100.0, 4)]]}
+        {"range": f"{chr(col_idx_start)}{row_idx}", "values": [["CLOSED"]]},
+        {"range": f"{chr(col_idx_start+1)}{row_idx}", "values": [[date_str]]},
+        {"range": f"{chr(col_idx_start+2)}{row_idx}", "values": [[round(exit_price, 2)]]},
+        {"range": f"{chr(col_idx_start+3)}{row_idx}", "values": [[round(exit_val, 2)]]},
+        {"range": f"{chr(col_idx_start+4)}{row_idx}", "values": [[round(gross_pnl, 2)]]},
+        {"range": f"{chr(col_idx_start+5)}{row_idx}", "values": [[exit_reason]]},
+        {"range": f"{chr(col_idx_start+6)}{row_idx}", "values": [[round(total_charges, 2)]]},
+        {"range": f"{chr(col_idx_start+7)}{row_idx}", "values": [[round(net_pnl, 2)]]},
+        {"range": f"{chr(col_idx_start+8)}{row_idx}", "values": [[round(est_tax, 2)]]},
+        {"range": f"{chr(col_idx_start+9)}{row_idx}", "values": [[round(net_return_pct / 100.0, 4)]]}
     ]
     retry_gspread(ws.batch_update, update_data)
     
@@ -825,6 +859,8 @@ def sync_portfolio(sh: gspread.Spreadsheet, macro_data: Dict[str, Any] = None) -
     total_positions_value = 0.0
     holdings_name, _, _ = get_worksheet_names(sh)
     ws = sh.worksheet(holdings_name)
+    headers = ws.row_values(1)
+    sl_col_idx = headers.index("Current SL") + 1 if "Current SL" in headers else (8 if "Company Name" in headers else 7)
     
     for row_idx, h in open_positions:
         ticker = h["Ticker"]
@@ -859,7 +895,7 @@ def sync_portfolio(sh: gspread.Spreadsheet, macro_data: Dict[str, Any] = None) -
             if macro_data and (macro_data.get("guardrail_holdings") == "TIGHTEN_SL_DAY_LOW" or macro_data.get("color") == "RED"):
                 new_sl = max(current_sl, low_today)
                 if new_sl > current_sl:
-                    retry_gspread(ws.update_cell, row_idx, 7, round(new_sl, 2))
+                    retry_gspread(ws.update_cell, row_idx, sl_col_idx, round(new_sl, 2))
                     logs.append(f"🛡️ 🔴 MACRO GUARDRAIL TRIGGERED for {ticker}: Market Risk-Off. Tightened SL to today's low: ₹{new_sl:.2f}")
                     current_sl = new_sl
 
@@ -870,7 +906,7 @@ def sync_portfolio(sh: gspread.Spreadsheet, macro_data: Dict[str, Any] = None) -
             if stock_sentiment == "NEGATIVE":
                 new_sl = max(current_sl, low_today)
                 if new_sl > current_sl:
-                    retry_gspread(ws.update_cell, row_idx, 7, round(new_sl, 2))
+                    retry_gspread(ws.update_cell, row_idx, sl_col_idx, round(new_sl, 2))
                     logs.append(f"⚠️ NEGATIVE NEWS detected for {ticker}. Tightened Trailing Stop to today's low: ₹{new_sl:.2f}")
                     current_sl = new_sl
             
@@ -885,7 +921,7 @@ def sync_portfolio(sh: gspread.Spreadsheet, macro_data: Dict[str, Any] = None) -
                 # Update Trailing Stop to 20 EMA if 20 EMA is higher than current SL
                 new_sl = max(current_sl, ema_20_today)
                 if new_sl > current_sl:
-                    retry_gspread(ws.update_cell, row_idx, 7, round(new_sl, 2))
+                    retry_gspread(ws.update_cell, row_idx, sl_col_idx, round(new_sl, 2))
                     logs.append(f"Updated Trailing Stop for {ticker} from {current_sl:.2f} to 20 EMA ({new_sl:.2f})")
                 total_positions_value += (live_price * qty)
         except Exception as e:

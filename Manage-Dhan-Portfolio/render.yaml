@@ -1,7 +1,0 @@
-services:
-  - type: web
-    name: manage-dhan-portfolio
-    env: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: ./start.sh
-    autoDeploy: true

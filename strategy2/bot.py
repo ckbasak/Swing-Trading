@@ -1,0 +1,1267 @@
+import sys
+try:
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    if hasattr(sys.stderr, 'reconfigure'):
+        sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+except Exception:
+    pass
+
+import os
+import sys
+import time
+import pytz
+import datetime
+
+try:
+    pid_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bot.pid")
+    with open(pid_file, "w") as f:
+        f.write(str(os.getpid()))
+except Exception:
+    pass
+
+import logging
+from logging.handlers import RotatingFileHandler
+import asyncio
+import requests
+import gspread
+import yfinance as yf
+from telegram import Update, BotCommand, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
+
+# Import backend modules
+import portfolio_manager
+import trading_graph
+import dhan_client
+import screener
+import sentiment_analyzer
+import tax_sentinel
+
+# Configure logging with rotating file handler
+log_formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+root_logger = logging.getLogger()
+root_logger.setLevel(logging.INFO)
+
+console_handler = logging.StreamHandler(sys.stdout)
+console_handler.setFormatter(log_formatter)
+root_logger.addHandler(console_handler)
+
+try:
+    file_handler = RotatingFileHandler("bot.log", maxBytes=2*1024*1024, backupCount=2, encoding="utf-8")
+    file_handler.setFormatter(log_formatter)
+    root_logger.addHandler(file_handler)
+except Exception:
+    pass
+
+logger = logging.getLogger(__name__)
+
+# Auto-load .env if available
+def _load_env():
+    env_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+    if os.path.exists(env_file):
+        try:
+            from dotenv import load_dotenv
+            load_dotenv(env_file)
+        except Exception:
+            with open(env_file, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith("#") and "=" in line:
+                        k, v = line.split("=", 1)
+                        if k.strip() not in os.environ:
+                            os.environ[k.strip()] = v.strip().strip("'").strip('"')
+_load_env()
+
+# Fetch Token from env (check for dedicated Bot Token 2 first)
+TELEGRAM_BOT_TOKEN = (
+    os.environ.get("TELEGRAM_BOT_TOKEN_2") or 
+    os.environ.get("TELEGRAM_BOT_TOKEN") or 
+    os.environ.get("BOT_TOKEN")
+)
+if TELEGRAM_BOT_TOKEN:
+    TELEGRAM_BOT_TOKEN = TELEGRAM_BOT_TOKEN.strip().strip("'").strip('"')
+
+# Helper functions for dynamic Telegram chat registration in Google Sheets
+def register_chat(chat_id: int):
+    try:
+        client = portfolio_manager.get_gspread_client()
+        sh = portfolio_manager.get_or_create_portfolio_sheet(client)
+        try:
+            _, _, chats_name = portfolio_manager.get_worksheet_names(sh)
+            ws = sh.worksheet(chats_name)
+        except gspread.WorksheetNotFound:
+            _, _, chats_name = portfolio_manager.get_worksheet_names(sh)
+            ws = sh.add_worksheet(title=chats_name, rows="100", cols="1")
+            ws.append_row(["ChatID"])
+            
+        values = ws.get_all_values()
+        chat_ids = [int(row[0]) for row in values[1:] if row and row[0].isdigit()]
+        
+        if chat_id not in chat_ids:
+            ws.append_row([str(chat_id)])
+            logger.info(f"Registered new Chat ID: {chat_id}")
+    except Exception as e:
+        logger.error(f"Error registering Chat ID {chat_id}: {e}")
+
+def get_registered_chats() -> list:
+    try:
+        client = portfolio_manager.get_gspread_client()
+        sh = portfolio_manager.get_or_create_portfolio_sheet(client)
+        try:
+            _, _, chats_name = portfolio_manager.get_worksheet_names(sh)
+            ws = sh.worksheet(chats_name)
+        except gspread.WorksheetNotFound:
+            return []
+        values = ws.get_all_values()
+        return [int(row[0]) for row in values[1:] if row and row[0].isdigit()]
+    except Exception as e:
+        logger.error(f"Error getting registered chats: {e}")
+        return []
+
+def get_main_menu_keyboard():
+    """Generates the interactive inline menu button matrix."""
+    keyboard = [
+        [
+            InlineKeyboardButton("🔍 Run Market Scan", callback_data="cmd_scan"),
+            InlineKeyboardButton("🌐 Market Sentiment", callback_data="cmd_news")
+        ],
+        [
+            InlineKeyboardButton("📈 Open Positions", callback_data="cmd_positions"),
+            InlineKeyboardButton("🏦 Portfolio Summary", callback_data="cmd_summary")
+        ],
+        [
+            InlineKeyboardButton("🤝 Trade History", callback_data="cmd_history"),
+            InlineKeyboardButton("📅 Scan Schedules", callback_data="cmd_schedules")
+        ]
+    ]
+    return InlineKeyboardMarkup(keyboard)
+
+# Core Actions (Callable from Slash Commands and Inline Buttons)
+
+async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+    register_chat(chat_id)
+    
+    welcome_text = (
+        "🤖 **Welcome to NSE Multi-Agent Swing Trading Bot (System #2 - Strategy v2)!** 🤖\n\n"
+        "You are registered for automated daily market breakout scans (**3:25 PM IST**) and intraday exit alerts.\n\n"
+        "**Available Commands:**\n"
+        "• `/scan` - Run breakout scan in preview mode\n"
+        "• `/news` - Comprehensive Market Sentiment & Macro Guardrails\n"
+        "• `/news <TICKER>` - Market & Stock Sentiment for any stock (e.g. `/news RELIANCE`)\n"
+        "• `/positions` - View Strategy #2 active holdings & PnL\n"
+        "• `/summary` - View account balance & risk allocation\n"
+        "• `/history` - View closed trades history\n"
+        "• `/schedules` - View Google Sheets scan schedules\n\n"
+        "🎛️ **Quick Action Menu:** Tap any button below or use the chat menu button `[/]`:"
+    )
+    await update.message.reply_text(
+        welcome_text, 
+        reply_markup=get_main_menu_keyboard(), 
+        parse_mode="Markdown"
+    )
+
+async def menu_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = (
+        "🎛️ **NSE Swing Trading Main Menu (System #2 - Strategy v2)**\n\n"
+        "Tap an action button below to execute trades or inspect your portfolio:"
+    )
+    await update.message.reply_text(
+        text, 
+        reply_markup=get_main_menu_keyboard(), 
+        parse_mode="Markdown"
+    )
+
+def is_market_hours() -> bool:
+    """Returns True if currently within NSE market hours (Mon-Fri, 9:15 AM - 3:30 PM IST)."""
+    try:
+        # from zoneinfo import ZoneInfo
+        tz = ZoneInfo("Asia/Kolkata")
+    except ImportError:
+        tz = pytz.timezone("Asia/Kolkata")
+    now = datetime.datetime.now(tz)
+    if now.weekday() > 4:  # Saturday or Sunday
+        return False
+    start_time = datetime.time(9, 15)
+    end_time = datetime.time(15, 30)
+    return start_time <= now.time() <= end_time
+
+async def scan_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
+    in_market = is_market_hours()
+    mode_text = "Live Market Scan" if in_market else "After-Market (AMO) Scan"
+    await context.bot.send_message(
+        chat_id=chat_id, 
+        text=f"🔍 **Executing {mode_text} (Strategy #2)...** Scanning Nifty universe (Preview Mode)."
+    )
+    
+    loop = asyncio.get_event_loop()
+    try:
+        # Manual scan runs with execute_trades=False (preview without auto-buying)
+        state = await loop.run_in_executor(None, lambda: trading_graph.run_trading_system(execute_trades=False))
+        report = trading_graph.format_scan_report(state, is_scheduled=False, is_amo=(not in_market))
+        
+        trades = state.get("trades_to_execute", [])
+        if trades:
+            # Store pending proposals for confirmation
+            context.bot_data[f"pending_trades_{chat_id}"] = trades
+            
+            if in_market:
+                confirm_btn = InlineKeyboardButton("🚀 Confirm & Execute Market Entry", callback_data="confirm_market_entry")
+            else:
+                confirm_btn = InlineKeyboardButton("🌙 Confirm & Execute AMO Entry", callback_data="confirm_amo_entry")
+                
+            reply_markup = InlineKeyboardMarkup([
+                [confirm_btn],
+                [InlineKeyboardButton("❌ Discard", callback_data="discard_entry")],
+                [InlineKeyboardButton("🎛️ Return to Main Menu", callback_data="cmd_menu")]
+            ])
+        else:
+            reply_markup = get_main_menu_keyboard()
+            
+        await context.bot.send_message(
+            chat_id=chat_id, 
+            text=report, 
+            reply_markup=reply_markup,
+            parse_mode="Markdown"
+        )
+    except Exception as e:
+        logger.error(f"Error running scan: {e}")
+        await context.bot.send_message(
+            chat_id=chat_id, 
+            text=f"❌ Error running scan: {e}",
+            reply_markup=get_main_menu_keyboard()
+        )
+
+async def scan_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await scan_action(update.effective_chat.id, context)
+
+async def positions_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
+    await context.bot.send_message(chat_id=chat_id, text="📊 **Fetching Open Positions...**")
+    
+    loop = asyncio.get_event_loop()
+    try:
+        client = await loop.run_in_executor(None, portfolio_manager.get_gspread_client)
+        sh = await loop.run_in_executor(None, portfolio_manager.get_or_create_portfolio_sheet, client)
+        open_pos = await loop.run_in_executor(None, portfolio_manager.get_open_positions, sh)
+        
+        if not open_pos:
+            await context.bot.send_message(
+                chat_id=chat_id, 
+                text="📈 **Current Open Positions:**\n• No active open positions found.",
+                reply_markup=get_main_menu_keyboard()
+            )
+            return
+            
+        tickers = [p["Ticker"] for p in open_pos]
+        
+        # Check Dhan for real-time quotes first
+        dhan_quotes = {}
+        quote_source = "Yahoo Finance (EOD Fallback)"
+        if dhan_client.is_dhan_configured():
+            try:
+                dhan_quotes = await loop.run_in_executor(None, dhan_client.get_dhan_ltp, tickers)
+                if dhan_quotes:
+                    quote_source = "🟢 DhanHQ (Live Broker Feed)"
+            except Exception as e:
+                logger.error(f"Dhan positions quote error: {e}")
+                
+        # Fetch fallback quotes if any tickers missing
+        prices_df = None
+        if len(dhan_quotes) < len(tickers):
+            try:
+                prices_df = await loop.run_in_executor(
+                    None, lambda: yf.download(tickers, period="1d", group_by="ticker", threads=False, progress=False)
+                )
+            except Exception as e:
+                logger.error(f"yfinance fallback download error: {e}")
+        
+        tz = pytz.timezone("Asia/Kolkata")
+        now_ist = datetime.datetime.now(tz).strftime("%Y-%m-%d | %I:%M:%S %p IST")
+        
+        msg = f"📈 **Current Open Holdings ({len(open_pos)}):**\n"
+        msg += f"📅 *As of: {now_ist}*\n"
+        msg += f"📡 *Data Source: {quote_source}*\n\n"
+        
+        total_unrealized_pnl = 0.0
+        
+        for idx, p in enumerate(open_pos, 1):
+            ticker = p["Ticker"]
+            comp_name = screener.get_company_name(ticker)
+            ticker_clean = ticker.replace(".NS", "")
+            entry = float(p["Entry Price"])
+            qty = int(p["Quantity"])
+            target = float(p["Target"])
+            sl = float(p["Current SL"])
+            
+            # Determine current price (Prioritize Dhan)
+            current = dhan_quotes.get(ticker)
+            if current is None and prices_df is not None:
+                try:
+                    if len(tickers) == 1:
+                        current = float(prices_df["Close"].iloc[-1])
+                    else:
+                        current = float(prices_df[ticker]["Close"].iloc[-1])
+                except Exception:
+                    current = entry
+            elif current is None:
+                current = entry
+                
+            pnl_val = (current - entry) * qty
+            pnl_pct = ((current - entry) / entry) * 100.0 if entry > 0 else 0.0
+            total_unrealized_pnl += pnl_val
+            sector = screener.get_stock_sector(ticker)
+            msg += f"{idx}. 🏢 **{comp_name}** (`{ticker_clean}`) — *{sector}*\n"
+            msg += f"   • Qty: `{qty}` | Entry: `₹{entry:.2f}` | Live: `₹{current:.2f}`\n"
+            msg += f"   • PnL: {pnl_emoji} `₹{pnl_val:+,.2f}` (`{pnl_pct:+.2f}%`)\n"
+            msg += f"   • 🛡️ SL: `₹{sl:.2f}` | 🎯 Target: `₹{target:.2f}`\n\n"
+        
+        total_pnl_emoji = "🟢" if total_unrealized_pnl >= 0 else "🔴"
+        msg += f"💰 **Total Unrealized PnL:** {total_pnl_emoji} **₹{total_unrealized_pnl:,.2f}**"
+        
+        await context.bot.send_message(
+            chat_id=chat_id, 
+            text=msg, 
+            reply_markup=get_main_menu_keyboard(),
+            parse_mode="Markdown"
+        )
+    except Exception as e:
+        logger.error(f"Error fetching positions: {e}")
+        await context.bot.send_message(
+            chat_id=chat_id, 
+            text=f"❌ Error fetching positions: {e}",
+            reply_markup=get_main_menu_keyboard()
+        )
+
+async def positions_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await positions_action(update.effective_chat.id, context)
+
+async def checkrates_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
+    status_msg = await context.bot.send_message(
+        chat_id=chat_id,
+        text="⏳ *Autonomous Regulatory Sentinel is scanning Indian financial news & regulatory circulars via Gemini AI...*",
+        parse_mode="Markdown"
+    )
+    loop = asyncio.get_event_loop()
+    try:
+        client = await loop.run_in_executor(None, portfolio_manager.get_gspread_client)
+        sh = await loop.run_in_executor(None, lambda: portfolio_manager.get_or_create_portfolio_sheet(client))
+        report = await loop.run_in_executor(None, lambda: tax_sentinel.run_sentinel_cycle(sh))
+        cfg = await loop.run_in_executor(None, lambda: portfolio_manager.get_fee_and_tax_config(sh, force_refresh=True))
+        text = tax_sentinel.format_sentinel_status_message(report, cfg, strategy_num=2)
+        
+        kb = get_main_keyboard() if "get_main_keyboard" in globals() else get_main_menu_keyboard()
+        await status_msg.edit_text(text=text, reply_markup=kb, parse_mode="Markdown")
+    except Exception as e:
+        logger.error(f"Error in checkrates_action: {e}")
+        kb = get_main_keyboard() if "get_main_keyboard" in globals() else get_main_menu_keyboard()
+        await status_msg.edit_text(text=f"❌ Error scanning regulatory news: {e}", reply_markup=kb)
+
+async def checkrates_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await checkrates_action(update.effective_chat.id, context)
+
+async def rates_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
+    loop = asyncio.get_event_loop()
+    try:
+        cfg = await loop.run_in_executor(None, lambda: portfolio_manager.get_fee_and_tax_config(force_refresh=True))
+        lines = [
+            f"🏛️ **Active Regulatory Charges & Tax Schedule (Strategy #2)**",
+            "────────────────────────────",
+            f"• **STT (Buy Turnover)**: `{cfg['stt_buy_pct']:.3f}%`",
+            f"• **STT (Sell Turnover)**: `{cfg['stt_sell_pct']:.3f}%`",
+            f"• **Stamp Duty (Buy)**: `{cfg['stamp_duty_pct']:.3f}%`",
+            f"• **NSE Turnover Fee**: `{cfg['nse_fee_pct']:.5f}%`",
+            f"• **SEBI Turnover Fee**: `₹{cfg['sebi_fee_per_cr']:.0f} / crore`",
+            f"• **GST Rate**: `{cfg['gst_pct']:.1f}%` (on NSE+SEBI+Brokerage)",
+            f"• **DP Charges (Sell)**: `₹{cfg['dp_charges']:.2f}` flat per scrip/day",
+            f"• **Brokerage**: `₹{cfg.get('brokerage_flat', 0.0):.2f}` (Dhan Zero Delivery)",
+            f"• **STCG Tax Rate**: `{cfg['stcg_tax_pct']:.1f}%` (Section 111A)",
+            "────────────────────────────",
+            "💡 **Dynamic Update Policy:**",
+            "Rates are dynamically read in real-time from the Google Sheet **Account** tab (or environment variables). Any modification in the sheet immediately updates all trade calculations and portfolio tax accounting."
+        ]
+        rates_kb = InlineKeyboardMarkup([
+            [InlineKeyboardButton("🔍 Scan Regulatory & Tax News Now", callback_data="cmd_checkrates")],
+            [InlineKeyboardButton("🎛️ Main Menu", callback_data="cmd_menu")]
+        ])
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text="\n".join(lines),
+            reply_markup=rates_kb,
+            parse_mode="Markdown"
+        )
+    except Exception as e:
+        await context.bot.send_message(chat_id=chat_id, text=f"❌ Error reading rates: {e}")
+
+async def rates_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await rates_action(update.effective_chat.id, context)
+
+async def summary_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
+    loop = asyncio.get_event_loop()
+    try:
+        client = await loop.run_in_executor(None, portfolio_manager.get_gspread_client)
+        sh = await loop.run_in_executor(None, portfolio_manager.get_or_create_portfolio_sheet, client)
+        account = await loop.run_in_executor(None, portfolio_manager.get_account_details, sh)
+        holdings = await loop.run_in_executor(None, portfolio_manager.get_all_holdings, sh)
+        perf = await loop.run_in_executor(None, portfolio_manager.calculate_performance_metrics, sh)
+        
+        feed_source = "🟢 DhanHQ (Live Broker Feed)" if dhan_client.is_dhan_configured() else "⚪ Yahoo Finance (EOD Fallback)"
+        
+        open_pos = [h for h in holdings if h["Status"] == "OPEN"]
+        closed_pos = [h for h in holdings if h["Status"] == "CLOSED"]
+        
+        total_pnl = 0.0
+        pnl_pcts = []
+        win_count = 0
+        for h in closed_pos:
+            try:
+                pnl = float(h["PnL"]) if h["PnL"] != "" else 0.0
+                total_pnl += pnl
+                entry = float(h["Entry Price"])
+                exit_price = float(h["Exit Price"])
+                pct = ((exit_price - entry) / entry) * 100.0 if entry > 0 else 0.0
+                pnl_pcts.append(pct)
+                if pnl > 0:
+                    win_count += 1
+            except Exception:
+                pass
+                
+        win_rate_str = f" ({win_count}/{len(closed_pos)} won, {(win_count/len(closed_pos)*100.0):.1f}%)" if closed_pos else ""
+        avg_pct_str = f" (Avg: {sum(pnl_pcts)/len(pnl_pcts):+.2f}%)" if pnl_pcts else ""
+        
+        tz = pytz.timezone("Asia/Kolkata")
+        now_ist = datetime.datetime.now(tz).strftime("%Y-%m-%d | %I:%M:%S %p IST")
+        
+        risk_pct = account.get("Risk Percent", account.get("Risk Percentage", 0.075))
+        port_val = account.get("Total Portfolio Value", 0.0)
+        risk_val = port_val * risk_pct
+        
+        gross_pnl = float(account.get('Realized PnL', total_pnl))
+        charges = float(account.get('Total Realized Charges', 0.0))
+        net_pnl = float(account.get('Net Realized PnL', gross_pnl - charges))
+        est_tax = float(account.get('Estimated STCG Tax (20%)', 0.0))
+        take_home = float(account.get('Net Take-Home PnL', net_pnl - est_tax))
+        net_ret = str(account.get('Net Realized Return %', f"{(net_pnl/port_val*100.0 if port_val>0 else 0.0):+.2f}%"))
+        
+        msg = (
+            "🏦 **Portfolio Performance Summary:**\n"
+            f"📅 *As of: {now_ist}*\n"
+            f"📡 *Data Engine: {feed_source}*\n\n"
+            f"💰 **Total Portfolio Value:** ₹{port_val:,.2f}\n"
+            f"💵 **Cash Balance:** ₹{account.get('Cash Balance', 0):,.2f}\n"
+            f"🛡️ **Capital Risk per Trade:** {risk_pct * 100:.2f}% (₹{risk_val:,.2f})\n"
+            f"📊 **Open Positions:** {len(open_pos)}\n"
+            f"🤝 **Closed Trades:** {len(closed_pos)}{win_rate_str}\n"
+            f"📈 **Gross Realized PnL:** ₹{gross_pnl:,.2f}{avg_pct_str}\n"
+            f"🧾 **Brokerage & Govt Fees:** ₹{charges:,.2f}\n"
+            f"💵 **Net Realized PnL:** ₹{net_pnl:,.2f}\n"
+            f"🏛️ **Est. STCG Tax (20%):** ₹{est_tax:,.2f}\n"
+            f"💎 **Net Take-Home PnL:** ₹{take_home:,.2f}\n"
+            f"🎯 **Gross Return:** {perf['Total Return (%)']}%\n"
+            f"📊 **Net Realized Return:** {net_ret}\n"
+            f"⏱️ **Days Active:** {perf['Days Elapsed']} Days\n"
+            f"📊 **CAGR (Annualized):** {perf['CAGR (%)']}%\n"
+            f"🌀 **XIRR:** {perf['XIRR (%)']}%\n"
+        )
+        await context.bot.send_message(
+            chat_id=chat_id, 
+            text=msg, 
+            reply_markup=get_main_menu_keyboard(),
+            parse_mode="Markdown"
+        )
+    except Exception as e:
+        logger.error(f"Error getting summary: {e}")
+        await context.bot.send_message(
+            chat_id=chat_id, 
+            text=f"❌ Error fetching summary: {e}",
+            reply_markup=get_main_menu_keyboard()
+        )
+
+async def summary_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await summary_action(update.effective_chat.id, context)
+
+async def history_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
+    loop = asyncio.get_event_loop()
+    try:
+        client = await loop.run_in_executor(None, portfolio_manager.get_gspread_client)
+        sh = await loop.run_in_executor(None, portfolio_manager.get_or_create_portfolio_sheet, client)
+        holdings = await loop.run_in_executor(None, portfolio_manager.get_all_holdings, sh)
+        
+        closed_pos = [h for h in holdings if h["Status"] == "CLOSED"]
+        if not closed_pos:
+            await context.bot.send_message(
+                chat_id=chat_id, 
+                text="🤝 **Closed Trade History:**\n• No closed trades recorded yet.",
+                reply_markup=get_main_menu_keyboard()
+            )
+            return
+            
+        tz = pytz.timezone("Asia/Kolkata")
+        now_ist = datetime.datetime.now(tz).strftime("%Y-%m-%d | %I:%M:%S %p IST")
+        
+        msg = f"🤝 **Closed Trades History ({len(closed_pos)}):**\n"
+        msg += f"📅 *As of: {now_ist}*\n\n"
+        
+        total_pnl = 0.0
+        pnl_pcts = []
+        win_count = 0
+        
+        for idx, p in enumerate(closed_pos, 1):
+            ticker = p["Ticker"]
+            comp_name = screener.get_company_name(ticker)
+            ticker_clean = ticker.replace(".NS", "")
+            try:
+                entry = float(p["Entry Price"])
+            except Exception:
+                entry = 0.0
+            try:
+                exit_price = float(p["Exit Price"])
+            except Exception:
+                exit_price = 0.0
+            try:
+                pnl = float(p["PnL"]) if p["PnL"] != "" else 0.0
+            except Exception:
+                pnl = 0.0
+                
+            pnl_pct = ((exit_price - entry) / entry) * 100.0 if entry > 0 else 0.0
+            total_pnl += pnl
+            pnl_pcts.append(pnl_pct)
+            if pnl > 0:
+                win_count += 1
+                
+            pnl_emoji = "🟢" if pnl >= 0 else "🔴"
+            exit_reason = p.get("Exit Reason", "Closed")
+            exit_date = p.get("Exit Date", "")
+            
+            msg += f"{idx}. 🏢 **{comp_name}** (`{ticker_clean}`)\n"
+            msg += f"   • Entry: `₹{entry:.2f}` | Exit: `₹{exit_price:.2f}`\n"
+            msg += f"   • PnL: {pnl_emoji} `₹{pnl:+,.2f}` (`{pnl_pct:+.2f}%`)\n"
+            msg += f"   • 🏷️ Reason: {exit_reason} | 📅 Date: {exit_date}\n\n"
+            
+        win_rate = (win_count / len(closed_pos)) * 100.0 if closed_pos else 0.0
+        avg_pct = sum(pnl_pcts) / len(pnl_pcts) if pnl_pcts else 0.0
+        total_pnl_emoji = "🟢" if total_pnl >= 0 else "🔴"
+        
+        msg += f"📊 **Total Closed:** {len(closed_pos)} trades\n"
+        msg += f"🏆 **Win Rate:** {win_rate:.1f}% ({win_count}/{len(closed_pos)} profitable)\n"
+        msg += f"📈 **Avg Return / Trade:** {avg_pct:+.2f}%\n"
+        msg += f"💰 **Total Realized PnL:** {total_pnl_emoji} **₹{total_pnl:,.2f}**"
+        
+        await context.bot.send_message(
+            chat_id=chat_id, 
+            text=msg, 
+            reply_markup=get_main_menu_keyboard(),
+            parse_mode="Markdown"
+        )
+    except Exception as e:
+        logger.error(f"Error fetching history: {e}")
+        await context.bot.send_message(
+            chat_id=chat_id, 
+            text=f"❌ Error fetching trade history: {e}",
+            reply_markup=get_main_menu_keyboard()
+        )
+
+async def history_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await history_action(update.effective_chat.id, context)
+
+async def schedules_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
+    tz = pytz.timezone("Asia/Kolkata")
+    now = datetime.datetime.now(tz)
+    
+    await context.bot.send_message(
+        chat_id=chat_id,
+        text=f"⏳ *Checking Strategy #2 Google Sheets scan schedules as of {now.strftime('%H:%M:%S IST')}...*",
+        parse_mode="Markdown"
+    )
+    
+    loop = asyncio.get_event_loop()
+    try:
+        client = await loop.run_in_executor(None, portfolio_manager.get_gspread_client)
+        sh = await loop.run_in_executor(None, lambda: portfolio_manager.get_or_create_portfolio_sheet(client))
+        schedules = await loop.run_in_executor(None, lambda: portfolio_manager.get_pending_schedules(sh))
+        
+        if not schedules:
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text="ℹ️ No pending schedules found in Google Sheets (`Schedules` worksheet).",
+                reply_markup=get_main_menu_keyboard()
+            )
+            return
+            
+        msg = f"📅 *Google Sheets Scan Schedules ({len(schedules)} Pending):*\n"
+        msg += f"⏱️ *Current Cloud Time:* `{now.strftime('%Y-%m-%d %H:%M:%S IST')}`\n\n"
+        
+        for s in schedules:
+            due = portfolio_manager.is_schedule_due(s, now)
+            due_str = "🟢 **DUE NOW**" if due else "⏳ Waiting"
+            msg += f"• **Row {s['row_idx']}:** `{s['date']}` at `{s['time']} IST`\n"
+            msg += f"   Mode: `{s['mode']}` | Status: `{s['status']}`\n"
+            if s.get("notes"):
+                msg += f"   Notes: `{s['notes']}`\n"
+            msg += f"   State: {due_str}\n\n"
+            
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=msg,
+            reply_markup=get_main_menu_keyboard(),
+            parse_mode="Markdown"
+        )
+    except Exception as e:
+        logger.error(f"Error in schedules_action: {e}")
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=f"❌ *Error reading Google Sheets Schedules:*\n`{e}`",
+            reply_markup=get_main_menu_keyboard(),
+            parse_mode="Markdown"
+        )
+
+async def schedules_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await schedules_action(update.effective_chat.id, context)
+
+async def news_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE, query_arg: str = None):
+    """
+    Executes Comprehensive Global & Indian Market Sentiment Analysis & Guardrails (Strategy #2):
+    - If query_arg is None or 'MARKET' / 'GLOBAL':
+      - Fetches and displays comprehensive Global + Indian Market News Analysis with color-coded guardrails.
+      - If active open holdings exist, also evaluates holding stocks.
+    - If query_arg is a specific stock ticker:
+      - Analyzes stock-specific market sentiment and includes prevailing macro guardrail status.
+    """
+    loop = asyncio.get_event_loop()
+    
+    is_macro_query = query_arg and query_arg.strip().upper() in [
+        "MARKET", "GLOBAL", "MACRO", "NIFTY", "NIFTY 50", "NIFTY50", "^NSEI"
+    ]
+    
+    if query_arg and not is_macro_query:
+        target_raw = query_arg.strip()
+        target_upper = target_raw.upper()
+        
+        # Format stock symbol
+        if not target_upper.endswith(".NS") and not any(ch in target_upper for ch in [" ", "^"]):
+            ticker_ns = f"{target_upper}.NS"
+        else:
+            ticker_ns = target_upper
+            
+        comp_name = screener.get_company_name(ticker_ns)
+        query_text = comp_name if comp_name and comp_name != ticker_ns else target_raw
+        
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=f"⏳ *Analyzing live market sentiment for {query_text}...*",
+            parse_mode="Markdown"
+        )
+        
+        try:
+            detailed = await loop.run_in_executor(
+                None,
+                lambda: sentiment_analyzer.get_detailed_news_sentiment(query_text, ticker=ticker_ns)
+            )
+            report = sentiment_analyzer.format_detailed_sentiment_report(detailed)
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text=report,
+                reply_markup=get_main_menu_keyboard(),
+                parse_mode="Markdown"
+            )
+        except Exception as e:
+            logger.error(f"Error analyzing market sentiment for {query_arg}: {e}")
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text=f"❌ Error analyzing market sentiment: {e}",
+                reply_markup=get_main_menu_keyboard()
+            )
+        return
+
+    # Comprehensive Global & Indian Market Macro News Analysis & Guardrails
+    await context.bot.send_message(
+        chat_id=chat_id,
+        text="⏳ *Conducting comprehensive Global & Indian market news analysis & calculating guardrails...*",
+        parse_mode="Markdown"
+    )
+    
+    try:
+        macro_data = await loop.run_in_executor(
+            None,
+            sentiment_analyzer.get_comprehensive_market_macro_sentiment
+        )
+        macro_report = sentiment_analyzer.format_macro_sentiment_report(macro_data)
+        
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=macro_report,
+            parse_mode="Markdown"
+        )
+        
+        # Check Strategy #2 active holdings to provide holding stock guardrails review
+        client = await loop.run_in_executor(None, portfolio_manager.get_gspread_client)
+        sh = await loop.run_in_executor(None, portfolio_manager.get_or_create_portfolio_sheet, client)
+        open_pos = await loop.run_in_executor(None, portfolio_manager.get_open_positions, sh)
+        
+        if open_pos:
+            tickers = [p["Ticker"] for p in open_pos]
+            analyzed_count = min(len(tickers), 3)
+            for idx in range(analyzed_count):
+                ticker = tickers[idx]
+                comp_name = screener.get_company_name(ticker)
+                sector = screener.get_stock_sector(ticker)
+                query_text = comp_name if comp_name and comp_name != ticker else ticker.replace(".NS", "")
+                
+                detailed = await loop.run_in_executor(
+                    None,
+                    lambda q=query_text, t=ticker: sentiment_analyzer.get_detailed_news_sentiment(q, ticker=t)
+                )
+                report = sentiment_analyzer.format_detailed_sentiment_report(detailed)
+                holding_header = f"💼 *Strategy #2 Active Holding #{idx+1} of {len(tickers)}* (Sector: _{sector}_)\n"
+                await context.bot.send_message(
+                    chat_id=chat_id,
+                    text=holding_header + report,
+                    parse_mode="Markdown"
+                )
+                
+            extra_buttons = []
+            if len(tickers) > 3:
+                for rem_t in tickers[3:]:
+                    sym = rem_t.replace(".NS", "")
+                    extra_buttons.append([InlineKeyboardButton(f"📊 Analyze {sym}", callback_data=f"news_ticker_{rem_t}")])
+            extra_buttons.append([InlineKeyboardButton("🌐 Re-run Macro Analysis", callback_data="news_market")])
+            extra_buttons.append([InlineKeyboardButton("🎛️ Main Menu", callback_data="cmd_menu")])
+            
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text="💡 *Tip: To check any other stock, type:* `/news <TICKER>` *(e.g. /news RELIANCE, /news TATAMOTORS)*",
+                reply_markup=InlineKeyboardMarkup(extra_buttons),
+                parse_mode="Markdown"
+            )
+        else:
+            tip = "\n\n💡 *Tip: You can analyze market sentiment for any specific stock anytime by typing:* `/news <TICKER>` *(e.g. /news RELIANCE, /news TATAMOTORS, /news HDFCBANK).*"
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text="ℹ️ *No active open holdings in Strategy #2 portfolio.*" + tip,
+                reply_markup=get_main_menu_keyboard(),
+                parse_mode="Markdown"
+            )
+    except Exception as e:
+        logger.error(f"Error fetching comprehensive market sentiment: {e}")
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=f"❌ Error fetching market sentiment & guardrails: {e}",
+            reply_markup=get_main_menu_keyboard()
+        )
+
+async def news_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query_arg = " ".join(context.args).strip() if context.args else None
+    await news_action(update.effective_chat.id, context, query_arg=query_arg)
+
+# Callback Query Handler for Inline Buttons
+async def menu_button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    try:
+        await query.answer() # Acknowledge button press immediately
+    except Exception:
+        pass # Ignore expired callback query timeout
+    
+    chat_id = update.effective_chat.id
+    action = query.data
+    
+    if action == "cmd_scan":
+        await scan_action(chat_id, context)
+    elif action == "cmd_positions":
+        await positions_action(chat_id, context)
+    elif action == "cmd_history":
+        await history_action(chat_id, context)
+    elif action == "cmd_rates":
+        await rates_action(chat_id, context)
+    elif action == "cmd_summary":
+        await summary_action(chat_id, context)
+    elif action == "cmd_schedules":
+        await schedules_action(chat_id, context)
+    elif action == "cmd_news":
+        await news_action(chat_id, context, query_arg=None)
+    elif action == "news_market":
+        await news_action(chat_id, context, query_arg="Nifty 50")
+    elif action.startswith("news_ticker_"):
+        ticker = action.replace("news_ticker_", "")
+        await news_action(chat_id, context, query_arg=ticker)
+    elif action in ["confirm_market_entry", "confirm_amo_entry"]:
+        is_amo_flag = (action == "confirm_amo_entry")
+        pending = context.bot_data.pop(f"pending_trades_{chat_id}", None)
+        if not pending:
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text="⚠️ No pending trades found to execute (order may have expired or already been placed). Run /scan again.",
+                reply_markup=get_main_menu_keyboard()
+            )
+            return
+            
+        action_name = "AMO Entry" if is_amo_flag else "Market Entry"
+        await context.bot.send_message(chat_id=chat_id, text=f"⏳ Executing {len(pending)} {action_name} trade(s)...")
+        
+        loop = asyncio.get_event_loop()
+        try:
+            client = await loop.run_in_executor(None, portfolio_manager.get_gspread_client)
+            sh = await loop.run_in_executor(None, portfolio_manager.get_or_create_portfolio_sheet, client)
+            success_logs = []
+            for t in pending:
+                res = await loop.run_in_executor(
+                    None,
+                    lambda t=t: portfolio_manager.add_position(
+                        sh,
+                        t["ticker"],
+                        t["entry_price"],
+                        t["quantity"],
+                        t["initial_sl"],
+                        t["target"]
+                    )
+                )
+                success_logs.append(res)
+                
+            header = "🌙 **AMO Orders Successfully Placed in Portfolio!**" if is_amo_flag else "🚀 **Live Market Orders Successfully Executed!**"
+            msg = f"{header}\n\n" + "\n".join(f"• {log}" for log in success_logs)
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text=msg,
+                reply_markup=get_main_menu_keyboard(),
+                parse_mode="Markdown"
+            )
+        except Exception as e:
+            logger.error(f"Error executing manual entries: {e}")
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text=f"❌ Error executing entries: {e}",
+                reply_markup=get_main_menu_keyboard()
+            )
+    elif action == "discard_entry":
+        context.bot_data.pop(f"pending_trades_{chat_id}", None)
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text="🗑️ Proposed trades discarded. No entries were added to your portfolio.",
+            reply_markup=get_main_menu_keyboard()
+        )
+    elif action == "cmd_menu":
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text="🎛️ **Main Control Menu:**",
+            reply_markup=get_main_menu_keyboard()
+        )
+
+# Post Init Hook: Registers Native Telegram Menu Commands
+async def post_init_setup(application: Application):
+    commands = [
+        BotCommand("menu", "🎛️ Show Interactive Button Menu"),
+        BotCommand("scan", "🔍 Run Strategy #2 Scan (Preview)"),
+        BotCommand("news", "🌐 Market Sentiment & Macro Guardrails"),
+        BotCommand("positions", "📈 Strategy #2 Open Holdings"),
+        BotCommand("history", "🤝 Strategy #2 Closed Trades"),
+        BotCommand("schedules", "📅 View Scan Schedules"),
+        BotCommand("summary", "🏦 Strategy #2 Summary"),
+        BotCommand("rates", "🏛️ Statutory Fee & Tax Rates"),
+        BotCommand("start", "🚀 Start & Register Chat")
+    ]
+    try:
+        await application.bot.set_my_commands(commands)
+        logger.info("Successfully registered native Telegram Bot Command Menu.")
+    except Exception as e:
+        logger.error(f"Error setting Telegram Bot commands: {e}")
+
+# Dynamic Google Sheets Schedules Job
+def resolve_sentiment_target(notes: str):
+    """
+    Parses the Notes column from Schedules to determine if a specific ticker
+    or market index is targeted for market sentiment analysis.
+    Returns ticker/query string, or None to fall back to portfolio holdings / market.
+    """
+    clean = notes.strip() if notes else ""
+    if not clean:
+        return None
+    lower = clean.lower()
+    if lower in ("market", "nifty", "nifty 50", "nifty50", "benchmark", "index"):
+        return "Nifty 50 Indian stock market"
+    if any(k in lower for k in ["holdings", "portfolio", "daily", "morning", "scan", "check", "sentiment", "news", "sample"]):
+        words = [w for w in clean.replace(",", " ").split() if w.lower() not in (
+            "sentiment", "news", "scan", "check", "daily", "morning", "preview", "mode", "for", "sample", "custom", "briefing"
+        )]
+        if words:
+            w0 = words[0]
+            if w0.lower() in ("market", "nifty", "nifty 50", "nifty50", "benchmark", "index"):
+                return "Nifty 50 Indian stock market"
+            if w0.lower() in ("holdings", "portfolio"):
+                return None
+            return w0
+        return None
+    return clean
+
+async def check_google_sheets_schedules_job(context: ContextTypes.DEFAULT_TYPE):
+    """
+    Checks the 'Schedules' worksheet in Google Sheets every 60 seconds.
+    If any pending schedule matches the current IST time, executes the scan
+    and dispatches the report to all registered Telegram chats.
+    Supports EXECUTE, PREVIEW, SENTIMENT, and NEWS modes.
+    """
+    loop = asyncio.get_event_loop()
+    try:
+        client = await loop.run_in_executor(None, portfolio_manager.get_gspread_client)
+        sh = await loop.run_in_executor(None, lambda: portfolio_manager.get_or_create_portfolio_sheet(client))
+        schedules = await loop.run_in_executor(None, lambda: portfolio_manager.get_pending_schedules(sh))
+        
+        if not schedules:
+            return
+            
+        tz = pytz.timezone("Asia/Kolkata")
+        now = datetime.datetime.now(tz)
+        
+        for item in schedules:
+            if portfolio_manager.is_schedule_due(item, now):
+                row_idx = item["row_idx"]
+                date_val = item["date"]
+                time_val = item["time"]
+                mode = item["mode"] # 'EXECUTE', 'PREVIEW', 'SENTIMENT', 'NEWS'
+                notes = item.get("notes", "").strip()
+                logger.info(f"Triggering scheduled scan from Google Sheet (Row {row_idx}: {date_val} {time_val}, Mode={mode}, Notes={notes})...")
+                
+                # Mark as RUNNING immediately in sheet to prevent double triggers
+                await loop.run_in_executor(
+                    None,
+                    lambda: portfolio_manager.update_schedule_status(sh, row_idx, "RUNNING")
+                )
+                
+                try:
+                    if mode in ("SENTIMENT", "NEWS"):
+                        target_query = resolve_sentiment_target(notes)
+                        header = (
+                            f"🌐 *Dynamic Scheduled Market Sentiment Briefing (Google Sheets Trigger) — Strategy #2*\n"
+                            f"📅 Schedule: `{date_val}` at `{time_val} IST` | Mode: `{mode}`\n\n"
+                        )
+                        reports_to_send = []
+                        if target_query:
+                            target_raw = target_query.strip()
+                            target_upper = target_raw.upper()
+                            if not target_upper.endswith(".NS") and not any(ch in target_upper for ch in [" ", "^"]):
+                                ticker_ns = f"{target_upper}.NS"
+                            else:
+                                ticker_ns = target_upper
+                            comp_name = screener.get_company_name(ticker_ns)
+                            query_text = comp_name if comp_name and comp_name != ticker_ns else target_raw
+                            
+                            detailed = await loop.run_in_executor(
+                                None,
+                                lambda: sentiment_analyzer.get_detailed_news_sentiment(query_text, ticker=ticker_ns)
+                            )
+                            rep = sentiment_analyzer.format_detailed_sentiment_report(detailed)
+                            reports_to_send.append(header + rep)
+                        else:
+                            # Send Comprehensive Global & Indian Market Sentiment & Macro Guardrails Report
+                            macro_data = await loop.run_in_executor(
+                                None,
+                                sentiment_analyzer.get_comprehensive_market_macro_sentiment
+                            )
+                            macro_rep = sentiment_analyzer.format_macro_sentiment_report(macro_data)
+                            reports_to_send.append(header + macro_rep)
+                            
+                            open_pos = await loop.run_in_executor(None, portfolio_manager.get_open_positions, sh)
+                            if open_pos:
+                                tickers = [p["Ticker"] for p in open_pos]
+                                analyzed_count = min(len(tickers), 3)
+                                for idx in range(analyzed_count):
+                                    ticker = tickers[idx]
+                                    comp_name = screener.get_company_name(ticker)
+                                    sector = screener.get_stock_sector(ticker)
+                                    query_text = comp_name if comp_name and comp_name != ticker else ticker.replace(".NS", "")
+                                    detailed = await loop.run_in_executor(
+                                        None,
+                                        lambda q=query_text, t=ticker: sentiment_analyzer.get_detailed_news_sentiment(q, ticker=t)
+                                    )
+                                    rep = sentiment_analyzer.format_detailed_sentiment_report(detailed)
+                                    holding_header = (
+                                        f"💼 *Strategy #2 Active Holding #{idx+1} of {len(tickers)}* (Sector: _{sector}_)\n"
+                                    )
+                                    reports_to_send.append(holding_header + rep)
+                                
+                        chat_ids = await loop.run_in_executor(None, get_registered_chats)
+                        for cid in chat_ids:
+                            for rep_msg in reports_to_send:
+                                try:
+                                    await context.bot.send_message(
+                                        chat_id=cid,
+                                        text=rep_msg,
+                                        reply_markup=get_main_menu_keyboard(),
+                                        parse_mode="Markdown"
+                                    )
+                                except Exception as e:
+                                    logger.error(f"Failed to send scheduled sentiment report to {cid}: {e}")
+                    else:
+                        execute_trades = (mode == "EXECUTE")
+                        state = await loop.run_in_executor(
+                            None,
+                            lambda: trading_graph.run_trading_system(execute_trades=execute_trades)
+                        )
+                        header = (
+                            f"⏰ *Dynamic Scheduled Scan Report (Google Sheets Trigger) — Strategy #2*\n"
+                            f"📅 Schedule: `{date_val}` at `{time_val} IST` | Mode: `{mode}`\n"
+                        )
+                        report = trading_graph.format_scan_report(state, is_scheduled=execute_trades)
+                        full_report = f"{header}\n{report}"
+                        
+                        chat_ids = await loop.run_in_executor(None, get_registered_chats)
+                        for cid in chat_ids:
+                            try:
+                                await context.bot.send_message(
+                                    chat_id=cid,
+                                    text=full_report,
+                                    reply_markup=get_main_menu_keyboard(),
+                                    parse_mode="Markdown"
+                                )
+                            except Exception as e:
+                                logger.error(f"Failed to send custom schedule report to {cid}: {e}")
+                                
+                    last_run_str = now.strftime("%Y-%m-%d %H:%M:%S IST")
+                    is_recurring = str(date_val).strip().upper() in ("DAILY", "WEEKDAYS", "WEEKDAY", "MON-FRI")
+                    new_status = "ACTIVE" if is_recurring else "COMPLETED"
+                    
+                    await loop.run_in_executor(
+                        None,
+                        lambda: portfolio_manager.update_schedule_status(sh, row_idx, new_status, last_run=last_run_str)
+                    )
+                    logger.info(f"Custom schedule row {row_idx} completed successfully (status -> {new_status}).")
+                except Exception as ex:
+                    logger.error(f"Error executing custom schedule row {row_idx}: {ex}")
+                    await loop.run_in_executor(
+                        None,
+                        lambda: portfolio_manager.update_schedule_status(sh, row_idx, "ERROR", last_run=f"Error: {ex}")
+                    )
+    except Exception as e:
+        logger.error(f"Error in check_google_sheets_schedules_job: {e}")
+
+# Daily Cron Job
+async def daily_scan_job(context: ContextTypes.DEFAULT_TYPE):
+    logger.info("Starting scheduled daily scan job (Auto-Execution)...")
+    
+    loop = asyncio.get_event_loop()
+    try:
+        # Scheduled run executes trades automatically into Google Sheets
+        state = await loop.run_in_executor(None, lambda: trading_graph.run_trading_system(execute_trades=True))
+        report = trading_graph.format_scan_report(state, is_scheduled=True)
+        
+        # Notify all registered chats
+        chat_ids = await loop.run_in_executor(None, get_registered_chats)
+        if not chat_ids:
+            logger.warning("No registered chats found to notify.")
+            return
+            
+        for cid in chat_ids:
+            try:
+                await context.bot.send_message(
+                    chat_id=cid, 
+                    text=report, 
+                    reply_markup=get_main_menu_keyboard(),
+                    parse_mode="Markdown"
+                )
+            except Exception as e:
+                logger.error(f"Failed to send to {cid}: {e}")
+    except Exception as e:
+        logger.error(f"Error in daily_scan_job: {e}")
+
+# Intraday Market Hours Sync Job (Exits only)
+async def market_hours_sync_job(context: ContextTypes.DEFAULT_TYPE):
+    # Get current time in IST
+    tz = pytz.timezone("Asia/Kolkata")
+    now = datetime.datetime.now(tz)
+    
+    # 0 = Monday, 4 = Friday. Skip weekends.
+    if now.weekday() > 4:
+        return
+        
+    start_time = datetime.time(9, 15)
+    end_time = datetime.time(15, 30)
+    current_time = now.time()
+    
+    # Only run during NSE market hours
+    if start_time <= current_time <= end_time:
+        logger.info("Executing intraday market hours portfolio sync...")
+        loop = asyncio.get_event_loop()
+        try:
+            client = await loop.run_in_executor(None, portfolio_manager.get_gspread_client)
+            sh = await loop.run_in_executor(None, portfolio_manager.get_or_create_portfolio_sheet, client)
+            
+            # Sync portfolio checks for exits and returns a log list
+            logs = await loop.run_in_executor(None, portfolio_manager.sync_portfolio, sh)
+            
+            # Extract closed trade logs (exits)
+            exit_logs = [log for log in logs if "Closed trade" in log]
+            if exit_logs:
+                chat_ids = await loop.run_in_executor(None, get_registered_chats)
+                for cid in chat_ids:
+                    for log in exit_logs:
+                        await context.bot.send_message(
+                            chat_id=cid, 
+                            text=f"🔔 **Intraday Exit Alert:**\n{log}", 
+                            reply_markup=get_main_menu_keyboard(),
+                            parse_mode="Markdown"
+                        )
+        except Exception as e:
+            logger.error(f"Error during intraday market sync: {e}")
+
+async def regulatory_sentinel_job(context: ContextTypes.DEFAULT_TYPE):
+    """
+    Scheduled background task that scans financial news RSS & regulatory circulars.
+    If an official statutory revision is enacted, updates Google Sheets, recalculates taxes,
+    and broadcasts an urgent alert to all registered Telegram chats.
+    """
+    logger.info(f"Starting scheduled Regulatory & Tax Sentinel news check (Strategy #2)...")
+    loop = asyncio.get_event_loop()
+    try:
+        client = await loop.run_in_executor(None, portfolio_manager.get_gspread_client)
+        sh = await loop.run_in_executor(None, lambda: portfolio_manager.get_or_create_portfolio_sheet(client))
+        report = await loop.run_in_executor(None, lambda: tax_sentinel.run_sentinel_cycle(sh))
+        
+        if report.get("has_official_change") and report.get("changes_detected"):
+            cfg = await loop.run_in_executor(None, lambda: portfolio_manager.get_fee_and_tax_config(sh, force_refresh=True))
+            alert_text = tax_sentinel.format_sentinel_status_message(report, cfg, strategy_num=2)
+            chat_ids = await loop.run_in_executor(None, get_registered_chats)
+            kb = get_main_keyboard() if "get_main_keyboard" in globals() else get_main_menu_keyboard()
+            for cid in chat_ids:
+                try:
+                    await context.bot.send_message(
+                        chat_id=cid,
+                        text=alert_text,
+                        reply_markup=kb,
+                        parse_mode="Markdown"
+                    )
+                except Exception as ex:
+                    logger.error(f"Failed sending regulatory alert to {cid}: {ex}")
+        else:
+            logger.info(f"Regulatory Sentinel scan complete: No statutory changes detected ({report.get('scanned_count', 0)} sources evaluated).")
+    except Exception as e:
+        logger.error(f"Error in regulatory_sentinel_job: {e}")
+
+async def render_keep_alive_job(context: ContextTypes.DEFAULT_TYPE):
+    """Pings the Render public endpoint every 9 minutes to keep the free service perpetually warm."""
+    render_url = os.environ.get("RENDER_EXTERNAL_URL") or os.environ.get("RENDER_SERVICE_URL") or "https://ai-swing-trade-2.onrender.com"
+    target = f"{render_url.rstrip('/')}/_stcore/health"
+    loop = asyncio.get_running_loop()
+    try:
+        def _ping():
+            return requests.get(target, timeout=25)
+        res = await loop.run_in_executor(None, _ping)
+        logger.info(f"Render keep-alive ping to {target} -> HTTP {res.status_code}")
+    except Exception as e:
+        logger.debug(f"Render keep-alive ping error: {e}")
+
+def main():
+    if not TELEGRAM_BOT_TOKEN:
+        logger.error("No TELEGRAM_BOT_TOKEN environment variable set. Exiting.")
+        return
+
+    # Create Bot Application with post_init hook for setting native menu commands
+    app = Application.builder().token(TELEGRAM_BOT_TOKEN).post_init(post_init_setup).build()
+    
+    # Register command handlers
+    app.add_handler(CommandHandler("start", start_command))
+    app.add_handler(CommandHandler("menu", menu_command))
+    app.add_handler(CommandHandler("scan", scan_command))
+    app.add_handler(CommandHandler(["news", "sentiment"], news_command))
+    app.add_handler(CommandHandler(["positions", "position"], positions_command))
+    app.add_handler(CommandHandler(["history", "closed", "trades"], history_command))
+    app.add_handler(CommandHandler(["schedules", "schedule"], schedules_command))
+    app.add_handler(CommandHandler("summary", summary_command))
+    app.add_handler(CommandHandler(["rates", "fees", "tax"], rates_command))
+    
+    # Register callback query handler for interactive buttons
+    app.add_handler(CallbackQueryHandler(menu_button_callback))
+    
+    tz = pytz.timezone("Asia/Kolkata")
+        
+    if app.job_queue is not None:
+        morning_time = datetime.time(hour=8, minute=0, second=0, tzinfo=tz)
+        app.job_queue.run_daily(
+            daily_scan_job,
+            time=morning_time,
+            days=(0, 1, 2, 3, 4, 5, 6), # Every day
+            name="morning_scan_8am",
+            job_kwargs={"misfire_grace_time": 180}
+        )
+        logger.info("Morning scan job scheduled for 08:00 IST daily.")
+
+        app.job_queue.run_daily(
+            regulatory_sentinel_job,
+            time=datetime.time(hour=8, minute=15, second=0, tzinfo=tz),
+            days=(0, 1, 2, 3, 4, 5, 6),
+            name="sentinel_morning_check",
+            job_kwargs={"misfire_grace_time": 180}
+        )
+        app.job_queue.run_daily(
+            regulatory_sentinel_job,
+            time=datetime.time(hour=16, minute=15, second=0, tzinfo=tz),
+            days=(0, 1, 2, 3, 4),
+            name="sentinel_evening_check",
+            job_kwargs={"misfire_grace_time": 180}
+        )
+        logger.info("Autonomous Regulatory Sentinel scheduled (08:15 & 16:15 IST).")
+
+        app.job_queue.run_repeating(
+            check_google_sheets_schedules_job,
+            interval=60,
+            first=15,
+            name="dynamic_sheets_scheduler",
+            job_kwargs={"misfire_grace_time": 45}
+        )
+        logger.info("Dynamic Google Sheets Scan Scheduler active (polling every 60s).")
+
+        time_to_run = datetime.time(hour=15, minute=25, second=0, tzinfo=tz)
+        app.job_queue.run_daily(
+            daily_scan_job, 
+            time=time_to_run,
+            days=(0, 1, 2, 3, 4), # Monday through Friday
+            name="closing_scan_325pm",
+            job_kwargs={"misfire_grace_time": 120}
+        )
+        logger.info("Market close scan job scheduled for 15:25 IST (Mon-Fri).")
+        
+        app.job_queue.run_repeating(market_hours_sync_job, interval=300, first=10, job_kwargs={"misfire_grace_time": 60})
+        logger.info("Intraday market hours sync job scheduled (every 5 minutes).")
+
+        app.job_queue.run_repeating(render_keep_alive_job, interval=540, first=30, job_kwargs={"misfire_grace_time": 60})
+        logger.info("Render keep-alive job scheduled (every 9 minutes).")
+    else:
+        logger.warning("app.job_queue is None. Telegram bot running in standalone command mode.")
+    
+    # Start bot
+    logger.info("Starting Telegram Bot poll...")
+    try:
+        with open("bot.pid", "w") as f:
+            f.write(str(os.getpid()))
+        client = portfolio_manager.get_gspread_client()
+        sh = portfolio_manager.get_or_create_portfolio_sheet(client)
+        portfolio_manager.log_cloud_event(sh, "bot.py", f"Bot application online (PID {os.getpid()})")
+    except Exception as e:
+        logger.debug(f"Startup log notice: {e}")
+    try:
+        app.run_polling(drop_pending_updates=True, close_loop=False)
+    except Exception as e:
+        if "Conflict" in str(e) or "terminated by other getUpdates request" in str(e):
+            logger.warning("Telegram polling conflict detected. Retrying connection in 5s...")
+            import time
+            time.sleep(5)
+            raise e
+        else:
+            raise e
+
+
+def run_forever():
+    while True:
+        try:
+            logger.info("Starting Telegram bot service...")
+            main()
+            logger.warning("main() returned. Restarting in 5s...")
+            time.sleep(5)
+        except Exception as e:
+            logger.error(f"Telegram bot exception: {e}. Reconnecting in 10s...", exc_info=True)
+            try:
+                client = portfolio_manager.get_gspread_client()
+                sh = portfolio_manager.get_or_create_portfolio_sheet(client)
+                portfolio_manager.log_cloud_event(sh, "bot.py", f"Bot restart event: {e}")
+            except Exception:
+                pass
+            time.sleep(10)
+
+if __name__ == "__main__":
+    run_forever()

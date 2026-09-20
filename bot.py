@@ -1225,7 +1225,7 @@ def main():
         portfolio_manager.log_cloud_event(sh, "bot.py", f"Bot application online (PID {os.getpid()})")
     except Exception as e:
         logger.debug(f"Startup log notice: {e}")
-    app.run_polling(drop_pending_updates=False)
+    app.run_polling(drop_pending_updates=True, close_loop=False)
 
 def run_forever():
     while True:
