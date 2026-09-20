@@ -43,6 +43,16 @@ def get_bot_status() -> dict:
     except Exception:
         pass
         
+    if not running:
+        try:
+            output = subprocess.check_output('wmic process where "commandline like \'%bot.py%\'" get processid', shell=True, stderr=subprocess.DEVNULL).decode()
+            pids = [int(p) for p in output.split() if p.isdigit() and int(p) != os.getpid()]
+            if pids:
+                running = True
+                pid = pids[0]
+        except Exception:
+            pass
+        
     logs = ""
     log_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bot.log")
     if os.path.exists(log_file):

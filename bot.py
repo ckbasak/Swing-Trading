@@ -256,12 +256,16 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "• /portfolio - Executive Portfolio Overview\n"
         "• /rebalance - Actionable SELL / AVERAGE signals + 1-Click Order Buttons\n"
         "• /recycle - View Capital Recycling Allocation Plan\n"
-        "• /analyze - Run full 30-position technical scan\n"
+        "• /analyze - Run full technical scan\n"
         "• /renew - Check/Renew Dhan Access Token\n"
         "• /status - System Health & Data Engine Status"
     )
-    if update.message:
-        await update.message.reply_text(welcome_text, parse_mode="Markdown", reply_markup=build_main_keyboard())
+    msg = update.effective_message
+    if msg:
+        try:
+            await msg.reply_text(welcome_text, parse_mode="Markdown", reply_markup=build_main_keyboard())
+        except Exception:
+            await msg.reply_text(welcome_text.replace("*", ""), reply_markup=build_main_keyboard())
 
 async def cmd_summary(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handler for /portfolio, /summary, and /holdings commands."""
