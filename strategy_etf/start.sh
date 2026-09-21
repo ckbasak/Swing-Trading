@@ -1,6 +1,9 @@
 #!/bin/bash
 export BOT_STARTED_BY_SCRIPT=1
 
+# Determine port (Render assigns $PORT, fallback to 10000)
+PORT_TO_USE="${PORT:-10000}"
+
 # Start self-healing Telegram bot supervisor in the background
 (
   while true; do
@@ -13,4 +16,4 @@ export BOT_STARTED_BY_SCRIPT=1
 ) &
 
 # Start the Streamlit app in the foreground
-streamlit run app.py --server.port $PORT --server.address 0.0.0.0 --server.fileWatcherType none --server.headless true
+exec streamlit run app.py --server.port "$PORT_TO_USE" --server.address 0.0.0.0 --server.fileWatcherType none --server.headless true

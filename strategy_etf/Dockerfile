@@ -9,9 +9,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy source code
 COPY . .
 
-# Expose Hugging Face Spaces default port
-EXPOSE 7860
+EXPOSE 10000
 
 RUN chmod +x start.sh
 CMD ["/bin/bash", "./start.sh"]
-
