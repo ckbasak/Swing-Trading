@@ -201,12 +201,20 @@ async def scan_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
         else:
             reply_markup = get_main_menu_keyboard()
             
-        await context.bot.send_message(
-            chat_id=chat_id, 
-            text=report, 
-            reply_markup=reply_markup,
-            parse_mode="Markdown"
-        )
+        try:
+            await context.bot.send_message(
+                chat_id=chat_id, 
+                text=report, 
+                reply_markup=reply_markup,
+                parse_mode="Markdown"
+            )
+        except Exception as parse_err:
+            logger.warning(f"Markdown send failed ({parse_err}). Sending as plain text...")
+            await context.bot.send_message(
+                chat_id=chat_id, 
+                text=report, 
+                reply_markup=reply_markup
+            )
     except Exception as e:
         logger.error(f"Error running scan: {e}")
         await context.bot.send_message(
