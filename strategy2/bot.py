@@ -186,6 +186,56 @@ def is_market_hours() -> bool:
     end_time = datetime.time(15, 30)
     return start_time <= now.time() <= end_time
 
+async def send_long_message(context: ContextTypes.DEFAULT_TYPE, chat_id: int, text: str, reply_markup=None, parse_mode="Markdown"):
+    """
+    Safely sends messages to Telegram, automatically splitting text into max 3900 character chunks
+    and falling back to plain text if Markdown parsing fails.
+    """
+    if not text:
+        return
+        
+    MAX_CHUNK = 3900
+    chunks = []
+    
+    if len(text) <= MAX_CHUNK:
+        chunks = [text]
+    else:
+        lines = text.split("\n")
+        current_chunk = []
+        current_len = 0
+        for line in lines:
+            if current_len + len(line) + 1 > MAX_CHUNK:
+                chunks.append("\n".join(current_chunk))
+                current_chunk = [line]
+                current_len = len(line)
+            else:
+                current_chunk.append(line)
+                current_len += len(line) + 1
+        if current_chunk:
+            chunks.append("\n".join(current_chunk))
+
+    for idx, chunk in enumerate(chunks):
+        is_last = (idx == len(chunks) - 1)
+        markup = reply_markup if is_last else None
+        
+        try:
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text=chunk,
+                reply_markup=markup,
+                parse_mode=parse_mode
+            )
+        except Exception as parse_err:
+            logger.warning(f"Markdown send failed for chunk {idx+1}/{len(chunks)} ({parse_err}). Retrying as plain text...")
+            try:
+                await context.bot.send_message(
+                    chat_id=chat_id,
+                    text=chunk,
+                    reply_markup=markup
+                )
+            except Exception as e:
+                logger.error(f"Failed to send message chunk to {chat_id}: {e}")
+
 async def scan_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
     in_market = is_market_hours()
     mode_text = "Live Market Scan" if in_market else "After-Market (AMO) Scan"
@@ -218,27 +268,10 @@ async def scan_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
         else:
             reply_markup = get_main_menu_keyboard()
             
-        try:
-            await context.bot.send_message(
-                chat_id=chat_id, 
-                text=report, 
-                reply_markup=reply_markup,
-                parse_mode="Markdown"
-            )
-        except Exception as parse_err:
-            logger.warning(f"Markdown send failed ({parse_err}). Sending as plain text...")
-            await context.bot.send_message(
-                chat_id=chat_id, 
-                text=report, 
-                reply_markup=reply_markup
-            )
+        await send_long_message(context, chat_id, report, reply_markup=reply_markup)
     except Exception as e:
         logger.error(f"Error running scan: {e}")
-        await context.bot.send_message(
-            chat_id=chat_id, 
-            text=f"❌ Error running scan: {e}",
-            reply_markup=get_main_menu_keyboard()
-        )
+        await send_long_message(context, chat_id, f"❌ Error running scan: {e}", reply_markup=get_main_menu_keyboard())
 
 async def scan_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await scan_action(update.effective_chat.id, context)

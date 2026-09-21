@@ -294,6 +294,8 @@ def is_schedule_due(item: Dict[str, Any], now_ist: datetime) -> bool:
         
     # For recurring schedules (DAILY / WEEKDAYS):
     # Generous 30-minute grace window (-60s to +1800s)
+    return -60 <= diff_seconds <= 1800
+
 def _parse_num(val: Any, fallback: float = 0.0) -> float:
     """Safely parse numbers with commas, currency symbols, and percentage signs into float."""
     if val is None or str(val).strip() == "":

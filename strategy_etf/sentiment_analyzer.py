@@ -118,7 +118,7 @@ def _call_gemini_rest(prompt: str, max_tokens: int = 900, timeout: float = 8.0) 
     if not api_key:
         return ""
         
-    models_to_try = ["gemini-3.5-flash", "gemini-3.6-flash"]
+    models_to_try = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"]
     for model in models_to_try:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
         headers = {"Content-Type": "application/json"}
@@ -126,8 +126,7 @@ def _call_gemini_rest(prompt: str, max_tokens: int = 900, timeout: float = 8.0) 
             "contents": [{"parts": [{"text": prompt}]}],
             "generationConfig": {
                 "temperature": 0.2,
-                "maxOutputTokens": max_tokens,
-                "thinkingConfig": {"thinkingBudget": 0}
+                "maxOutputTokens": max_tokens
             }
         }
         try:
@@ -136,6 +135,9 @@ def _call_gemini_rest(prompt: str, max_tokens: int = 900, timeout: float = 8.0) 
                 res = r.json()
                 text = res['candidates'][0]['content']['parts'][0]['text']
                 return text.strip()
+            elif r.status_code in (401, 403):
+                logger.debug(f"Gemini API key unauthorized (HTTP {r.status_code}). Using local NLP fallback.")
+                return ""
             else:
                 logger.debug(f"Gemini REST {model} returned status {r.status_code}: {r.text[:100]}")
         except Exception as e:
