@@ -129,23 +129,22 @@ def is_market_hours() -> bool:
 def get_main_keyboard() -> InlineKeyboardMarkup:
     keyboard = [
         [
-            InlineKeyboardButton("📊 System & Status", callback_data="cmd_status"),
-            InlineKeyboardButton("🔍 Run ETF Scan", callback_data="cmd_scan")
+            InlineKeyboardButton("🔍 Run Market Scan", callback_data="cmd_scan"),
+            InlineKeyboardButton("🌐 Market Sentiment", callback_data="cmd_news")
         ],
         [
-            InlineKeyboardButton("📈 Open Holdings", callback_data="cmd_positions"),
+            InlineKeyboardButton("📈 Open Positions", callback_data="cmd_positions"),
             InlineKeyboardButton("🏦 Portfolio Summary", callback_data="cmd_summary")
         ],
         [
-            InlineKeyboardButton("🌐 Market Sentiment", callback_data="cmd_news"),
-            InlineKeyboardButton("📅 Scan Schedules", callback_data="cmd_schedules")
-        ],
-        [
             InlineKeyboardButton("🤝 Trade History", callback_data="cmd_history"),
-            InlineKeyboardButton("🏆 Curated Pool", callback_data="cmd_pool")
+            InlineKeyboardButton("📅 Scan Schedules", callback_data="cmd_schedules")
         ]
     ]
     return InlineKeyboardMarkup(keyboard)
+
+def get_main_menu_keyboard() -> InlineKeyboardMarkup:
+    return get_main_keyboard()
 
 # Core Commands & Handlers
 
@@ -1009,17 +1008,15 @@ async def render_keep_alive_job(context: ContextTypes.DEFAULT_TYPE):
 
 async def post_init_setup(application: Application):
     commands = [
-        BotCommand("status", "📊 System & Portfolio Status"),
-        BotCommand("menu", "🎛️ Show Interactive Button Menu"),
-        BotCommand("scan", "🔍 Run ETF Breakout Scan (Preview)"),
-        BotCommand("positions", "📈 Active ETF Holdings"),
-        BotCommand("summary", "🏦 Account Balance & Performance"),
+        BotCommand("menu", "🎛️ Interactive Touch Menu"),
+        BotCommand("scan", "🔍 Run Market Scan"),
         BotCommand("news", "🌐 Market Sentiment & Macro Guardrails"),
-        BotCommand("history", "🤝 Closed Trades & Exits"),
+        BotCommand("positions", "📈 Open Positions & PnL"),
+        BotCommand("summary", "🏦 Portfolio Summary"),
+        BotCommand("history", "🤝 Trade History & Realized PnL"),
         BotCommand("schedules", "📅 View Scan Schedules"),
-        BotCommand("rates", "🏛️ Statutory Fee & Tax Rates"),
-        BotCommand("pool", "🏆 Curated ETF Universe"),
-        BotCommand("start", "🚀 Start & Register Chat")
+        BotCommand("rates", "🏛️ Statutory Tax & Fee Rates"),
+        BotCommand("start", "🚀 Register Chat & Welcome Hub")
     ]
     try:
         await application.bot.set_my_commands(commands)
