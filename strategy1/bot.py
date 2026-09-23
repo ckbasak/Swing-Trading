@@ -398,6 +398,67 @@ async def checkrates_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
 async def checkrates_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await checkrates_action(update.effective_chat.id, context)
 
+
+async def strategy_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
+    status_msg = await context.bot.send_message(
+        chat_id=chat_id,
+        text="⚡ *Analyzing strategy specifications & evaluating effectiveness under live market sentiment...*",
+        parse_mode="Markdown"
+    )
+    loop = asyncio.get_event_loop()
+    try:
+        macro_data = await loop.run_in_executor(
+            None,
+            sentiment_analyzer.get_comprehensive_market_macro_sentiment
+        )
+        color_code = macro_data.get("color_code", "GREEN")
+        score = macro_data.get("overall_sentiment_score", 0.0)
+        regime_title = macro_data.get("market_regime_title", "Risk-On / Normal Operations")
+        
+        if color_code == "GREEN":
+            color_emoji = "🟢"
+            effectiveness_level = "🔥 HIGH (100% Operational Efficiency)"
+            entry_impact = "✅ **Full Capacity Entries Allowed** — Breakout setups receive full capital sizing."
+            defense_impact = "🛡️ **Standard 20 EMA Trailing** — Trailing stops maintain standard buffer."
+        elif color_code == "YELLOW":
+            color_emoji = "🟡"
+            effectiveness_level = "⚡ MODERATE (Selective Capital Allocation)"
+            entry_impact = "⚠️ **Selective Entries Only** — Breakouts require >2.5x volume conviction."
+            defense_impact = "🛡️ **Defensive Trailing Active** — Monitoring for momentum exhaustion stalls."
+        else:
+            color_emoji = "🔴"
+            effectiveness_level = "🛡️ PROTECTIVE (Capital Preservation Regime Active)"
+            entry_impact = "🛑 **Entries Halted (PAUSED)** — New purchases paused to avoid false breakouts."
+            defense_impact = "🛡️ **Stops Tightened to Day Low** — Automatically locks in open profits."
+            
+        specs_text = """• **Target Universe**: NSE Nifty 50 Index Constituents (Blue Chips)
+• **Entry Trigger**: Today Close > 20 SMA & Yesterday Close <= 20 SMA
+• **Volume Filter**: Today Volume > 2.0x 20-day Volume SMA
+• **RSI Filter**: 14-period RSI between 50 and 70 (inclusive)
+• **Risk Management**: 1.0% Capital Risk per Trade | 1:2 Fixed Risk-to-Reward
+• **Stop-Loss Buffer**: Clamped between 3.0% and 15.0%
+• **Holding Defense**: 20 EMA Trailing Stop Loss"""
+        
+        msg = f"⚡ **Strategy #1: Classic 20 SMA Breakout**\n\n"
+        msg += f"📜 **Strategy Specifications & Core Rules:**\n"
+        msg += f"{specs_text}\n\n"
+        msg += f"🌐 **Live Market Sentiment Alignment & Effectiveness:**\n"
+        msg += f"• **Macro Regime**: {color_emoji} **{color_code}** ({regime_title})\n"
+        msg += f"• **Sentiment Score**: `{score:+.2f}` (Scale -1.0 to +1.0)\n"
+        msg += f"• **Current Strategy Effectiveness**: **{effectiveness_level}**\n"
+        msg += f"• **Entry Directive**: {entry_impact}\n"
+        msg += f"• **Holding Defense**: {defense_impact}\n"
+        
+        kb = get_main_keyboard() if "get_main_keyboard" in globals() else get_main_menu_keyboard()
+        await status_msg.edit_text(text=msg, reply_markup=kb, parse_mode="Markdown")
+    except Exception as e:
+        logger.error(f"Error in strategy_action: {e}")
+        kb = get_main_keyboard() if "get_main_keyboard" in globals() else get_main_menu_keyboard()
+        await status_msg.edit_text(text=f"❌ Error generating strategy report: {e}", reply_markup=kb)
+
+async def strategy_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await strategy_action(update.effective_chat.id, context)
+
 async def rates_action(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
     loop = asyncio.get_event_loop()
     try:
@@ -1193,6 +1254,7 @@ def main():
     
     # Register command handlers
     app.add_handler(CommandHandler("start", start_command))
+    app.add_handler(CommandHandler("strategy", strategy_command))
     app.add_handler(CommandHandler("menu", menu_command))
     app.add_handler(CommandHandler("scan", scan_command))
     app.add_handler(CommandHandler(["news", "sentiment"], news_command))
