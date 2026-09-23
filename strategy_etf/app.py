@@ -144,6 +144,12 @@ if st.sidebar.button("🧹 Reset Account for Fresh Start", use_container_width=T
 st.title("📈 ETF Strategy 1: Systematic Dual-Target Swing Trading System")
 st.markdown("*Optimized institutional-grade swing execution across broad-market, sectoral, commodity, and international ETFs with zero-risk runners and statutory tax efficiency.*")
 
+try:
+    import sentiment_analyzer
+    sentiment_analyzer.render_streamlit_sentiment_card("strategy_etf")
+except Exception as e:
+    st.warning(f"Strategy sentiment component offline: {e}")
+
 # Account KPIs
 acc = portfolio_manager.get_account_summary()
 holdings = portfolio_manager.get_open_positions()

@@ -695,3 +695,127 @@ def format_macro_sentiment_snippet(data: Dict[str, Any]) -> List[str]:
         f"• 🌍 Global Cues ({g_sent}): {g_sum}",
         f"• 🇮🇳 Indian Cues ({d_sent}): {d_sum}"
     ]
+
+def render_streamlit_sentiment_card(strategy_key: str = "master"):
+    """
+    Renders an interactive Streamlit card displaying the specific strategy summary,
+    its core rules/specifications, and its live effectiveness alignment with the current market macro sentiment.
+    """
+    import streamlit as st
+
+    @st.cache_data(ttl=300)
+    def _get_cached_macro():
+        return get_comprehensive_market_macro_sentiment()
+
+    try:
+        macro = _get_cached_macro()
+    except Exception as e:
+        logger.error(f"Error fetching macro sentiment for Streamlit card: {e}")
+        macro = _fallback_comprehensive_macro([], [])
+
+    regime = macro.get("market_regime", "CAUTION")
+    color = macro.get("color", "YELLOW")
+    badge = macro.get("color_badge", "🟡")
+    breakout_guard = macro.get("guardrail_breakouts", "SELECTIVE")
+    holdings_guard = macro.get("guardrail_holdings", "DEFENSIVE_TRAIL")
+    global_sent = macro.get("global_sentiment", "NEUTRAL")
+    domestic_sent = macro.get("domestic_sentiment", "NEUTRAL")
+    global_sum = macro.get("global_summary", "")
+    domestic_sum = macro.get("domestic_summary", "")
+    drivers = macro.get("key_drivers", [])
+    action_sum = macro.get("action_summary", "")
+
+    # Map effectiveness level based on market regime
+    if regime == "RISK-ON":
+        eff_title = "🟢 HIGH EFFECTIVENESS (Optimal Market Environment)"
+        eff_desc = "Breakout momentum setups have maximum institutional follow-through. Full position allocation enabled."
+        eff_color = "success"
+    elif regime == "RISK-OFF":
+        eff_title = "🔴 SUSPENDED / CAUTION (Adverse Market Environment)"
+        eff_desc = "Broad market selling pressure increases false breakout risk. New buys paused; trail stops aggressively."
+        eff_color = "error"
+    else:
+        eff_title = "🟡 MODERATE / SELECTIVE EFFECTIVENESS (Choppy / Mixed Market)"
+        eff_desc = "Selective trade execution required. High-volume conviction entries only; strict risk parameters active."
+        eff_color = "warning"
+
+    # Strategy specifications mapping
+    specs = {
+        "strategy1": {
+            "title": "📈 Strategy #1: Classic Breakout (Nifty 50)",
+            "universe": "Nifty 50 Index Equities (Blue-Chip Liquidity)",
+            "trigger": "Close > 20-period SMA + Volume > 2.0x 20-day Average",
+            "exit": "Trailing 20-period EMA or Stop Loss (Recent 5-day Low)",
+            "risk": "1.0% Capital Risk per Trade",
+            "metrics": "Net Return +231.48% | Win Rate 49.0% | Profit Factor 2.45x | Max DD -12.80%"
+        },
+        "strategy2": {
+            "title": "🎯 Strategy #2: Dynamic ATR & Sector Concentration Limits",
+            "universe": "Nifty 50 Index Equities",
+            "trigger": "Multi-period Breakout + Volume Surge (>2.5x SMA)",
+            "exit": "Dynamic Trailing Stop at 2.0x Average True Range (ATR)",
+            "risk": "1.5% Capital Risk per Trade | Max 3 Positions per Sector",
+            "metrics": "Net Return +184.18% | Win Rate 44.4% | Profit Factor 2.09x | Max DD -20.23%"
+        },
+        "strategy3": {
+            "title": "🥇 Strategy #3: Hybrid Optimal Swing (Curated Champions)",
+            "universe": "Top 50 / Top 101 Curated Champions Pool",
+            "trigger": "Multi-factor Momentum Spike & RSI Relative Strength Confirmation",
+            "exit": "50% Lock at Target 1 (+2.0x ATR), 50% Runner trailing 20-EMA",
+            "risk": "6.0% Position Allocation | Max 3 per Industry",
+            "metrics": "Net Return +148.22% | Win Rate 59.2% | Profit Factor 2.39x | Max DD -11.33%"
+        },
+        "strategy_etf": {
+            "title": "📊 ETF Strategy #1: Systematic Liquid ETF Swing",
+            "universe": "20 Most Liquid Indian Index, Sectoral & Commodity ETFs",
+            "trigger": "Mean Reversion / Momentum Breakout (>1.15x Vol SMA)",
+            "exit": "50% Lock at T1 (+2.0x ATR), 50% Runner trailing 20-EMA",
+            "risk": "1.5% Risk per Trade | 0% STT Buy + Zero DP Charges",
+            "metrics": "Net Return +144.38% | Win Rate 71.1% | Profit Factor 3.71x | Max DD -14.90%"
+        },
+        "master": {
+            "title": "🏆 Master Multi-System Unified Hub (4 Strategy Engines)",
+            "universe": "Nifty 50 Equities, Curated Champions Pool & 20 Liquid ETFs",
+            "trigger": "Concurrent Multi-Agent Scanners & Telegram Signal Dispatchers",
+            "exit": "Multi-Strategy Trailing EMA & Volatility ATR Stop Sentinel",
+            "risk": "Statutory Tax Sentinel & Autonomous Fee Budgeting Active",
+            "metrics": "Combined Portfolio Net Take-Home > 150%+ Net Alpha over Nifty 50"
+        }
+    }
+
+    curr_spec = specs.get(strategy_key, specs["master"])
+
+    with st.expander(f"⚡ Strategy Specs & Market Sentiment Alignment ({badge} Regime: {regime})", expanded=True):
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.subheader("📌 Strategy Core Specifications")
+            st.markdown(f"**Strategy Name**: {curr_spec['title']}")
+            st.markdown(f"• 🎯 **Target Universe**: {curr_spec['universe']}")
+            st.markdown(f"• ⚡ **Entry Trigger**: {curr_spec['trigger']}")
+            st.markdown(f"• 🛑 **Exit & Stop Rule**: {curr_spec['exit']}")
+            st.markdown(f"• 🛡️ **Risk Sizing**: {curr_spec['risk']}")
+            st.markdown(f"• 📊 **Historical Benchmark**: `{curr_spec['metrics']}`")
+
+        with col2:
+            st.subheader("🌐 Market Macro Sentiment & Alignment")
+            
+            if eff_color == "success":
+                st.success(f"**{eff_title}**\n\n{eff_desc}")
+            elif eff_color == "error":
+                st.error(f"**{eff_title}**\n\n{eff_desc}")
+            else:
+                st.warning(f"**{eff_title}**\n\n{eff_desc}")
+
+            m1, m2 = st.columns(2)
+            m1.metric("🛒 New Breakouts", f"{badge} {breakout_guard}")
+            m2.metric("💼 Active Holdings", f"{badge} {holdings_guard}")
+
+            st.markdown(f"**🌍 Global Cues ({global_sent})**: {global_sum or 'Analyzing international markets...'}")
+            st.markdown(f"**🇮🇳 Indian Domestic Cues ({domestic_sent})**: {domestic_sum or 'Analyzing domestic news flow...'}")
+            
+            if drivers:
+                st.markdown("**🔑 Key Market Drivers & Catalysts:**")
+                for d in drivers[:3]:
+                    st.markdown(f"• {d}")
+

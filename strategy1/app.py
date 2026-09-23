@@ -87,6 +87,12 @@ except Exception:
 st.title("📈 NSE Swing Trading Dashboard (Project #1: Classic Breakout)")
 st.markdown("Automated Quantitative System: 20-SMA Breakout • >2.0x Volume • Trailing 20-EMA • 1.0% Risk")
 
+try:
+    import sentiment_analyzer
+    sentiment_analyzer.render_streamlit_sentiment_card("strategy1")
+except Exception as e:
+    st.warning(f"Strategy sentiment component offline: {e}")
+
 # Bot Status Indicator in Sidebar
 bot_alive = _ensure_bot_running()
 if bot_alive:

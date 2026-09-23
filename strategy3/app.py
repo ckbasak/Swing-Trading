@@ -148,6 +148,12 @@ if st.sidebar.button("🧹 Reset Account for Fresh Start", use_container_width=T
 st.title("🏆 Strategy 3: Hybrid Optimal Swing Trading System")
 st.markdown("*Autonomous quantitative swing execution combining ATR noise immunity, dual-tranche profit locking, zero-risk runners, and curated stock universes.*")
 
+try:
+    import sentiment_analyzer
+    sentiment_analyzer.render_streamlit_sentiment_card("strategy3")
+except Exception as e:
+    st.warning(f"Strategy sentiment component offline: {e}")
+
 # Account KPIs
 acc = portfolio_manager.get_account_summary()
 holdings = portfolio_manager.get_open_positions()

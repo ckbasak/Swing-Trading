@@ -108,6 +108,14 @@ if "Master Multi-System" in active_system:
     
     st.markdown("---")
     
+    try:
+        import sentiment_analyzer
+        sentiment_analyzer.render_streamlit_sentiment_card("master")
+    except Exception as e:
+        st.warning(f"Strategy sentiment component offline: {e}")
+        
+    st.markdown("---")
+    
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Strategy 1 (Classic)", "Nifty 50 Universe", "1.0% Risk / Trade")
     c2.metric("Strategy 2 (Dynamic ATR)", "Nifty 50 Universe", "1.5% Risk (Max 3/Sector)")
