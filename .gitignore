@@ -1,7 +1,26 @@
+# Secrets & Credentials
 service_account.json
 */service_account.json
-__pycache__/
-*.pyc
 .env
-.streamlit/
+*.env
+
+# Python Bytecode & Cache
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+
+# Process & Log Files
 *.log
+*.pid
+*.tmp
+
+# OS & IDE Junk
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+.streamlit/
