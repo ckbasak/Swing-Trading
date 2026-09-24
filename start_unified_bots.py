@@ -5,6 +5,22 @@ import threading
 
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 
+def _load_env():
+    env_file = os.path.join(PROJECT_ROOT, ".env")
+    if os.path.exists(env_file):
+        try:
+            from dotenv import load_dotenv
+            load_dotenv(env_file)
+        except Exception:
+            with open(env_file, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith("#") and "=" in line:
+                        k, v = line.split("=", 1)
+                        if k.strip() not in os.environ:
+                            os.environ[k.strip()] = v.strip().strip("'").strip('"')
+_load_env()
+
 # Single-process RAM optimization: Limit internal thread pools & memory allocations
 os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["MKL_NUM_THREADS"] = "1"
