@@ -930,12 +930,13 @@ async def menu_button_callback(update: Update, context: ContextTypes.DEFAULT_TYP
 async def post_init_setup(application: Application):
     commands = [
         BotCommand("menu", "🎛️ Show Interactive Button Menu"),
-        BotCommand("scan", "🔍 Run Strategy #2 Scan (Preview)"),
+        BotCommand("strategy", "⚡ Strategy Specs & Market Sentiment"),
+        BotCommand("scan", "🔍 Run Strategy Scan (Preview)"),
         BotCommand("news", "🌐 Market Sentiment & Macro Guardrails"),
-        BotCommand("positions", "📈 Strategy #2 Open Holdings"),
-        BotCommand("history", "🤝 Strategy #2 Closed Trades"),
+        BotCommand("positions", "📈 Open Holdings & PnL"),
+        BotCommand("history", "🤝 Closed Trades & PnL"),
         BotCommand("schedules", "📅 View Scan Schedules"),
-        BotCommand("summary", "🏦 Strategy #2 Summary"),
+        BotCommand("summary", "🏦 Portfolio Summary"),
         BotCommand("rates", "🏛️ Statutory Fee & Tax Rates"),
         BotCommand("start", "🚀 Start & Register Chat")
     ]

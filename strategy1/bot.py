@@ -947,6 +947,7 @@ async def menu_button_callback(update: Update, context: ContextTypes.DEFAULT_TYP
 async def post_init_setup(application: Application):
     commands = [
         BotCommand("menu", "🎛️ Show Interactive Button Menu"),
+        BotCommand("strategy", "⚡ Strategy Specs & Market Sentiment"),
         BotCommand("scan", "🔍 Run Breakout Scan (Preview)"),
         BotCommand("news", "🌐 Market Sentiment & Macro Guardrails"),
         BotCommand("positions", "📈 View Open Holdings & PnL"),
