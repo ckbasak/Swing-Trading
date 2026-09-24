@@ -1260,7 +1260,7 @@ def main():
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CommandHandler("strategy", strategy_command))
     app.add_handler(CommandHandler("menu", menu_command))
-    app.add_handler(CommandHandler("scan", scan_command))
+    app.add_handler(CommandHandler(["scan", "run"], scan_command))
     app.add_handler(CommandHandler(["news", "sentiment"], news_command))
     app.add_handler(CommandHandler(["positions", "position"], positions_command))
     app.add_handler(CommandHandler(["history", "closed", "trades"], history_command))
