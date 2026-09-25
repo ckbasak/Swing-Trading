@@ -16,6 +16,10 @@ __pycache__/
 # Data Caches & Logs
 bot.log
 bot.log.*
+cached_chat_id.txt
+cached_paper_trades.json
+cached_holdings.json
+cached_settings.json
 scratch/
 
 # OS Specific

@@ -35,6 +35,15 @@ This document consolidates all conversation histories, user prompts, technical a
   - Fixed `/start` bot issue: Diagnosed `409 Conflict: terminated by other getUpdates request` (duplicate bot instances). Updated `app.py` process detection logic (`get_bot_status`), updated `cmd_start` handler in `bot.py` with Markdown fallback handling, and launched single clean background daemon.
   - Consolidated all 3 conversation threads into this master context.
 
+### Session 4: Dhan Token Auto-Renewal, TOTP Failsafe & Dynamic Order Mode Engine
+- **Implementation**:
+  - Implemented 12-hour automated Dhan token extension loop with 30-minute retries in `dhan_client.py`.
+  - Added TOTP auto-authentication failsafe (`DHAN_TOTP_SECRET`) to seamlessly request fresh 24-hour access tokens if current token expires.
+  - Implemented dynamic Dhan Order Mode recommendation engine (`Limit`, `⚡ SUPER`, `⚡ TRAIL`) mapped 1:1 to Dhan Web Order UI modal.
+  - Added `⭐ Recommended` badge rendering and mode-specific parameter cards in `app.py`.
+  - Added runtime cache persistence (`cached_settings.json`, `cached_holdings.json`) across Render container restarts.
+  - Verified local and cloud deployment stability with automated test suite (`python -B verify_portfolio.py`).
+
 ---
 
 ## 🛠️ Master Component Architecture
@@ -43,9 +52,10 @@ This document consolidates all conversation histories, user prompts, technical a
 C:\Users\ckbas\Documents\antigravity\Manage-Dhan-Portfolio\
 ├── app.py                      # Standalone Streamlit Web Dashboard UI
 ├── bot.py                      # Interactive Telegram Bot Daemon & Market Alerts
-├── portfolio_analyzer.py       # Technical Decision Engine (SELL/AVERAGE/HOLD)
+├── portfolio_analyzer.py       # Technical Decision Engine (SELL/AVERAGE/HOLD) & Order Mode Calculator
 ├── portfolio_manager.py        # Google Sheets Sync (NSE_Dhan_Portfolio_Manager)
-├── dhan_client.py              # DhanHQ API Integration & Fallback Engine
+├── dhan_client.py              # DhanHQ API Integration, TOTP Auto-Auth & Auto-Renewal Engine
+├── renew_dhan_token.py         # Standalone Token Renewal Helper
 ├── run_dashboard.bat           # 1-Click Windows Dashboard Launcher
 ├── run_bot.bat                 # 1-Click Windows Bot Launcher
 ├── verify_portfolio.py         # Automated Verification Script
@@ -53,8 +63,8 @@ C:\Users\ckbas\Documents\antigravity\Manage-Dhan-Portfolio\
 ├── service_account.json        # Google Sheets Service Account Key
 ├── Dockerfile                  # Container Spec
 ├── requirements.txt            # Python Dependencies
-├── start.sh                    # Launcher Shell Script
-└── render.yaml                 # Render Manifest
+├── start.sh                    # Dual-Service Supervisor Script
+└── render.yaml                 # Render Cloud Deployment Blueprint
 ```
 
 ---
@@ -69,11 +79,15 @@ Liquid capital released from simulated paper exits (**SELL** recommendations) is
 
 ---
 
-## 🌐 100% Free Cloud Deployment Guide
+## 🌐 Cloud & Local Deployment Guide
 
-1. **Streamlit Community Cloud (`share.streamlit.io`)**:
-   - Repository: `ckbasak/Swing-Trading` (or new repo)
-   - Branch: `master-unified`
-   - Main File Path: `Manage-Dhan-Portfolio/app.py`
-2. **Hugging Face Spaces (`huggingface.co/new-space`)**:
-   - SDK: Docker (Blank) -> 16 GB Free RAM container.
+1. **Render Web Service (`render.com`)**:
+   - Repository: `ckbasak/Swing-Trading`
+   - Branch: `Manage-Dhan-Portfolio`
+   - Build Command: `pip install -r requirements.txt`
+   - Start Command: `./start.sh`
+2. **Local Machine (Windows)**:
+   - Run verification: `python -B verify_portfolio.py`
+   - Run dashboard: `streamlit run app.py --server.port 8501`
+   - Run bot daemon: `python -B bot.py`
+
