@@ -61,9 +61,18 @@ def get_gspread_client() -> Optional[gspread.Client]:
             s = env_json.strip()
             if (s.startswith("'") and s.endswith("'")) or (s.startswith('"') and s.endswith('"')):
                 s = s[1:-1].strip()
+            if not s.startswith("{") and len(s) > 50:
+                try:
+                    import base64
+                    s = base64.b64decode(s).decode("utf-8").strip()
+                except Exception:
+                    pass
             info = json.loads(s)
-            if "private_key" in info and "\\n" in info["private_key"]:
-                info["private_key"] = info["private_key"].replace("\\n", "\n")
+            if "private_key" in info:
+                pk = str(info["private_key"])
+                if "\\n" in pk:
+                    pk = pk.replace("\\n", "\n")
+                info["private_key"] = pk
             creds = Credentials.from_service_account_info(info, scopes=SCOPES)
             return gspread.authorize(creds)
         except Exception as e:
