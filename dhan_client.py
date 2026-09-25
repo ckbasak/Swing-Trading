@@ -35,6 +35,26 @@ SCRIP_MASTER_URL = "https://images.dhan.co/api-data/api-scrip-master.csv"
 _SYMBOL_MAP: Dict[str, str] = {}
 _LAST_SCRIP_SYNC: float = 0.0
 _DHAN_INSTANCE = None
+_HOLDINGS_SOURCE: str = "UNKNOWN"
+_LAST_API_ERROR: Optional[str] = None
+
+def get_holdings_source() -> str:
+    return _HOLDINGS_SOURCE
+
+def get_last_api_error() -> Optional[str]:
+    return _LAST_API_ERROR
+
+def set_dhan_access_token(token: str) -> bool:
+    """Updates Dhan access token in memory and .env file, resets client instance."""
+    token = token.strip()
+    if not token:
+        return False
+    os.environ["DHAN_ACCESS_TOKEN"] = token
+    _update_env_file("DHAN_ACCESS_TOKEN", token)
+    global _DHAN_INSTANCE
+    _DHAN_INSTANCE = None
+    get_dhan_holdings()
+    return _HOLDINGS_SOURCE == "LIVE"
 
 def _update_env_file(key: str, value: str):
     """Dynamically updates or appends a key-value pair in .env file."""
@@ -377,9 +397,11 @@ def get_dhan_holdings() -> List[Dict[str, Any]]:
     If Dhan API token is expired, returns cached real holdings combined with live yfinance feeds
     so technical analysis operates continuously without requiring daily token renewals.
     """
+    global _HOLDINGS_SOURCE, _LAST_API_ERROR
     client = get_dhan_client()
     if not client:
         logger.info("Dhan client unavailable. Returning cached holdings data.")
+        _HOLDINGS_SOURCE = "CACHED"
         return load_cached_holdings()
         
     try:
@@ -420,7 +442,10 @@ def get_dhan_holdings() -> List[Dict[str, Any]]:
                         "type": "ETF" if is_etf else "STOCK"
                     })
                 save_cached_holdings(formatted)
+                _HOLDINGS_SOURCE = "LIVE"
+                _LAST_API_ERROR = None
                 return formatted
+        _LAST_API_ERROR = str(resp) if resp else "Empty response from Dhan get_holdings"
         logger.warning(f"Dhan get_holdings status error: {resp}.")
         if isinstance(resp, dict) and "DH-901" in str(resp):
             logger.info("Attempting TOTP auto-authentication renewal...")
@@ -463,11 +488,15 @@ def get_dhan_holdings() -> List[Dict[str, Any]]:
                                     "type": "ETF" if is_etf else "STOCK"
                                 })
                             save_cached_holdings(formatted)
+                            _HOLDINGS_SOURCE = "LIVE"
+                            _LAST_API_ERROR = None
                             return formatted
         logger.warning("Falling back to cached holdings.")
     except Exception as e:
+        _LAST_API_ERROR = str(e)
         logger.error(f"Error fetching Dhan holdings: {e}. Falling back to cached holdings.")
         
+    _HOLDINGS_SOURCE = "CACHED"
     return load_cached_holdings()
 
 def get_dhan_positions() -> List[Dict[str, Any]]:

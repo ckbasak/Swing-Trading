@@ -279,10 +279,29 @@ with st.sidebar:
     st.header("⚙️ System Control & Sync")
     
     dhan_configured = dhan_client.is_dhan_configured()
-    if dhan_configured:
-        st.success("🟢 Dhan API Configured")
+    holdings_source = dhan_client.get_holdings_source()
+    
+    if holdings_source == "LIVE":
+        st.success("🟢 Live Dhan Portfolio Connected")
+    elif dhan_configured:
+        st.warning("⚠️ Dhan Token Expired (Using Cached Snapshot)")
     else:
-        st.info("🟡 Dhan API Offline / Demo Mode (Using Sample Holdings)")
+        st.info("🟡 Dhan API Offline / Demo Mode")
+        
+    with st.expander("🔑 Dhan API Live Token Update", expanded=(holdings_source != "LIVE")):
+        st.caption("Generate a fresh 24h Access Token from **web.dhan.co** -> **My Profile** -> **Access DhanHQ APIs**:")
+        new_token_val = st.text_input("Dhan Access Token", type="password", key="dhan_token_renew_input")
+        if st.button("⚡ Update Token & Sync Live Portfolio", use_container_width=True, type="primary"):
+            if new_token_val.strip():
+                success = dhan_client.set_dhan_access_token(new_token_val.strip())
+                st.cache_data.clear()
+                if success:
+                    st.toast("Connected to live Dhan portfolio!", icon="🟢")
+                    st.rerun()
+                else:
+                    st.error("Token verification failed. Please check the token generated from web.dhan.co.")
+            else:
+                st.warning("Please paste a valid Dhan Access Token.")
         
     sh_instance = portfolio_manager.get_or_create_spreadsheet()
     if sh_instance:
@@ -384,6 +403,9 @@ elif macro_status == "LOW_VOLATILITY":
     st.success(f"{macro_label} | **Bullish Uptrend Active (Growth Swing Allocations)**")
 else:
     st.info(f"{macro_label} | **Standard Balanced Allocations Active**")
+
+if dhan_client.get_holdings_source() == "CACHED":
+    st.warning("⚠️ **Notice: Dhan API Access Token Expired** — Currently displaying cached holdings snapshot. To sync live Dhan portfolio, update your `DHAN_ACCESS_TOKEN` in the sidebar under **🔑 Dhan API Live Token Update**.")
 
 # Top KPI Metric Cards
 col1, col2, col3, col4, col5 = st.columns(5)
