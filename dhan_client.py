@@ -136,7 +136,7 @@ def renew_dhan_token_via_api() -> Optional[str]:
 _AUTO_RENEW_THREAD_STARTED = False
 
 def start_12h_auto_renewal_background_thread():
-    """Starts a background thread that auto-renews Dhan API Access Token every 12 hours."""
+    """Starts a background thread that auto-renews Dhan API Access Token every 12 hours with retry resilience."""
     global _AUTO_RENEW_THREAD_STARTED
     if _AUTO_RENEW_THREAD_STARTED:
         return
@@ -148,7 +148,14 @@ def start_12h_auto_renewal_background_thread():
             try:
                 if _HOLDINGS_SOURCE == "LIVE":
                     logger.info("Executing scheduled 12-hour Dhan token auto-renewal...")
-                    renew_dhan_token_via_api()
+                    res = renew_dhan_token_via_api()
+                    # Failsafe retry loop for temporary network issues
+                    retries = 0
+                    while not res and retries < 6 and _HOLDINGS_SOURCE == "LIVE":
+                        retries += 1
+                        logger.warning(f"Auto-renewal failed (attempt {retries}/6). Retrying in 30 minutes...")
+                        time.sleep(1800)
+                        res = renew_dhan_token_via_api()
             except Exception as e:
                 logger.error(f"Error in 12h auto-renewal loop: {e}")
                 
