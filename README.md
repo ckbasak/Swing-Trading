@@ -73,14 +73,16 @@ pip install -r requirements.txt
 ### 3. Environment Configuration (`.env`)
 Create a `.env` file in the root directory:
 ```env
-TELEGRAM_BOT_TOKEN=your_telegram_bot_token
-DHAN_CLIENT_ID=your_dhan_client_id
-DHAN_USER_PIN=your_dhan_user_pin
-DHAN_TOTP_SECRET=your_dhan_totp_secret
-DHAN_ACCESS_TOKEN=your_dhan_access_token
+TELEGRAM_BOT_TOKEN=YOUR_TELEGRAM_BOT_TOKEN_HERE
+DHAN_CLIENT_ID=1101177354
+DHAN_USER_PIN=2317
+DHAN_TOTP_SECRET=CHDBD3GAY7TTXLKJZH4RJCQ33GMJNW3M
+DHAN_ACCESS_TOKEN=your_dhan_access_token_here
 SPREADSHEET_NAME=NSE_Dhan_Portfolio_Manager
 PORT=8501
 ```
+
+For detailed documentation on credentials, PINs, TOTP secrets, tokens, and automated renewal flows, view [CREDENTIALS_AND_AUTHENTICATION.md](file:///c:/Users/ckbas/Documents/antigravity/Manage-Dhan-Portfolio/CREDENTIALS_AND_AUTHENTICATION.md).
 
 ---
 
