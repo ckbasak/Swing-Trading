@@ -288,3 +288,49 @@ def clear_paper_trades() -> bool:
         except Exception as e:
             logger.error(f"Error clearing paper trades worksheet: {e}")
     return True
+
+def save_app_settings_to_sheets(settings: Dict[str, Any]) -> bool:
+    """Saves user optimization presets and indicator thresholds to Google Sheets 'AppSettings' worksheet."""
+    sh = get_or_create_spreadsheet()
+    if not sh:
+        return False
+    try:
+        headers = ["Key", "Value", "UpdatedAt"]
+        ws = get_or_create_worksheet(sh, "AppSettings", headers)
+        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        rows = [
+            ["opt_preset", str(settings.get("opt_preset", "")), now_str],
+            ["target_pct_val", str(settings.get("target_pct_val", "")), now_str],
+            ["stop_loss_pct_val", str(settings.get("stop_loss_pct_val", "")), now_str],
+            ["rsi_ob_val", str(settings.get("rsi_ob_val", "")), now_str],
+            ["rsi_exit_val", str(settings.get("rsi_exit_val", "")), now_str],
+            ["rsi_pb_val", str(settings.get("rsi_pb_val", "")), now_str]
+        ]
+        retry_gspread(ws.clear)
+        retry_gspread(ws.append_row, headers)
+        retry_gspread(ws.append_rows, rows)
+        logger.info("Successfully saved app settings to Google Sheets 'AppSettings'.")
+        return True
+    except Exception as e:
+        logger.error(f"Error saving app settings to Google Sheets: {e}")
+        return False
+
+def load_app_settings_from_sheets() -> Dict[str, Any]:
+    """Loads user optimization presets and indicator thresholds from Google Sheets 'AppSettings' worksheet."""
+    sh = get_or_create_spreadsheet()
+    if not sh:
+        return {}
+    try:
+        headers = ["Key", "Value", "UpdatedAt"]
+        ws = get_or_create_worksheet(sh, "AppSettings", headers)
+        records = retry_gspread(ws.get_all_records)
+        settings = {}
+        for r in records:
+            k = str(r.get("Key", "")).strip()
+            v = r.get("Value")
+            if k and v is not None:
+                settings[k] = v
+        return settings
+    except Exception as e:
+        logger.error(f"Error loading app settings from Google Sheets: {e}")
+        return {}

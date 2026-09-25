@@ -98,6 +98,23 @@ DEFAULT_SETTINGS = {
 }
 
 def load_saved_settings() -> dict:
+    try:
+        gs_cfg = portfolio_manager.load_app_settings_from_sheets()
+        if gs_cfg and "opt_preset" in gs_cfg:
+            res = DEFAULT_SETTINGS.copy()
+            res.update(gs_cfg)
+            try:
+                res["target_pct_val"] = float(res["target_pct_val"])
+                res["stop_loss_pct_val"] = float(res["stop_loss_pct_val"])
+                res["rsi_ob_val"] = float(res["rsi_ob_val"])
+                res["rsi_exit_val"] = float(res["rsi_exit_val"])
+                res["rsi_pb_val"] = float(res["rsi_pb_val"])
+            except Exception:
+                pass
+            return res
+    except Exception:
+        pass
+
     if os.path.exists(SETTINGS_FILE):
         try:
             with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
@@ -115,7 +132,12 @@ def save_settings(settings: dict):
         with open(SETTINGS_FILE, "w", encoding="utf-8") as f:
             json.dump(settings, f, indent=2)
     except Exception as e:
-        print(f"Error saving settings: {e}")
+        print(f"Error saving settings locally: {e}")
+
+    try:
+        portfolio_manager.save_app_settings_to_sheets(settings)
+    except Exception as e:
+        print(f"Error syncing settings to Google Sheets: {e}")
 
 # HTML5 LocalStorage restoration script for browser-side persistence across tab closes
 js_restore = """
