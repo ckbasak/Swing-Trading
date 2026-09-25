@@ -89,12 +89,12 @@ PRESET_OPTIONS = [
 ]
 
 DEFAULT_SETTINGS = {
-    "opt_preset": PRESET_OPTIONS[1],
-    "target_pct_val": 10.0,
-    "stop_loss_pct_val": -7.0,
-    "rsi_ob_val": 70.0,
-    "rsi_exit_val": 38.0,
-    "rsi_pb_val": 46.0
+    "opt_preset": PRESET_OPTIONS[2],
+    "target_pct_val": 14.0,
+    "stop_loss_pct_val": -8.5,
+    "rsi_ob_val": 75.0,
+    "rsi_exit_val": 35.0,
+    "rsi_pb_val": 48.0
 }
 
 import threading

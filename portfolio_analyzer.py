@@ -123,11 +123,11 @@ def analyze_holding(item: Dict[str, Any], overrides: Optional[Dict[str, float]] 
         except Exception:
             pass
 
-        target_pct_limit = float(ov.get("PROFIT_TARGET_PCT", os.environ.get("PROFIT_TARGET_PCT", cached_cfg.get("target_pct_val", 10.0))))
-        stop_loss_pct_limit = float(ov.get("STOP_LOSS_PCT", os.environ.get("STOP_LOSS_PCT", cached_cfg.get("stop_loss_pct_val", -7.0))))
-        rsi_overbought_limit = float(ov.get("RSI_OVERBOUGHT", os.environ.get("RSI_OVERBOUGHT", cached_cfg.get("rsi_ob_val", 70.0))))
-        rsi_breakdown_limit = float(ov.get("RSI_OVERSOLD_EXIT", os.environ.get("RSI_OVERSOLD_EXIT", cached_cfg.get("rsi_exit_val", 38.0))))
-        rsi_pullback_max = float(ov.get("RSI_PULLBACK_MAX", os.environ.get("RSI_PULLBACK_MAX", cached_cfg.get("rsi_pb_val", 46.0))))
+        target_pct_limit = float(ov.get("PROFIT_TARGET_PCT", os.environ.get("PROFIT_TARGET_PCT", cached_cfg.get("target_pct_val", 14.0))))
+        stop_loss_pct_limit = float(ov.get("STOP_LOSS_PCT", os.environ.get("STOP_LOSS_PCT", cached_cfg.get("stop_loss_pct_val", -8.5))))
+        rsi_overbought_limit = float(ov.get("RSI_OVERBOUGHT", os.environ.get("RSI_OVERBOUGHT", cached_cfg.get("rsi_ob_val", 75.0))))
+        rsi_breakdown_limit = float(ov.get("RSI_OVERSOLD_EXIT", os.environ.get("RSI_OVERSOLD_EXIT", cached_cfg.get("rsi_exit_val", 35.0))))
+        rsi_pullback_max = float(ov.get("RSI_PULLBACK_MAX", os.environ.get("RSI_PULLBACK_MAX", cached_cfg.get("rsi_pb_val", 48.0))))
         
         # Decision Logic Matrix (Market-Optimized Criteria)
         
