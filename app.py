@@ -97,24 +97,10 @@ DEFAULT_SETTINGS = {
     "rsi_pb_val": 46.0
 }
 
-def load_saved_settings() -> dict:
-    try:
-        gs_cfg = portfolio_manager.load_app_settings_from_sheets()
-        if gs_cfg and "opt_preset" in gs_cfg:
-            res = DEFAULT_SETTINGS.copy()
-            res.update(gs_cfg)
-            try:
-                res["target_pct_val"] = float(res["target_pct_val"])
-                res["stop_loss_pct_val"] = float(res["stop_loss_pct_val"])
-                res["rsi_ob_val"] = float(res["rsi_ob_val"])
-                res["rsi_exit_val"] = float(res["rsi_exit_val"])
-                res["rsi_pb_val"] = float(res["rsi_pb_val"])
-            except Exception:
-                pass
-            return res
-    except Exception:
-        pass
+import threading
 
+def load_saved_settings() -> dict:
+    """Fast instantaneous local JSON settings loader (0ms delay)."""
     if os.path.exists(SETTINGS_FILE):
         try:
             with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
@@ -122,22 +108,38 @@ def load_saved_settings() -> dict:
                 if isinstance(data, dict):
                     res = DEFAULT_SETTINGS.copy()
                     res.update(data)
+                    try:
+                        res["target_pct_val"] = float(res["target_pct_val"])
+                        res["stop_loss_pct_val"] = float(res["stop_loss_pct_val"])
+                        res["rsi_ob_val"] = float(res["rsi_ob_val"])
+                        res["rsi_exit_val"] = float(res["rsi_exit_val"])
+                        res["rsi_pb_val"] = float(res["rsi_pb_val"])
+                    except Exception:
+                        pass
                     return res
         except Exception:
             pass
     return DEFAULT_SETTINGS.copy()
 
+def _bg_sync_sheets(settings: dict):
+    try:
+        portfolio_manager.save_app_settings_to_sheets(settings)
+    except Exception:
+        pass
+
 def save_settings(settings: dict):
+    """Fast local JSON settings writer + non-blocking background backup thread."""
     try:
         with open(SETTINGS_FILE, "w", encoding="utf-8") as f:
             json.dump(settings, f, indent=2)
     except Exception as e:
-        print(f"Error saving settings locally: {e}")
+        print(f"Error saving local settings: {e}")
 
     try:
-        portfolio_manager.save_app_settings_to_sheets(settings)
-    except Exception as e:
-        print(f"Error syncing settings to Google Sheets: {e}")
+        t = threading.Thread(target=_bg_sync_sheets, args=(settings,), daemon=True)
+        t.start()
+    except Exception:
+        pass
 
 # HTML5 LocalStorage restoration script for browser-side persistence across tab closes
 js_restore = """
