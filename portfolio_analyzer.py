@@ -201,57 +201,98 @@ def analyze_holding(item: Dict[str, Any], overrides: Optional[Dict[str, float]] 
         analysis["rationale"] = rationale
         analysis["oneTapUrl"] = build_one_tap_order_url(sym, analysis["recommendation"], qty, analysis["ltp"])
         
-        # Comprehensive Dhan Order Parameters & Dynamic Risk Protection Setup
+        # Comprehensive Dhan Order Parameters (Mapped 1:1 to Dhan Web UI Tabs)
         rec = analysis["recommendation"]
+        target_p = round(analysis["targetPrice"], 2)
+        sl_p = round(analysis["stopLoss"], 2)
+        
         if rec == "SELL":
-            slippage_limit = round(ltp * 0.997, 2)
+            limit_p = round(ltp * 0.997, 2)  # 0.3% buffer below LTP for quick fill
+            trigger_p = round(ltp * 0.999, 2)
             analysis["dhanOrderParams"] = {
-                "transactionType": "SELL",
-                "exchange": "NSE",
-                "productType": "CNC (Delivery)",
-                "orderType": "LIMIT (Slippage Protected)",
-                "qty": qty,
-                "limitPrice": slippage_limit,
-                "triggerPrice": round(analysis["stopLoss"], 2),
+                "mode": "Investing",
+                "toggle": "Sell",
+                "quantity": qty,
+                "limitPrice": limit_p,
+                "addTriggerPrice": trigger_p,
                 "validity": "DAY",
-                "gttType": "Dhan Forever (GTT) - OCO",
-                "gttTargetTrigger": round(analysis["targetPrice"], 2),
-                "gttStopTrigger": round(analysis["stopLoss"], 2),
-                "trailingStep": "1.0%",
-                "protectionTip": f"To prevent bad fills during market drops, use LIMIT price ₹{slippage_limit:,.2f} instead of MARKET. Set a Dhan Forever (GTT) OCO Order with a 1.0% Trailing Stop to lock in maximum gains."
+                "super": {
+                    "quantity": qty,
+                    "limit": limit_p,
+                    "target": target_p,
+                    "stoploss": sl_p,
+                    "bookProfits": "Full Exit",
+                    "addTriggerPrice": trigger_p
+                },
+                "trail": {
+                    "quantity": qty,
+                    "limit": limit_p,
+                    "target": target_p,
+                    "stoploss": sl_p,
+                    "tgTrailJump": 1,
+                    "slTrailJump": 1,
+                    "addTriggerPrice": trigger_p,
+                    "orderValidity": "365 Days"
+                },
+                "quickTip": f"Select 'Investing' -> 'Limit' tab. Set Quantity: {qty}, Price: ₹{limit_p:,.2f} (LTP - 0.3% buffer). Or for auto-trailing exit, select 'TRAIL' tab."
             }
         elif rec == "AVERAGE":
-            slippage_limit = round(ltp * 1.003, 2)
+            limit_p = round(ltp * 1.003, 2)  # 0.3% buffer above LTP for quick fill
+            trigger_p = round(ltp * 1.001, 2)
             analysis["dhanOrderParams"] = {
-                "transactionType": "BUY",
-                "exchange": "NSE",
-                "productType": "CNC (Delivery)",
-                "orderType": "LIMIT (Slippage Protected)",
-                "qty": qty,
-                "limitPrice": slippage_limit,
-                "triggerPrice": round(analysis["stopLoss"], 2),
+                "mode": "Investing",
+                "toggle": "Buy",
+                "quantity": qty,
+                "limitPrice": limit_p,
+                "addTriggerPrice": trigger_p,
                 "validity": "DAY",
-                "gttType": "Dhan Forever (GTT) - OCO",
-                "gttTargetTrigger": round(analysis["targetPrice"], 2),
-                "gttStopTrigger": round(analysis["stopLoss"], 2),
-                "trailingStep": "1.5%",
-                "protectionTip": f"Place LIMIT order at ₹{slippage_limit:,.2f} (LTP + 0.3% buffer) to avoid overpaying. Set Dhan Forever (GTT) OCO order with Target ₹{analysis['targetPrice']:,.2f}, SL ₹{analysis['stopLoss']:,.2f}, and 1.5% Trailing Jump to capture upside and prevent losses."
+                "super": {
+                    "quantity": qty,
+                    "limit": limit_p,
+                    "target": target_p,
+                    "stoploss": sl_p,
+                    "bookProfits": "Full Exit",
+                    "addTriggerPrice": trigger_p
+                },
+                "trail": {
+                    "quantity": qty,
+                    "limit": limit_p,
+                    "target": target_p,
+                    "stoploss": sl_p,
+                    "tgTrailJump": 1,
+                    "slTrailJump": 1,
+                    "addTriggerPrice": trigger_p,
+                    "orderValidity": "365 Days"
+                },
+                "quickTip": f"Select 'Investing' -> 'Limit' tab. Set Quantity: {qty}, Price: ₹{limit_p:,.2f} (LTP + 0.3% buffer). To automate profit-taking & stoploss, select 'TRAIL' tab."
             }
         else: # HOLD
             analysis["dhanOrderParams"] = {
-                "transactionType": "HOLD (Set GTT)",
-                "exchange": "NSE",
-                "productType": "CNC (Delivery)",
-                "orderType": "GTT / FOREVER SL-OCO",
-                "qty": qty,
+                "mode": "Investing",
+                "toggle": "Sell",
+                "quantity": qty,
                 "limitPrice": round(ltp, 2),
-                "triggerPrice": round(analysis["stopLoss"], 2),
-                "validity": "FOREVER",
-                "gttType": "Dhan Forever (GTT) - OCO",
-                "gttTargetTrigger": round(analysis["targetPrice"], 2),
-                "gttStopTrigger": round(analysis["stopLoss"], 2),
-                "trailingStep": "1.5%",
-                "protectionTip": f"Hold position. Protect gains by setting a Dhan Forever (GTT) Order with Target ₹{analysis['targetPrice']:,.2f} and SL ₹{analysis['stopLoss']:,.2f} with a 1.5% Trailing Stop."
+                "addTriggerPrice": sl_p,
+                "validity": "365 Days",
+                "super": {
+                    "quantity": qty,
+                    "limit": round(ltp, 2),
+                    "target": target_p,
+                    "stoploss": sl_p,
+                    "bookProfits": "Full Exit",
+                    "addTriggerPrice": sl_p
+                },
+                "trail": {
+                    "quantity": qty,
+                    "limit": round(ltp, 2),
+                    "target": target_p,
+                    "stoploss": sl_p,
+                    "tgTrailJump": 1,
+                    "slTrailJump": 1,
+                    "addTriggerPrice": sl_p,
+                    "orderValidity": "365 Days"
+                },
+                "quickTip": f"Position on Hold. To protect gains, open 'Investing' -> 'TRAIL' tab. Set Target: ₹{target_p:,.2f}, Stoploss: ₹{sl_p:,.2f}, SL Trail Jump: 1."
             }
         
     except Exception as e:

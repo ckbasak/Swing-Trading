@@ -513,24 +513,41 @@ with tab2:
                     st.write(f"• **Target**: `₹{s['targetPrice']:,.2f}` | **SL**: `₹{s['stopLoss']:,.2f}`")
                     st.error(f"**Rationale**: {' '.join(s['rationale'])}")
                     
-                    # Explicit Dhan Order Parameter Specifications
+                    # Explicit Dhan Order Window Parameter Specifications (Mapped 1:1 to Dhan UI Tabs)
                     dp = s.get("dhanOrderParams", {})
                     st.divider()
-                    st.markdown("#### 📋 Dhan Order Setup Parameters")
-                    st.markdown(
-                        f"• **Transaction**: `{dp.get('transactionType', 'SELL')}` | **Product**: `{dp.get('productType', 'CNC (Delivery)')}`\n"
-                        f"• **Order Type**: `{dp.get('orderType', 'LIMIT (Slippage Protected)')}`\n"
-                        f"• **Quantity**: `{dp.get('qty', s['qty'])}` | **Limit Price**: `₹{dp.get('limitPrice', s['ltp']):,.2f}`\n"
-                        f"• **Validity**: `{dp.get('validity', 'DAY')}`"
-                    )
+                    st.markdown("#### 📱 Dhan Order Entry Guide (UI Tab Parameters)")
+                    st.caption(f"💡 *{dp.get('quickTip', '')}*")
                     
-                    with st.expander("🛡️ Dynamic Profit Lock & Dynamic Stop-Loss (Dhan Forever / GTT)", expanded=False):
+                    o_tab1, o_tab2, o_tab3 = st.tabs(["⚡ Limit (Quick Fill)", "🛡️ SUPER (GTT Bracket)", "🎯 TRAIL (Auto-Trailing)"])
+                    
+                    with o_tab1:
                         st.markdown(
-                            f"• **Order Mode**: `{dp.get('gttType', 'Dhan Forever (GTT) - OCO')}`\n"
-                            f"• **Target Trigger**: `₹{dp.get('gttTargetTrigger', s['targetPrice']):,.2f}`\n"
-                            f"• **Stop-Loss Trigger**: `₹{dp.get('gttStopTrigger', s['stopLoss']):,.2f}`\n"
-                            f"• **Trailing Stop Jump**: `{dp.get('trailingStep', '1.0%')}` *(Stop Loss trails UPWARDS automatically as price advances)*\n\n"
-                            f"💡 **Execution Tip**: *{dp.get('protectionTip', '')}*"
+                            f"**Mode**: `Investing` | **Toggle**: `{dp.get('toggle', 'Sell')}`\n\n"
+                            f"• **Quantity**: `{dp.get('quantity', s['qty'])}` | **Price**: `₹{dp.get('limitPrice', s['ltp']):,.2f}` *(LTP - 0.3% Buffer)*\n"
+                            f"• **Add Trigger Price**: `[Checked]` → **Trigger at**: `₹{dp.get('addTriggerPrice', s['stopLoss']):,.2f}`\n"
+                            f"• **Validity**: `{dp.get('validity', 'DAY')}`"
+                        )
+                        
+                    with o_tab2:
+                        sp = dp.get("super", {})
+                        st.markdown(
+                            f"**Mode**: `Investing` → `⚡ SUPER` Tab | **Toggle**: `{dp.get('toggle', 'Sell')}`\n\n"
+                            f"• **Quantity**: `{sp.get('quantity', s['qty'])}` | **Limit**: `[Checked: ₹{sp.get('limit', s['ltp']):,.2f}]`\n"
+                            f"• **Target**: `[Checked: ₹{sp.get('target', s['targetPrice']):,.2f}]` | **Stoploss**: `[Checked: ₹{sp.get('stoploss', s['stopLoss']):,.2f}]`\n"
+                            f"• **Book Profits in Steps**: `{sp.get('bookProfits', 'Full Exit')}`\n"
+                            f"• **Add Trigger Price**: `[Checked: ₹{sp.get('addTriggerPrice', s['stopLoss']):,.2f}]`"
+                        )
+                        
+                    with o_tab3:
+                        tr = dp.get("trail", {})
+                        st.markdown(
+                            f"**Mode**: `Investing` → `⚡ TRAIL` Tab | **Toggle**: `{dp.get('toggle', 'Sell')}`\n\n"
+                            f"• **Quantity**: `{tr.get('quantity', s['qty'])}` | **Limit**: `[Checked: ₹{tr.get('limit', s['ltp']):,.2f}]`\n"
+                            f"• **Target**: `[Checked: ₹{tr.get('target', s['targetPrice']):,.2f}]` | **Stoploss**: `[Checked: ₹{tr.get('stoploss', s['stopLoss']):,.2f}]`\n"
+                            f"• **TG Trail Jump**: `[Checked: {tr.get('tgTrailJump', 1)}]` | **SL Trail Jump**: `[Checked: {tr.get('slTrailJump', 1)}]`\n"
+                            f"• **Add Trigger Price**: `[Checked: ₹{tr.get('addTriggerPrice', s['stopLoss']):,.2f}]`\n"
+                            f"• **Validity of Order**: `{tr.get('orderValidity', '365 Days')}`"
                         )
 
                     one_url = "https://web.dhan.co"
@@ -561,21 +578,38 @@ with tab2:
                     
                     dp = a.get("dhanOrderParams", {})
                     st.divider()
-                    st.markdown("#### 📋 Dhan Order Setup Parameters")
-                    st.markdown(
-                        f"• **Transaction**: `{dp.get('transactionType', 'BUY')}` | **Product**: `{dp.get('productType', 'CNC (Delivery)')}`\n"
-                        f"• **Order Type**: `{dp.get('orderType', 'LIMIT (Slippage Protected)')}`\n"
-                        f"• **Quantity**: `{dp.get('qty', a['qty'])}` | **Limit Price**: `₹{dp.get('limitPrice', a['ltp']):,.2f}`\n"
-                        f"• **Validity**: `{dp.get('validity', 'DAY')}`"
-                    )
+                    st.markdown("#### 📱 Dhan Order Entry Guide (UI Tab Parameters)")
+                    st.caption(f"💡 *{dp.get('quickTip', '')}*")
                     
-                    with st.expander("🛡️ Dynamic Profit Lock & Dynamic Stop-Loss (Dhan Forever / GTT)", expanded=False):
+                    o_tab1, o_tab2, o_tab3 = st.tabs(["⚡ Limit (Quick Fill)", "🛡️ SUPER (GTT Bracket)", "🎯 TRAIL (Auto-Trailing)"])
+                    
+                    with o_tab1:
                         st.markdown(
-                            f"• **Order Mode**: `{dp.get('gttType', 'Dhan Forever (GTT) - OCO')}`\n"
-                            f"• **Target Trigger**: `₹{dp.get('gttTargetTrigger', a['targetPrice']):,.2f}`\n"
-                            f"• **Stop-Loss Trigger**: `₹{dp.get('gttStopTrigger', a['stopLoss']):,.2f}`\n"
-                            f"• **Trailing Stop Jump**: `{dp.get('trailingStep', '1.5%')}` *(Stop Loss trails UPWARDS automatically as price advances)*\n\n"
-                            f"💡 **Execution Tip**: *{dp.get('protectionTip', '')}*"
+                            f"**Mode**: `Investing` | **Toggle**: `{dp.get('toggle', 'Buy')}`\n\n"
+                            f"• **Quantity**: `{dp.get('quantity', a['qty'])}` | **Price**: `₹{dp.get('limitPrice', a['ltp']):,.2f}` *(LTP + 0.3% Buffer)*\n"
+                            f"• **Add Trigger Price**: `[Checked]` → **Trigger at**: `₹{dp.get('addTriggerPrice', a['stopLoss']):,.2f}`\n"
+                            f"• **Validity**: `{dp.get('validity', 'DAY')}`"
+                        )
+                        
+                    with o_tab2:
+                        sp = dp.get("super", {})
+                        st.markdown(
+                            f"**Mode**: `Investing` → `⚡ SUPER` Tab | **Toggle**: `{dp.get('toggle', 'Buy')}`\n\n"
+                            f"• **Quantity**: `{sp.get('quantity', a['qty'])}` | **Limit**: `[Checked: ₹{sp.get('limit', a['ltp']):,.2f}]`\n"
+                            f"• **Target**: `[Checked: ₹{sp.get('target', a['targetPrice']):,.2f}]` | **Stoploss**: `[Checked: ₹{sp.get('stoploss', a['stopLoss']):,.2f}]`\n"
+                            f"• **Book Profits in Steps**: `{sp.get('bookProfits', 'Full Exit')}`\n"
+                            f"• **Add Trigger Price**: `[Checked: ₹{sp.get('addTriggerPrice', a['stopLoss']):,.2f}]`"
+                        )
+                        
+                    with o_tab3:
+                        tr = dp.get("trail", {})
+                        st.markdown(
+                            f"**Mode**: `Investing` → `⚡ TRAIL` Tab | **Toggle**: `{dp.get('toggle', 'Buy')}`\n\n"
+                            f"• **Quantity**: `{tr.get('quantity', a['qty'])}` | **Limit**: `[Checked: ₹{tr.get('limit', a['ltp']):,.2f}]`\n"
+                            f"• **Target**: `[Checked: ₹{tr.get('target', a['targetPrice']):,.2f}]` | **Stoploss**: `[Checked: ₹{tr.get('stoploss', a['stopLoss']):,.2f}]`\n"
+                            f"• **TG Trail Jump**: `[Checked: {tr.get('tgTrailJump', 1)}]` | **SL Trail Jump**: `[Checked: {tr.get('slTrailJump', 1)}]`\n"
+                            f"• **Add Trigger Price**: `[Checked: ₹{tr.get('addTriggerPrice', a['stopLoss']):,.2f}]`\n"
+                            f"• **Validity of Order**: `{tr.get('orderValidity', '365 Days')}`"
                         )
 
                     one_url = "https://web.dhan.co"
@@ -606,11 +640,13 @@ with tab2:
                     
                     dp = h.get("dhanOrderParams", {})
                     with st.expander("🛡️ Dhan Protection & GTT Parameters", expanded=False):
+                        tr = dp.get("trail", {})
                         st.markdown(
-                            f"• **Mode**: `{dp.get('gttType', 'Dhan Forever (GTT) - OCO')}`\n"
-                            f"• **Target**: `₹{dp.get('gttTargetTrigger', h['targetPrice']):,.2f}` | **SL**: `₹{dp.get('gttStopTrigger', h['stopLoss']):,.2f}`\n"
-                            f"• **Trailing Step**: `{dp.get('trailingStep', '1.5%')}`\n\n"
-                            f"💡 *{dp.get('protectionTip', '')}*"
+                            f"**Mode**: `Investing` → `⚡ TRAIL` Tab | **Toggle**: `Sell`\n\n"
+                            f"• **Quantity**: `{tr.get('quantity', h['qty'])}` | **Limit**: `[Checked: ₹{tr.get('limit', h['ltp']):,.2f}]`\n"
+                            f"• **Target**: `[Checked: ₹{tr.get('target', h['targetPrice']):,.2f}]` | **Stoploss**: `[Checked: ₹{tr.get('stoploss', h['stopLoss']):,.2f}]`\n"
+                            f"• **TG Trail Jump**: `[Checked: {tr.get('tgTrailJump', 1)}]` | **SL Trail Jump**: `[Checked: {tr.get('slTrailJump', 1)}]`\n"
+                            f"• **Validity of Order**: `365 Days`"
                         )
         else:
             st.write("No positions on hold.")
