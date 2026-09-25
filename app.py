@@ -9,13 +9,9 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import streamlit as st
 
-import importlib
 import dhan_client
 import portfolio_analyzer
 import portfolio_manager
-importlib.reload(dhan_client)
-importlib.reload(portfolio_analyzer)
-importlib.reload(portfolio_manager)
 
 st.set_page_config(
     page_title="Manage-Dhan-Portfolio | Swing Advisory & Capital Recycling",

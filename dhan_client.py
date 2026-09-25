@@ -39,6 +39,9 @@ _HOLDINGS_SOURCE: str = "UNKNOWN"
 _LAST_API_ERROR: Optional[str] = None
 
 def get_holdings_source() -> str:
+    global _HOLDINGS_SOURCE
+    if _HOLDINGS_SOURCE == "UNKNOWN":
+        get_dhan_holdings()
     return _HOLDINGS_SOURCE
 
 def get_last_api_error() -> Optional[str]:
@@ -49,11 +52,12 @@ def set_dhan_access_token(token: str) -> bool:
     token = token.strip()
     if not token:
         return False
-    global DHAN_ACCESS_TOKEN, _DHAN_INSTANCE
+    global DHAN_ACCESS_TOKEN, _DHAN_INSTANCE, _HOLDINGS_SOURCE
     DHAN_ACCESS_TOKEN = token
     os.environ["DHAN_ACCESS_TOKEN"] = token
     _update_env_file("DHAN_ACCESS_TOKEN", token)
     _DHAN_INSTANCE = None
+    _HOLDINGS_SOURCE = "UNKNOWN"
     get_dhan_holdings()
     return _HOLDINGS_SOURCE == "LIVE"
 
