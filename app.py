@@ -299,7 +299,8 @@ with st.sidebar:
                     st.toast("Connected to live Dhan portfolio!", icon="🟢")
                     st.rerun()
                 else:
-                    st.error("Token verification failed. Please check the token generated from web.dhan.co.")
+                    err_detail = dhan_client.get_last_api_error() or "Invalid authentication token"
+                    st.error(f"Token verification failed: `{err_detail}`. Please verify the token copied from web.dhan.co.")
             else:
                 st.warning("Please paste a valid Dhan Access Token.")
         

@@ -49,9 +49,10 @@ def set_dhan_access_token(token: str) -> bool:
     token = token.strip()
     if not token:
         return False
+    global DHAN_ACCESS_TOKEN, _DHAN_INSTANCE
+    DHAN_ACCESS_TOKEN = token
     os.environ["DHAN_ACCESS_TOKEN"] = token
     _update_env_file("DHAN_ACCESS_TOKEN", token)
-    global _DHAN_INSTANCE
     _DHAN_INSTANCE = None
     get_dhan_holdings()
     return _HOLDINGS_SOURCE == "LIVE"
