@@ -1,22 +1,5 @@
 [
   {
-    "tradingSymbol": "RELIANCE",
-    "securityId": "2885",
-    "exchange": "ALL",
-    "isin": "INE002A01018",
-    "totalQty": 10.0,
-    "dpQty": 10.0,
-    "t1Qty": 0.0,
-    "avgCostPrice": 1396.3,
-    "buyPrice": 1396.3,
-    "lastPrice": 1396.3,
-    "currentValue": 13963.0,
-    "investmentValue": 13963.0,
-    "pnl": 0.0,
-    "pnlPercentage": 0.0,
-    "type": "STOCK"
-  },
-  {
     "tradingSymbol": "JSWSTEEL",
     "securityId": "11723",
     "exchange": "ALL",

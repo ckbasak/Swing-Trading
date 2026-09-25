@@ -363,7 +363,10 @@ def load_cached_holdings() -> List[Dict[str, Any]]:
             with open(cache_file, "r", encoding="utf-8") as f:
                 data = json.load(f)
                 if data:
-                    return data
+                    return [
+                        item for item in data 
+                        if float(item.get("totalQty") or item.get("holdingQty") or item.get("dpQty") or 0) > 0
+                    ]
         except Exception as e:
             logger.error(f"Error loading cached holdings: {e}")
     return get_sample_holdings()
@@ -388,6 +391,8 @@ def get_dhan_holdings() -> List[Dict[str, Any]]:
                 for item in holdings_data:
                     sym = item.get("tradingSymbol", "").upper()
                     qty = float(item.get("totalQty") or item.get("holdingQty") or 0)
+                    if qty <= 0:
+                        continue
                     avg_cost = float(item.get("avgCostPrice") or item.get("costPrice") or 0)
                     last_price = float(item.get("lastPrice") or item.get("closePrice") or avg_cost)
                     inv_val = qty * avg_cost
@@ -431,6 +436,8 @@ def get_dhan_holdings() -> List[Dict[str, Any]]:
                             for item in holdings_data:
                                 sym = item.get("tradingSymbol", "").upper()
                                 qty = float(item.get("totalQty") or item.get("holdingQty") or 0)
+                                if qty <= 0:
+                                    continue
                                 avg_cost = float(item.get("avgCostPrice") or item.get("costPrice") or 0)
                                 last_price = float(item.get("lastPrice") or item.get("closePrice") or avg_cost)
                                 inv_val = qty * avg_cost
