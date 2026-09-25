@@ -82,8 +82,14 @@ st.caption("Autonomous Dhan Portfolio Analyzer, Swing Signal Matrix, Paper Tradi
 # Persistent Settings Manager
 SETTINGS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cached_settings.json")
 
+PRESET_OPTIONS = [
+    "🛡️ Capital Preservation & Risk Reduction (Conservative)",
+    "⚖️ Balanced Market Sentiment (Optimal)",
+    "🚀 Maximum Return & Profit Pursuit (Aggressive)"
+]
+
 DEFAULT_SETTINGS = {
-    "opt_preset": "⚖️ Balanced Market Sentiment (Optimal)",
+    "opt_preset": PRESET_OPTIONS[1],
     "target_pct_val": 10.0,
     "stop_loss_pct_val": -7.0,
     "rsi_ob_val": 70.0,
@@ -111,31 +117,92 @@ def save_settings(settings: dict):
     except Exception as e:
         print(f"Error saving settings: {e}")
 
+# Read URL Query Params if available
+qp = getattr(st, "query_params", {})
 saved_cfg = load_saved_settings()
 
-# Session State Initialization for Threshold Sliders
+init_preset = qp.get("preset", saved_cfg.get("opt_preset", PRESET_OPTIONS[1]))
+if init_preset not in PRESET_OPTIONS:
+    init_preset = PRESET_OPTIONS[1]
+
+try:
+    init_target = float(qp.get("target", saved_cfg.get("target_pct_val", 10.0)))
+    init_stop = float(qp.get("stop", saved_cfg.get("stop_loss_pct_val", -7.0)))
+    init_rsi_ob = float(qp.get("rsi_ob", saved_cfg.get("rsi_ob_val", 70.0)))
+    init_rsi_exit = float(qp.get("rsi_exit", saved_cfg.get("rsi_exit_val", 38.0)))
+    init_rsi_pb = float(qp.get("rsi_pb", saved_cfg.get("rsi_pb_val", 46.0)))
+except Exception:
+    init_target = float(saved_cfg.get("target_pct_val", 10.0))
+    init_stop = float(saved_cfg.get("stop_loss_pct_val", -7.0))
+    init_rsi_ob = float(saved_cfg.get("rsi_ob_val", 70.0))
+    init_rsi_exit = float(saved_cfg.get("rsi_exit_val", 38.0))
+    init_rsi_pb = float(saved_cfg.get("rsi_pb_val", 46.0))
+
+# Session State Initialization for Threshold Sliders and Selectbox Key
+if "opt_preset_select_key" not in st.session_state:
+    st.session_state.opt_preset_select_key = init_preset
 if "target_pct_val" not in st.session_state:
-    st.session_state.target_pct_val = float(saved_cfg.get("target_pct_val", 10.0))
+    st.session_state.target_pct_val = init_target
 if "stop_loss_pct_val" not in st.session_state:
-    st.session_state.stop_loss_pct_val = float(saved_cfg.get("stop_loss_pct_val", -7.0))
+    st.session_state.stop_loss_pct_val = init_stop
 if "rsi_ob_val" not in st.session_state:
-    st.session_state.rsi_ob_val = float(saved_cfg.get("rsi_ob_val", 70.0))
+    st.session_state.rsi_ob_val = init_rsi_ob
 if "rsi_exit_val" not in st.session_state:
-    st.session_state.rsi_exit_val = float(saved_cfg.get("rsi_exit_val", 38.0))
+    st.session_state.rsi_exit_val = init_rsi_exit
 if "rsi_pb_val" not in st.session_state:
-    st.session_state.rsi_pb_val = float(saved_cfg.get("rsi_pb_val", 46.0))
-if "opt_preset_val" not in st.session_state:
-    st.session_state.opt_preset_val = saved_cfg.get("opt_preset", "⚖️ Balanced Market Sentiment (Optimal)")
+    st.session_state.rsi_pb_val = init_rsi_pb
+
+def sync_and_save_settings():
+    preset = st.session_state.opt_preset_select_key
+    target = st.session_state.target_pct_val
+    stop = st.session_state.stop_loss_pct_val
+    rsi_ob = st.session_state.rsi_ob_val
+    rsi_exit = st.session_state.rsi_exit_val
+    rsi_pb = st.session_state.rsi_pb_val
+    
+    save_settings({
+        "opt_preset": preset,
+        "target_pct_val": target,
+        "stop_loss_pct_val": stop,
+        "rsi_ob_val": rsi_ob,
+        "rsi_exit_val": rsi_exit,
+        "rsi_pb_val": rsi_pb
+    })
+    
+    try:
+        st.query_params["preset"] = preset
+        st.query_params["target"] = str(target)
+        st.query_params["stop"] = str(stop)
+        st.query_params["rsi_ob"] = str(rsi_ob)
+        st.query_params["rsi_exit"] = str(rsi_exit)
+        st.query_params["rsi_pb"] = str(rsi_pb)
+    except Exception:
+        pass
+
+def on_preset_select_change():
+    preset = st.session_state.opt_preset_select_key
+    if "Capital Preservation" in preset:
+        st.session_state.target_pct_val = 9.5
+        st.session_state.stop_loss_pct_val = -5.5
+        st.session_state.rsi_ob_val = 68.0
+        st.session_state.rsi_exit_val = 40.0
+        st.session_state.rsi_pb_val = 44.0
+    elif "Maximum Return" in preset:
+        st.session_state.target_pct_val = 14.0
+        st.session_state.stop_loss_pct_val = -8.5
+        st.session_state.rsi_ob_val = 75.0
+        st.session_state.rsi_exit_val = 35.0
+        st.session_state.rsi_pb_val = 48.0
+    else:
+        st.session_state.target_pct_val = 11.5
+        st.session_state.stop_loss_pct_val = -7.0
+        st.session_state.rsi_ob_val = 70.0
+        st.session_state.rsi_exit_val = 38.0
+        st.session_state.rsi_pb_val = 46.0
+    sync_and_save_settings()
 
 def on_slider_change():
-    save_settings({
-        "opt_preset": st.session_state.get("opt_preset_val", saved_cfg["opt_preset"]),
-        "target_pct_val": st.session_state.target_pct_val,
-        "stop_loss_pct_val": st.session_state.stop_loss_pct_val,
-        "rsi_ob_val": st.session_state.rsi_ob_val,
-        "rsi_exit_val": st.session_state.rsi_exit_val,
-        "rsi_pb_val": st.session_state.rsi_pb_val
-    })
+    sync_and_save_settings()
 
 # Sidebar Configuration
 with st.sidebar:
@@ -193,55 +260,19 @@ with st.sidebar:
             st.code(bot_info["logs"], language="log")
 
     st.divider()
-    
-    preset_options = [
-        "🛡️ Capital Preservation & Risk Reduction (Conservative)",
-        "⚖️ Balanced Market Sentiment (Optimal)",
-        "🚀 Maximum Return & Profit Pursuit (Aggressive)"
-    ]
-    cur_preset = st.session_state.get("opt_preset_val", saved_cfg["opt_preset"])
-    default_idx = preset_options.index(cur_preset) if cur_preset in preset_options else 1
 
     with st.expander("🎯 Auto-Optimize Thresholds & Presets", expanded=True):
         st.caption("Select market goal & auto-tune indicator criteria:")
-        opt_preset = st.selectbox(
+        st.selectbox(
             "Optimization Goal",
-            options=preset_options,
-            index=default_idx
+            options=PRESET_OPTIONS,
+            key="opt_preset_select_key",
+            on_change=on_preset_select_change
         )
         
-        if st.button("⚡ Auto-Optimize Thresholds Now", width="stretch", type="primary"):
-            st.session_state.opt_preset_val = opt_preset
-            if "Capital Preservation" in opt_preset:
-                st.session_state.target_pct_val = 9.5
-                st.session_state.stop_loss_pct_val = -5.5
-                st.session_state.rsi_ob_val = 68.0
-                st.session_state.rsi_exit_val = 40.0
-                st.session_state.rsi_pb_val = 44.0
-                st.toast("🛡️ Thresholds auto-optimized for Capital Preservation & Risk Reduction!", icon="🛡️")
-            elif "Maximum Return" in opt_preset:
-                st.session_state.target_pct_val = 14.0
-                st.session_state.stop_loss_pct_val = -8.5
-                st.session_state.rsi_ob_val = 75.0
-                st.session_state.rsi_exit_val = 35.0
-                st.session_state.rsi_pb_val = 48.0
-                st.toast("🚀 Thresholds auto-optimized for Maximum Return!", icon="🚀")
-            else:
-                st.session_state.target_pct_val = 11.5
-                st.session_state.stop_loss_pct_val = -7.0
-                st.session_state.rsi_ob_val = 70.0
-                st.session_state.rsi_exit_val = 38.0
-                st.session_state.rsi_pb_val = 46.0
-                st.toast("⚖️ Thresholds auto-optimized for Balanced Market Sentiment!", icon="⚡")
-                
-            save_settings({
-                "opt_preset": opt_preset,
-                "target_pct_val": st.session_state.target_pct_val,
-                "stop_loss_pct_val": st.session_state.stop_loss_pct_val,
-                "rsi_ob_val": st.session_state.rsi_ob_val,
-                "rsi_exit_val": st.session_state.rsi_exit_val,
-                "rsi_pb_val": st.session_state.rsi_pb_val
-            })
+        if st.button("⚡ Apply / Re-Tune Selected Preset", width="stretch", type="primary"):
+            on_preset_select_change()
+            st.toast(f"Updated thresholds for {st.session_state.opt_preset_select_key}", icon="⚡")
             st.rerun()
 
         st.divider()
