@@ -22,7 +22,7 @@ def build_one_tap_order_url(symbol: str, recommendation: str, qty: float, price:
     return "https://web.dhan.co"
 
 
-def analyze_holding(item: Dict[str, Any], overrides: Optional[Dict[str, float]] = None) -> Dict[str, Any]:
+def analyze_holding(item: Dict[str, Any], overrides: Optional[Dict[str, float]] = None, macro_status: str = "BALANCED") -> Dict[str, Any]:
     """
     Performs comprehensive technical analysis for a single stock or ETF holding.
     Generates decision: SELL, AVERAGE, or HOLD along with stop loss, target, R:R, and rationale.
@@ -200,16 +200,29 @@ def analyze_holding(item: Dict[str, Any], overrides: Optional[Dict[str, float]] 
 
         analysis["rationale"] = rationale
         analysis["oneTapUrl"] = build_one_tap_order_url(sym, analysis["recommendation"], qty, analysis["ltp"])
-        
-        # Comprehensive Dhan Order Parameters (Mapped 1:1 to Dhan Web UI Tabs)
+
         rec = analysis["recommendation"]
-        target_p = round(analysis["targetPrice"], 2)
-        sl_p = round(analysis["stopLoss"], 2)
+        target_p = analysis.get("targetPrice", round(ltp * 1.05, 2))
+        sl_p = analysis.get("stopLoss", round(ltp * 0.95, 2))
         
+        # Determine Recommended Dhan UI Order Tab based on Market & Technical Setup
+        if is_stop_breached or macro_status == "HIGH_VOLATILITY":
+            recommended_mode = "Limit"
+            recommended_reason = "⚡ Recommended Tab: 'Limit' (Urgent execution & 0.3% price buffer protection required during market pressure or stop-loss exit)."
+        elif macro_status == "LOW_VOLATILITY" or rec == "AVERAGE" or (rec == "SELL" and "PROFIT" in analysis["actionStrength"]):
+            recommended_mode = "TRAIL"
+            recommended_reason = "🎯 Recommended Tab: '⚡ TRAIL' (Bullish momentum active. Auto-trails stop-loss upwards to capture maximum upside profit)."
+        else:
+            recommended_mode = "SUPER"
+            recommended_reason = "🛡️ Recommended Tab: '⚡ SUPER' (Balanced range-bound market. Set fixed Target & Stoploss Bracket Order)."
+
+        # Comprehensive Dhan Order Parameters (Mapped 1:1 to Dhan Web UI Tabs)
         if rec == "SELL":
             limit_p = round(ltp * 0.997, 2)  # 0.3% buffer below LTP for quick fill
             trigger_p = round(ltp * 0.999, 2)
             analysis["dhanOrderParams"] = {
+                "recommendedMode": recommended_mode,
+                "recommendedReason": recommended_reason,
                 "mode": "Investing",
                 "toggle": "Sell",
                 "quantity": qty,
@@ -234,12 +247,14 @@ def analyze_holding(item: Dict[str, Any], overrides: Optional[Dict[str, float]] 
                     "addTriggerPrice": trigger_p,
                     "orderValidity": "365 Days"
                 },
-                "quickTip": f"Select 'Investing' -> 'Limit' tab. Set Quantity: {qty}, Price: ₹{limit_p:,.2f} (LTP - 0.3% buffer). Or for auto-trailing exit, select 'TRAIL' tab."
+                "quickTip": f"Select 'Investing' -> '{recommended_mode}' tab. {recommended_reason}"
             }
         elif rec == "AVERAGE":
             limit_p = round(ltp * 1.003, 2)  # 0.3% buffer above LTP for quick fill
             trigger_p = round(ltp * 1.001, 2)
             analysis["dhanOrderParams"] = {
+                "recommendedMode": recommended_mode,
+                "recommendedReason": recommended_reason,
                 "mode": "Investing",
                 "toggle": "Buy",
                 "quantity": qty,
@@ -264,10 +279,12 @@ def analyze_holding(item: Dict[str, Any], overrides: Optional[Dict[str, float]] 
                     "addTriggerPrice": trigger_p,
                     "orderValidity": "365 Days"
                 },
-                "quickTip": f"Select 'Investing' -> 'Limit' tab. Set Quantity: {qty}, Price: ₹{limit_p:,.2f} (LTP + 0.3% buffer). To automate profit-taking & stoploss, select 'TRAIL' tab."
+                "quickTip": f"Select 'Investing' -> '{recommended_mode}' tab. {recommended_reason}"
             }
         else: # HOLD
             analysis["dhanOrderParams"] = {
+                "recommendedMode": recommended_mode,
+                "recommendedReason": recommended_reason,
                 "mode": "Investing",
                 "toggle": "Sell",
                 "quantity": qty,
@@ -292,7 +309,7 @@ def analyze_holding(item: Dict[str, Any], overrides: Optional[Dict[str, float]] 
                     "addTriggerPrice": sl_p,
                     "orderValidity": "365 Days"
                 },
-                "quickTip": f"Position on Hold. To protect gains, open 'Investing' -> 'TRAIL' tab. Set Target: ₹{target_p:,.2f}, Stoploss: ₹{sl_p:,.2f}, SL Trail Jump: 1."
+                "quickTip": f"Position on Hold. {recommended_reason}"
             }
         
     except Exception as e:
@@ -373,7 +390,7 @@ def analyze_full_dhan_portfolio(overrides: Optional[Dict[str, float]] = None) ->
     total_freed_capital = 0.0
     
     for h in holdings:
-        res = analyze_holding(h, overrides=overrides)
+        res = analyze_holding(h, overrides=overrides, macro_status=macro_regime.get("status", "BALANCED"))
         analyzed_holdings.append(res)
         
         total_investment += res["investmentValue"]

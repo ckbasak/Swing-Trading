@@ -515,11 +515,17 @@ with tab2:
                     
                     # Explicit Dhan Order Window Parameter Specifications (Mapped 1:1 to Dhan UI Tabs)
                     dp = s.get("dhanOrderParams", {})
-                    st.divider()
-                    st.markdown("#### 📱 Dhan Order Entry Guide (UI Tab Parameters)")
-                    st.caption(f"💡 *{dp.get('quickTip', '')}*")
+                    rec_mode = dp.get("recommendedMode", "Limit")
+                    rec_reason = dp.get("recommendedReason", "")
                     
-                    o_tab1, o_tab2, o_tab3 = st.tabs(["⚡ Limit (Quick Fill)", "🛡️ SUPER (GTT Bracket)", "🎯 TRAIL (Auto-Trailing)"])
+                    st.divider()
+                    st.info(f"💡 **Recommended Dhan Order Mode**: Select **`{rec_mode}`** Tab\n\n*{rec_reason}*")
+                    
+                    t1_lbl = "⚡ Limit (Quick Fill) ⭐ Recommended" if rec_mode == "Limit" else "⚡ Limit (Quick Fill)"
+                    t2_lbl = "🛡️ SUPER (GTT Bracket) ⭐ Recommended" if rec_mode == "SUPER" else "🛡️ SUPER (GTT Bracket)"
+                    t3_lbl = "🎯 TRAIL (Auto-Trailing) ⭐ Recommended" if rec_mode == "TRAIL" else "🎯 TRAIL (Auto-Trailing)"
+                    
+                    o_tab1, o_tab2, o_tab3 = st.tabs([t1_lbl, t2_lbl, t3_lbl])
                     
                     with o_tab1:
                         st.markdown(
@@ -577,11 +583,17 @@ with tab2:
                     st.success(f"**Rationale**: {' '.join(a['rationale'])}")
                     
                     dp = a.get("dhanOrderParams", {})
-                    st.divider()
-                    st.markdown("#### 📱 Dhan Order Entry Guide (UI Tab Parameters)")
-                    st.caption(f"💡 *{dp.get('quickTip', '')}*")
+                    rec_mode = dp.get("recommendedMode", "Limit")
+                    rec_reason = dp.get("recommendedReason", "")
                     
-                    o_tab1, o_tab2, o_tab3 = st.tabs(["⚡ Limit (Quick Fill)", "🛡️ SUPER (GTT Bracket)", "🎯 TRAIL (Auto-Trailing)"])
+                    st.divider()
+                    st.info(f"💡 **Recommended Dhan Order Mode**: Select **`{rec_mode}`** Tab\n\n*{rec_reason}*")
+                    
+                    t1_lbl = "⚡ Limit (Quick Fill) ⭐ Recommended" if rec_mode == "Limit" else "⚡ Limit (Quick Fill)"
+                    t2_lbl = "🛡️ SUPER (GTT Bracket) ⭐ Recommended" if rec_mode == "SUPER" else "🛡️ SUPER (GTT Bracket)"
+                    t3_lbl = "🎯 TRAIL (Auto-Trailing) ⭐ Recommended" if rec_mode == "TRAIL" else "🎯 TRAIL (Auto-Trailing)"
+                    
+                    o_tab1, o_tab2, o_tab3 = st.tabs([t1_lbl, t2_lbl, t3_lbl])
                     
                     with o_tab1:
                         st.markdown(
