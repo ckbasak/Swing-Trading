@@ -112,13 +112,22 @@ def analyze_holding(item: Dict[str, Any], overrides: Optional[Dict[str, float]] 
         pnl_pct = analysis["pnlPercentage"]
         rationale = []
         
-        # Dynamic Market Thresholds (Configurable via Overrides or Environment Variables)
+        # Dynamic Market Thresholds (Configurable via Overrides, Environment Variables, or Saved Settings)
         ov = overrides or {}
-        target_pct_limit = float(ov.get("PROFIT_TARGET_PCT", os.environ.get("PROFIT_TARGET_PCT", "10.0")))
-        stop_loss_pct_limit = float(ov.get("STOP_LOSS_PCT", os.environ.get("STOP_LOSS_PCT", "-7.0")))
-        rsi_overbought_limit = float(ov.get("RSI_OVERBOUGHT", os.environ.get("RSI_OVERBOUGHT", "70.0")))
-        rsi_breakdown_limit = float(ov.get("RSI_OVERSOLD_EXIT", os.environ.get("RSI_OVERSOLD_EXIT", "38.0")))
-        rsi_pullback_max = float(ov.get("RSI_PULLBACK_MAX", os.environ.get("RSI_PULLBACK_MAX", "46.0")))
+        cached_cfg = {}
+        try:
+            settings_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cached_settings.json")
+            if os.path.exists(settings_path):
+                with open(settings_path, "r", encoding="utf-8") as f:
+                    cached_cfg = json.load(f)
+        except Exception:
+            pass
+
+        target_pct_limit = float(ov.get("PROFIT_TARGET_PCT", os.environ.get("PROFIT_TARGET_PCT", cached_cfg.get("target_pct_val", 10.0))))
+        stop_loss_pct_limit = float(ov.get("STOP_LOSS_PCT", os.environ.get("STOP_LOSS_PCT", cached_cfg.get("stop_loss_pct_val", -7.0))))
+        rsi_overbought_limit = float(ov.get("RSI_OVERBOUGHT", os.environ.get("RSI_OVERBOUGHT", cached_cfg.get("rsi_ob_val", 70.0))))
+        rsi_breakdown_limit = float(ov.get("RSI_OVERSOLD_EXIT", os.environ.get("RSI_OVERSOLD_EXIT", cached_cfg.get("rsi_exit_val", 38.0))))
+        rsi_pullback_max = float(ov.get("RSI_PULLBACK_MAX", os.environ.get("RSI_PULLBACK_MAX", cached_cfg.get("rsi_pb_val", 46.0))))
         
         # Decision Logic Matrix (Market-Optimized Criteria)
         
