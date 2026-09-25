@@ -117,6 +117,33 @@ def save_settings(settings: dict):
     except Exception as e:
         print(f"Error saving settings: {e}")
 
+# HTML5 LocalStorage restoration script for browser-side persistence across tab closes
+js_restore = """
+<script>
+(function() {
+    try {
+        const p = new URLSearchParams(window.parent.location.search);
+        if (!p.has('preset')) {
+            const saved = window.parent.localStorage.getItem('dhan_user_preset_cfg');
+            if (saved) {
+                const c = JSON.parse(saved);
+                if (c && c.opt_preset) {
+                    p.set('preset', c.opt_preset);
+                    if (c.target_pct_val) p.set('target', c.target_pct_val);
+                    if (c.stop_loss_pct_val) p.set('stop', c.stop_loss_pct_val);
+                    if (c.rsi_ob_val) p.set('rsi_ob', c.rsi_ob_val);
+                    if (c.rsi_exit_val) p.set('rsi_exit', c.rsi_exit_val);
+                    if (c.rsi_pb_val) p.set('rsi_pb', c.rsi_pb_val);
+                    window.parent.location.search = p.toString();
+                }
+            }
+        }
+    } catch(e) {}
+})();
+</script>
+"""
+st.html(js_restore)
+
 # Read URL Query Params if available
 qp = getattr(st, "query_params", {})
 saved_cfg = load_saved_settings()
@@ -178,6 +205,25 @@ def sync_and_save_settings():
         st.query_params["rsi_pb"] = str(rsi_pb)
     except Exception:
         pass
+        
+    js_save = f"""
+    <script>
+    (function() {{
+        try {{
+            const cfg = {{
+                opt_preset: "{preset}",
+                target_pct_val: "{target}",
+                stop_loss_pct_val: "{stop}",
+                rsi_ob_val: "{rsi_ob}",
+                rsi_exit_val: "{rsi_exit}",
+                rsi_pb_val: "{rsi_pb}"
+            }};
+            window.parent.localStorage.setItem('dhan_user_preset_cfg', JSON.stringify(cfg));
+        }} catch(e) {{}}
+    }})();
+    </script>
+    """
+    st.html(js_save)
 
 def on_preset_select_change():
     preset = st.session_state.opt_preset_select_key
