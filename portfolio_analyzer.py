@@ -201,6 +201,59 @@ def analyze_holding(item: Dict[str, Any], overrides: Optional[Dict[str, float]] 
         analysis["rationale"] = rationale
         analysis["oneTapUrl"] = build_one_tap_order_url(sym, analysis["recommendation"], qty, analysis["ltp"])
         
+        # Comprehensive Dhan Order Parameters & Dynamic Risk Protection Setup
+        rec = analysis["recommendation"]
+        if rec == "SELL":
+            slippage_limit = round(ltp * 0.997, 2)
+            analysis["dhanOrderParams"] = {
+                "transactionType": "SELL",
+                "exchange": "NSE",
+                "productType": "CNC (Delivery)",
+                "orderType": "LIMIT (Slippage Protected)",
+                "qty": qty,
+                "limitPrice": slippage_limit,
+                "triggerPrice": round(analysis["stopLoss"], 2),
+                "validity": "DAY",
+                "gttType": "Dhan Forever (GTT) - OCO",
+                "gttTargetTrigger": round(analysis["targetPrice"], 2),
+                "gttStopTrigger": round(analysis["stopLoss"], 2),
+                "trailingStep": "1.0%",
+                "protectionTip": f"To prevent bad fills during market drops, use LIMIT price ₹{slippage_limit:,.2f} instead of MARKET. Set a Dhan Forever (GTT) OCO Order with a 1.0% Trailing Stop to lock in maximum gains."
+            }
+        elif rec == "AVERAGE":
+            slippage_limit = round(ltp * 1.003, 2)
+            analysis["dhanOrderParams"] = {
+                "transactionType": "BUY",
+                "exchange": "NSE",
+                "productType": "CNC (Delivery)",
+                "orderType": "LIMIT (Slippage Protected)",
+                "qty": qty,
+                "limitPrice": slippage_limit,
+                "triggerPrice": round(analysis["stopLoss"], 2),
+                "validity": "DAY",
+                "gttType": "Dhan Forever (GTT) - OCO",
+                "gttTargetTrigger": round(analysis["targetPrice"], 2),
+                "gttStopTrigger": round(analysis["stopLoss"], 2),
+                "trailingStep": "1.5%",
+                "protectionTip": f"Place LIMIT order at ₹{slippage_limit:,.2f} (LTP + 0.3% buffer) to avoid overpaying. Set Dhan Forever (GTT) OCO order with Target ₹{analysis['targetPrice']:,.2f}, SL ₹{analysis['stopLoss']:,.2f}, and 1.5% Trailing Jump to capture upside and prevent losses."
+            }
+        else: # HOLD
+            analysis["dhanOrderParams"] = {
+                "transactionType": "HOLD (Set GTT)",
+                "exchange": "NSE",
+                "productType": "CNC (Delivery)",
+                "orderType": "GTT / FOREVER SL-OCO",
+                "qty": qty,
+                "limitPrice": round(ltp, 2),
+                "triggerPrice": round(analysis["stopLoss"], 2),
+                "validity": "FOREVER",
+                "gttType": "Dhan Forever (GTT) - OCO",
+                "gttTargetTrigger": round(analysis["targetPrice"], 2),
+                "gttStopTrigger": round(analysis["stopLoss"], 2),
+                "trailingStep": "1.5%",
+                "protectionTip": f"Hold position. Protect gains by setting a Dhan Forever (GTT) Order with Target ₹{analysis['targetPrice']:,.2f} and SL ₹{analysis['stopLoss']:,.2f} with a 1.5% Trailing Stop."
+            }
+        
     except Exception as e:
         logger.error(f"Error performing technical analysis for {sym}: {e}")
         analysis["rationale"].append(f"Analysis fallback mode: {str(e)}")

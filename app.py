@@ -512,6 +512,27 @@ with tab2:
                     st.write(f"• **P&L**: `₹{s['pnl']:,.2f}` (`{s['pnlPercentage']:+.2f}%`)")
                     st.write(f"• **Target**: `₹{s['targetPrice']:,.2f}` | **SL**: `₹{s['stopLoss']:,.2f}`")
                     st.error(f"**Rationale**: {' '.join(s['rationale'])}")
+                    
+                    # Explicit Dhan Order Parameter Specifications
+                    dp = s.get("dhanOrderParams", {})
+                    st.divider()
+                    st.markdown("#### 📋 Dhan Order Setup Parameters")
+                    st.markdown(
+                        f"• **Transaction**: `{dp.get('transactionType', 'SELL')}` | **Product**: `{dp.get('productType', 'CNC (Delivery)')}`\n"
+                        f"• **Order Type**: `{dp.get('orderType', 'LIMIT (Slippage Protected)')}`\n"
+                        f"• **Quantity**: `{dp.get('qty', s['qty'])}` | **Limit Price**: `₹{dp.get('limitPrice', s['ltp']):,.2f}`\n"
+                        f"• **Validity**: `{dp.get('validity', 'DAY')}`"
+                    )
+                    
+                    with st.expander("🛡️ Dynamic Profit Lock & Dynamic Stop-Loss (Dhan Forever / GTT)", expanded=False):
+                        st.markdown(
+                            f"• **Order Mode**: `{dp.get('gttType', 'Dhan Forever (GTT) - OCO')}`\n"
+                            f"• **Target Trigger**: `₹{dp.get('gttTargetTrigger', s['targetPrice']):,.2f}`\n"
+                            f"• **Stop-Loss Trigger**: `₹{dp.get('gttStopTrigger', s['stopLoss']):,.2f}`\n"
+                            f"• **Trailing Stop Jump**: `{dp.get('trailingStep', '1.0%')}` *(Stop Loss trails UPWARDS automatically as price advances)*\n\n"
+                            f"💡 **Execution Tip**: *{dp.get('protectionTip', '')}*"
+                        )
+
                     one_url = "https://web.dhan.co"
                     if st.button(f"⚡ Execute SELL Order on Dhan", key=f"btn_sell_{s['tradingSymbol']}", use_container_width=True):
                         with st.spinner(f"Sending SELL order for {s['tradingSymbol']} ({s['qty']} qty) to Dhan..."):
@@ -537,6 +558,26 @@ with tab2:
                     st.write(f"• **Stop Loss**: `₹{a['stopLoss']:,.2f}`")
                     st.write(f"• **Risk:Reward**: `{a['riskReward']}`")
                     st.success(f"**Rationale**: {' '.join(a['rationale'])}")
+                    
+                    dp = a.get("dhanOrderParams", {})
+                    st.divider()
+                    st.markdown("#### 📋 Dhan Order Setup Parameters")
+                    st.markdown(
+                        f"• **Transaction**: `{dp.get('transactionType', 'BUY')}` | **Product**: `{dp.get('productType', 'CNC (Delivery)')}`\n"
+                        f"• **Order Type**: `{dp.get('orderType', 'LIMIT (Slippage Protected)')}`\n"
+                        f"• **Quantity**: `{dp.get('qty', a['qty'])}` | **Limit Price**: `₹{dp.get('limitPrice', a['ltp']):,.2f}`\n"
+                        f"• **Validity**: `{dp.get('validity', 'DAY')}`"
+                    )
+                    
+                    with st.expander("🛡️ Dynamic Profit Lock & Dynamic Stop-Loss (Dhan Forever / GTT)", expanded=False):
+                        st.markdown(
+                            f"• **Order Mode**: `{dp.get('gttType', 'Dhan Forever (GTT) - OCO')}`\n"
+                            f"• **Target Trigger**: `₹{dp.get('gttTargetTrigger', a['targetPrice']):,.2f}`\n"
+                            f"• **Stop-Loss Trigger**: `₹{dp.get('gttStopTrigger', a['stopLoss']):,.2f}`\n"
+                            f"• **Trailing Stop Jump**: `{dp.get('trailingStep', '1.5%')}` *(Stop Loss trails UPWARDS automatically as price advances)*\n\n"
+                            f"💡 **Execution Tip**: *{dp.get('protectionTip', '')}*"
+                        )
+
                     one_url = "https://web.dhan.co"
                     if st.button(f"⚡ Execute BUY Order on Dhan", key=f"btn_buy_{a['tradingSymbol']}", use_container_width=True):
                         with st.spinner(f"Sending BUY order for {a['tradingSymbol']} ({a['qty']} qty) to Dhan..."):
@@ -562,6 +603,15 @@ with tab2:
                     st.write(f"• **Target Price**: `₹{h['targetPrice']:,.2f}`")
                     st.write(f"• **Stop Loss**: `₹{h['stopLoss']:,.2f}`")
                     st.info(f"**Rationale**: {' '.join(h['rationale'])}")
+                    
+                    dp = h.get("dhanOrderParams", {})
+                    with st.expander("🛡️ Dhan Protection & GTT Parameters", expanded=False):
+                        st.markdown(
+                            f"• **Mode**: `{dp.get('gttType', 'Dhan Forever (GTT) - OCO')}`\n"
+                            f"• **Target**: `₹{dp.get('gttTargetTrigger', h['targetPrice']):,.2f}` | **SL**: `₹{dp.get('gttStopTrigger', h['stopLoss']):,.2f}`\n"
+                            f"• **Trailing Step**: `{dp.get('trailingStep', '1.5%')}`\n\n"
+                            f"💡 *{dp.get('protectionTip', '')}*"
+                        )
         else:
             st.write("No positions on hold.")
 
