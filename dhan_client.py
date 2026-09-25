@@ -27,6 +27,19 @@ def _load_env():
                         k, v = line.split("=", 1)
                         if k.strip() not in os.environ:
                             os.environ[k.strip()] = v.strip().strip("'").strip('"')
+
+    settings_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cached_settings.json")
+    if os.path.exists(settings_file):
+        try:
+            with open(settings_file, "r", encoding="utf-8") as f:
+                cfg = json.load(f)
+                if isinstance(cfg, dict):
+                    if cfg.get("DHAN_ACCESS_TOKEN"):
+                        os.environ["DHAN_ACCESS_TOKEN"] = cfg["DHAN_ACCESS_TOKEN"]
+                    if cfg.get("DHAN_CLIENT_ID"):
+                        os.environ["DHAN_CLIENT_ID"] = cfg["DHAN_CLIENT_ID"]
+        except Exception:
+            pass
 _load_env()
 
 DHAN_CLIENT_ID = os.environ.get("DHAN_CLIENT_ID")
@@ -61,6 +74,18 @@ def set_dhan_credentials(client_id: str, access_token: str) -> bool:
     os.environ["DHAN_ACCESS_TOKEN"] = access_token
     _update_env_file("DHAN_CLIENT_ID", client_id)
     _update_env_file("DHAN_ACCESS_TOKEN", access_token)
+    try:
+        settings_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cached_settings.json")
+        cfg = {}
+        if os.path.exists(settings_file):
+            with open(settings_file, "r", encoding="utf-8") as f:
+                cfg = json.load(f) or {}
+        cfg["DHAN_CLIENT_ID"] = client_id
+        cfg["DHAN_ACCESS_TOKEN"] = access_token
+        with open(settings_file, "w", encoding="utf-8") as f:
+            json.dump(cfg, f, indent=2)
+    except Exception:
+        pass
     _DHAN_INSTANCE = None
     _HOLDINGS_SOURCE = "UNKNOWN"
     get_dhan_holdings()
