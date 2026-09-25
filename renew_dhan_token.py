@@ -1,47 +1,43 @@
-﻿import os
+import os
 import sys
 import logging
+import dhan_client
 
 logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-def update_token(new_token: str):
-    new_token = new_token.strip()
-    if not new_token:
-        print("Error: Empty token provided.")
+def renew_active_token():
+    """Attempts automatic 24h extension using the active unexpired Dhan Access Token."""
+    logger.info("Attempting automatic token renewal via GET https://api.dhan.co/v2/RenewToken...")
+    new_token = dhan_client.renew_dhan_token_via_api()
+    if new_token:
+        print("SUCCESS: Token renewed automatically! Valid for another 24 hours.")
+        return True
+    else:
+        print("NOTICE: Automatic API renewal failed (likely because current token is already expired or invalid).")
         return False
-        
-    env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
-    lines = []
-    found = False
-    if os.path.exists(env_path):
-        with open(env_path, "r", encoding="utf-8") as f:
-            for line in f:
-                if line.startswith("DHAN_ACCESS_TOKEN="):
-                    lines.append(f"DHAN_ACCESS_TOKEN={new_token}\n")
-                    found = True
-                else:
-                    lines.append(line)
-    if not found:
-        lines.append(f"DHAN_ACCESS_TOKEN={new_token}\n")
-        
-    with open(env_path, "w", encoding="utf-8") as f:
-        f.writelines(lines)
-        
-    os.environ["DHAN_ACCESS_TOKEN"] = new_token
-    print("Updated .env with new DHAN_ACCESS_TOKEN.")
-    
-    # Test connection
-    import dhan_client
-    dhan_client._DHAN_INSTANCE = None
-    holdings = dhan_client.get_dhan_holdings()
-    print(f"Connection test complete! Holdings count: {len(holdings)}")
-    if holdings and holdings[0].get("tradingSymbol") != "RELIANCE":
-        print(f"SUCCESS: Connected to live Dhan account! Found {len(holdings)} holdings.")
-    return True
+
+def update_manual_token(new_token: str):
+    """Updates token manually from user input or argument."""
+    success = dhan_client.set_dhan_access_token(new_token)
+    if success:
+        print("SUCCESS: Connected to live Dhan account!")
+    else:
+        print("ERROR: Token verification failed. Please check your Dhan Access Token from web.dhan.co.")
+    return success
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        token_arg = sys.argv[1]
+    dhan_client._load_env()
+    if len(sys.argv) > 1 and sys.argv[1] == "--auto":
+        renew_active_token()
+    elif len(sys.argv) > 1:
+        update_manual_token(sys.argv[1])
     else:
-        token_arg = input("Enter new Dhan Access Token: ")
-    update_token(token_arg)
+        print("1. Automatic 24h Token Renewal (Requires currently active token)")
+        print("2. Manual Token Update")
+        choice = input("Select option (1 or 2): ").strip()
+        if choice == "1":
+            renew_active_token()
+        else:
+            token_arg = input("Enter new Dhan Access Token: ").strip()
+            update_manual_token(token_arg)

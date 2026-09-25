@@ -4,6 +4,7 @@ import csv
 import json
 import time
 import logging
+import threading
 import requests
 from typing import Dict, List, Optional, Any
 
@@ -92,6 +93,69 @@ def _update_env_file(key: str, value: str):
                 f.writelines(lines)
         except Exception as e:
             logger.error(f"Failed to update .env file: {e}")
+
+def renew_dhan_token_via_api() -> Optional[str]:
+    """
+    Renews current Dhan Access Token via GET https://api.dhan.co/v2/RenewToken.
+    Requires current token to still be active/valid.
+    Updates memory, environment variables, and .env file upon success.
+    """
+    client_id = os.environ.get("DHAN_CLIENT_ID")
+    active_token = os.environ.get("DHAN_ACCESS_TOKEN")
+    
+    if not client_id or not active_token:
+        return None
+        
+    url = "https://api.dhan.co/v2/RenewToken"
+    headers = {
+        "access-token": active_token,
+        "dhanClientId": client_id,
+        "Content-Type": "application/json"
+    }
+    
+    try:
+        res = requests.get(url, headers=headers, timeout=10)
+        if res.status_code == 200:
+            res_json = res.json()
+            new_token = (
+                res_json.get("accessToken")
+                or res_json.get("token")
+                or (res_json.get("data", {}) if isinstance(res_json.get("data"), dict) else {}).get("accessToken")
+            )
+            if new_token:
+                logger.info("Token successfully auto-renewed via Dhan RenewToken API! Valid for another 24 hours.")
+                set_dhan_credentials(client_id, new_token)
+                return new_token
+        else:
+            logger.warning(f"Dhan RenewToken API returned status [{res.status_code}]: {res.text}")
+    except Exception as e:
+        logger.error(f"Error executing Dhan RenewToken API: {e}")
+        
+    return None
+
+_AUTO_RENEW_THREAD_STARTED = False
+
+def start_12h_auto_renewal_background_thread():
+    """Starts a background thread that auto-renews Dhan API Access Token every 12 hours."""
+    global _AUTO_RENEW_THREAD_STARTED
+    if _AUTO_RENEW_THREAD_STARTED:
+        return
+    _AUTO_RENEW_THREAD_STARTED = True
+    
+    def _loop():
+        while True:
+            time.sleep(12 * 3600)
+            try:
+                if _HOLDINGS_SOURCE == "LIVE":
+                    logger.info("Executing scheduled 12-hour Dhan token auto-renewal...")
+                    renew_dhan_token_via_api()
+            except Exception as e:
+                logger.error(f"Error in 12h auto-renewal loop: {e}")
+                
+    thread = threading.Thread(target=_loop, daemon=True)
+    thread.start()
+
+start_12h_auto_renewal_background_thread()
 
 def renew_access_token_via_totp() -> Optional[str]:
     """
