@@ -286,19 +286,20 @@ with st.sidebar:
         
     with st.expander("🔑 Dhan API Live Token Update", expanded=(holdings_source != "LIVE")):
         st.caption("Generate a fresh 24h Access Token from **web.dhan.co** -> **My Profile** -> **Access DhanHQ APIs**:")
+        client_id_val = st.text_input("Dhan Client ID", value=os.environ.get("DHAN_CLIENT_ID", "1101177354"), key="dhan_client_id_renew_input")
         new_token_val = st.text_input("Dhan Access Token", type="password", key="dhan_token_renew_input")
         if st.button("⚡ Update Token & Sync Live Portfolio", use_container_width=True, type="primary"):
-            if new_token_val.strip():
-                success = dhan_client.set_dhan_access_token(new_token_val.strip())
+            if client_id_val.strip() and new_token_val.strip():
+                success = dhan_client.set_dhan_credentials(client_id_val.strip(), new_token_val.strip())
                 st.cache_data.clear()
                 if success:
                     st.toast("Connected to live Dhan portfolio!", icon="🟢")
                     st.rerun()
                 else:
                     err_detail = dhan_client.get_last_api_error() or "Invalid authentication token"
-                    st.error(f"Token verification failed: `{err_detail}`. Please verify the token copied from web.dhan.co.")
+                    st.error(f"Token verification failed: `{err_detail}`. Please verify Client ID and token copied from web.dhan.co.")
             else:
-                st.warning("Please paste a valid Dhan Access Token.")
+                st.warning("Please enter both Dhan Client ID and Access Token.")
         
     sh_instance = portfolio_manager.get_or_create_spreadsheet()
     if sh_instance:

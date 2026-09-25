@@ -47,19 +47,28 @@ def get_holdings_source() -> str:
 def get_last_api_error() -> Optional[str]:
     return _LAST_API_ERROR
 
-def set_dhan_access_token(token: str) -> bool:
-    """Updates Dhan access token in memory and .env file, resets client instance."""
-    token = token.strip()
-    if not token:
+def set_dhan_credentials(client_id: str, access_token: str) -> bool:
+    """Updates Dhan Client ID and Access Token in memory and .env file, resets client instance."""
+    client_id = client_id.strip()
+    access_token = access_token.strip()
+    if not client_id or not access_token:
         return False
-    global DHAN_ACCESS_TOKEN, _DHAN_INSTANCE, _HOLDINGS_SOURCE
-    DHAN_ACCESS_TOKEN = token
-    os.environ["DHAN_ACCESS_TOKEN"] = token
-    _update_env_file("DHAN_ACCESS_TOKEN", token)
+    global DHAN_CLIENT_ID, DHAN_ACCESS_TOKEN, _DHAN_INSTANCE, _HOLDINGS_SOURCE
+    DHAN_CLIENT_ID = client_id
+    DHAN_ACCESS_TOKEN = access_token
+    os.environ["DHAN_CLIENT_ID"] = client_id
+    os.environ["DHAN_ACCESS_TOKEN"] = access_token
+    _update_env_file("DHAN_CLIENT_ID", client_id)
+    _update_env_file("DHAN_ACCESS_TOKEN", access_token)
     _DHAN_INSTANCE = None
     _HOLDINGS_SOURCE = "UNKNOWN"
     get_dhan_holdings()
     return _HOLDINGS_SOURCE == "LIVE"
+
+def set_dhan_access_token(token: str) -> bool:
+    """Updates Dhan access token in memory and .env file, resets client instance."""
+    curr_client_id = os.environ.get("DHAN_CLIENT_ID", "1101177354")
+    return set_dhan_credentials(curr_client_id, token)
 
 def _update_env_file(key: str, value: str):
     """Dynamically updates or appends a key-value pair in .env file."""
