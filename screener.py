@@ -329,22 +329,24 @@ def screen_stocks(tickers: List[str], logs: List[str] = None, macro_data: Dict[s
                 continue
                 
             # Current values (last row)
-            close_today = df['Close'].iloc[-1]
-            vol_today = df['Volume'].iloc[-1]
-            sma_today = df['20_SMA'].iloc[-1]
-            ema_today = df['20_EMA'].iloc[-1]
-            vol_sma_today = df['Vol_SMA_20'].iloc[-1]
-            rsi_today = df['RSI_14'].iloc[-1]
-            atr_today = df['ATR_14'].iloc[-1]
+            close_today = float(df['Close'].iloc[-1])
+            open_today = float(df['Open'].iloc[-1]) if 'Open' in df else close_today
+            high_today = float(df['High'].iloc[-1]) if 'High' in df else close_today
+            low_today = float(df['Low'].iloc[-1]) if 'Low' in df else close_today
+            vol_today = float(df['Volume'].iloc[-1])
+            sma_today = float(df['20_SMA'].iloc[-1])
+            ema_today = float(df['20_EMA'].iloc[-1])
+            vol_sma_today = float(df['Vol_SMA_20'].iloc[-1])
+            rsi_today = float(df['RSI_14'].iloc[-1])
+            atr_today = float(df['ATR_14'].iloc[-1])
             
             # Data validation guardrails: block penny stocks (< Rs 20) and low volume (< 50,000 shares)
-            if close_today < 20.0:
+            if close_today < 20.0 or vol_sma_today < 50000.0:
                 continue
-            if vol_sma_today < 50000.0:
-                continue
+
             # Previous values (second last row)
-            close_yesterday = df['Close'].iloc[-2]
-            sma_yesterday = df['20_SMA'].iloc[-2]
+            close_yesterday = float(df['Close'].iloc[-2])
+            sma_yesterday = float(df['20_SMA'].iloc[-2])
             
             # Conditions for Strategy v2:
             # 1. Price Breakout over 20 SMA
@@ -353,8 +355,13 @@ def screen_stocks(tickers: List[str], logs: List[str] = None, macro_data: Dict[s
             volume_confirmed = vol_today > (2.5 * vol_sma_today)
             # 3. 14-period RSI between 50 and 70
             rsi_confirmed = 50 <= rsi_today <= 70
+
+            # 4. False Breakout Filter: Price Expansion Ratio >= 0.55 (ensures close near high, avoiding upper wicks)
+            range_today = high_today - low_today
+            price_expansion = ((close_today - open_today) / range_today) if range_today > 0 else 0.60
+            candle_confirmed = price_expansion >= 0.50
             
-            if price_breakout and volume_confirmed and rsi_confirmed:
+            if price_breakout and volume_confirmed and rsi_confirmed and candle_confirmed:
                 # Check stock-specific news sentiment
                 clean_sym = ticker.replace(".NS", "")
                 stock_sentiment = sentiment_analyzer.get_news_sentiment(f"{clean_sym} stock news NSE")
@@ -373,6 +380,9 @@ def screen_stocks(tickers: List[str], logs: List[str] = None, macro_data: Dict[s
                 breakout_candidates.append({
                     "ticker": ticker,
                     "close": float(close_today),
+                    "open": float(open_today),
+                    "high": float(high_today),
+                    "low": float(low_today),
                     "volume": int(vol_today),
                     "avg_volume_20": float(vol_sma_today),
                     "sma_20": float(sma_today),
@@ -380,6 +390,7 @@ def screen_stocks(tickers: List[str], logs: List[str] = None, macro_data: Dict[s
                     "volume_ratio": float(vol_today / vol_sma_today),
                     "rsi_14": float(rsi_today),
                     "atr_14": float(atr_today),
+                    "price_expansion": float(price_expansion),
                     "initial_sl": initial_sl,
                     "target": target,
                     "sector": sector

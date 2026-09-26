@@ -9,237 +9,406 @@ except Exception:
 
 import os
 import gc
+import io
 import json
 import requests
 import pandas as pd
 import numpy as np
 import yfinance as yf
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
+from urllib3.util import Retry
+from requests.adapters import HTTPAdapter
 import sentiment_analyzer
 
-PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
-ETF_POOL_PATH = os.path.join(PROJECT_ROOT, "curated_etf_pool.csv")
+# Nifty 250 List URL (Updated to Nifty 50)
+NIFTY_250_URL = "https://archives.nseindia.com/content/indices/ind_nifty50list.csv"
 
-# Load Curated ETF Metadata
-def load_etf_metadata() -> Dict[str, Dict[str, Any]]:
-    meta = {}
-    if os.path.exists(ETF_POOL_PATH):
-        try:
-            df = pd.read_csv(ETF_POOL_PATH)
-            for _, row in df.iterrows():
-                ticker = str(row.get("ticker", "")).strip().upper()
-                if ticker:
-                    meta[ticker] = {
-                        "name": str(row.get("Company Name", ticker)),
-                        "category": str(row.get("category", "Broad Market")),
-                        "source_index": str(row.get("source_index", "NIFTY")),
-                        "win_rate": float(row.get("win_rate", 70.0)),
-                        "profit_factor": float(row.get("profit_factor", 3.5))
-                    }
-        except Exception as e:
-            print(f"Error reading ETF pool: {e}")
-    return meta
+# Comprehensive Cache for Nifty 50 Company Names
+COMPANY_NAME_CACHE: Dict[str, str] = {
+    "ADANIENT.NS": "Adani Enterprises Ltd.",
+    "ADANIPORTS.NS": "Adani Ports & SEZ Ltd.",
+    "APOLLOHOSP.NS": "Apollo Hospitals Enterprise Ltd.",
+    "ASIANPAINT.NS": "Asian Paints Ltd.",
+    "AXISBANK.NS": "Axis Bank Ltd.",
+    "BAJAJ-AUTO.NS": "Bajaj Auto Ltd.",
+    "BAJFINANCE.NS": "Bajaj Finance Ltd.",
+    "BAJAJFINSV.NS": "Bajaj Finserv Ltd.",
+    "BEL.NS": "Bharat Electronics Ltd.",
+    "BHARTIARTL.NS": "Bharti Airtel Ltd.",
+    "CIPLA.NS": "Cipla Ltd.",
+    "COALINDIA.NS": "Coal India Ltd.",
+    "DRREDDY.NS": "Dr. Reddy's Laboratories Ltd.",
+    "EICHERMOT.NS": "Eicher Motors Ltd.",
+    "ETERNAL.NS": "Eternal Capital Ltd.",
+    "GRASIM.NS": "Grasim Industries Ltd.",
+    "HCLTECH.NS": "HCL Technologies Ltd.",
+    "HDFCBANK.NS": "HDFC Bank Ltd.",
+    "HDFCLIFE.NS": "HDFC Life Insurance Co. Ltd.",
+    "HINDALCO.NS": "Hindalco Industries Ltd.",
+    "HINDUNILVR.NS": "Hindustan Unilever Ltd.",
+    "ICICIBANK.NS": "ICICI Bank Ltd.",
+    "INDIGO.NS": "InterGlobe Aviation Ltd.",
+    "INDUSINDBK.NS": "IndusInd Bank Ltd.",
+    "INFY.NS": "Infosys Ltd.",
+    "ITC.NS": "ITC Ltd.",
+    "JIOFIN.NS": "Jio Financial Services Ltd.",
+    "JSWSTEEL.NS": "JSW Steel Ltd.",
+    "KOTAKBANK.NS": "Kotak Mahindra Bank Ltd.",
+    "LICI.NS": "Life Insurance Corp of India",
+    "LT.NS": "Larsen & Toubro Ltd.",
+    "LTIM.NS": "LTIMindtree Ltd.",
+    "M&M.NS": "Mahindra & Mahindra Ltd.",
+    "MARUTI.NS": "Maruti Suzuki India Ltd.",
+    "MAXHEALTH.NS": "Max Healthcare Institute Ltd.",
+    "NESTLEIND.NS": "Nestle India Ltd.",
+    "NTPC.NS": "NTPC Ltd.",
+    "ONGC.NS": "Oil & Natural Gas Corp Ltd.",
+    "POWERGRID.NS": "Power Grid Corp of India Ltd.",
+    "RELIANCE.NS": "Reliance Industries Ltd.",
+    "SBILIFE.NS": "SBI Life Insurance Co. Ltd.",
+    "SBIN.NS": "State Bank of India",
+    "SHRIRAMFIN.NS": "Shriram Finance Ltd.",
+    "SUNPHARMA.NS": "Sun Pharmaceutical Industries Ltd.",
+    "TATACONSUM.NS": "Tata Consumer Products Ltd.",
+    "TATAMOTORS.NS": "Tata Motors Ltd.",
+    "TATASTEEL.NS": "Tata Steel Ltd.",
+    "TCS.NS": "Tata Consultancy Services Ltd.",
+    "TECHM.NS": "Tech Mahindra Ltd.",
+    "TITAN.NS": "Titan Company Ltd.",
+    "TMPV.NS": "Tata Motors PV Ltd.",
+    "TRENT.NS": "Trent Ltd.",
+    "ULTRACEMCO.NS": "UltraTech Cement Ltd.",
+    "WIPRO.NS": "Wipro Ltd."
+}
 
-ETF_METADATA = load_etf_metadata()
+_company_cache = None
 
-def get_etf_tickers() -> List[str]:
-    """Returns the list of 20 liquid NSE ETFs."""
-    if ETF_METADATA:
-        return list(ETF_METADATA.keys())
-    return [
-        "NIFTYBEES.NS", "BANKBEES.NS", "JUNIORBEES.NS", "MID150BEES.NS", "SETFNIF50.NS",
-        "SETFNIFBK.NS", "NV20BEES.NS", "ALPHA.NS", "ICICIB22.NS", "CPSEETF.NS",
-        "ITBEES.NS", "PSUBNKBEES.NS", "AUTOBEES.NS", "PHARMABEES.NS", "CONSUMBEES.NS",
-        "GOLDBEES.NS", "HDFCGOLD.NS", "SILVERBEES.NS", "MON100.NS", "MAFANG.NS"
-    ]
-
-def get_curated_tickers(pool_type: str = "etf") -> List[str]:
-    """Compatibility alias for ETF Strategy 1 runner."""
-    return get_etf_tickers()
-
-def get_stock_sector(ticker: str) -> str:
-    """Returns asset category (Broad Market, Sectoral, Commodities, International)."""
+def get_company_name(ticker: str) -> str:
+    """
+    Returns the official company name for an NSE ticker symbol.
+    """
+    global _company_cache
+    if _company_cache is None:
+        cache_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "nse_company_names.json")
+        if os.path.exists(cache_path):
+            try:
+                with open(cache_path, "r", encoding="utf-8") as f:
+                    _company_cache = json.load(f)
+            except Exception:
+                _company_cache = {}
+        else:
+            _company_cache = {}
     sym = ticker.strip().upper()
     if not sym.endswith(".NS"):
         sym = f"{sym}.NS"
-    return ETF_METADATA.get(sym, {}).get("category", "Broad Market")
+    return _company_cache.get(sym) or _company_cache.get(sym.replace(".NS", "")) or COMPANY_NAME_CACHE.get(sym, sym.replace(".NS", ""))
 
-def get_company_name(ticker: str) -> str:
-    """Returns ETF official fund name."""
-    sym = str(ticker).strip().upper()
-    clean_sym = sym.replace(".NS", "")
-    with_ns = f"{clean_sym}.NS"
-    return ETF_METADATA.get(with_ns, {}).get("name", ETF_METADATA.get(clean_sym, {}).get("name", clean_sym))
+# Comprehensive Cache for Nifty 50 Sectors / Industries
+SECTOR_CACHE: Dict[str, str] = {
+    "ADANIENT.NS": "Metals & Mining",
+    "ADANIPORTS.NS": "Services",
+    "APOLLOHOSP.NS": "Healthcare",
+    "ASIANPAINT.NS": "Consumer Durables",
+    "AXISBANK.NS": "Financial Services",
+    "BAJAJ-AUTO.NS": "Automobile and Auto Components",
+    "BAJFINANCE.NS": "Financial Services",
+    "BAJAJFINSV.NS": "Financial Services",
+    "BEL.NS": "Capital Goods",
+    "BHARTIARTL.NS": "Telecommunication",
+    "CIPLA.NS": "Healthcare",
+    "COALINDIA.NS": "Oil Gas & Consumable Fuels",
+    "DRREDDY.NS": "Healthcare",
+    "EICHERMOT.NS": "Automobile and Auto Components",
+    "ETERNAL.NS": "Consumer Services",
+    "GRASIM.NS": "Construction Materials",
+    "HCLTECH.NS": "Information Technology",
+    "HDFCBANK.NS": "Financial Services",
+    "HDFCLIFE.NS": "Financial Services",
+    "HINDALCO.NS": "Metals & Mining",
+    "HINDUNILVR.NS": "Fast Moving Consumer Goods",
+    "ICICIBANK.NS": "Financial Services",
+    "INDIGO.NS": "Services",
+    "INDUSINDBK.NS": "Financial Services",
+    "INFY.NS": "Information Technology",
+    "ITC.NS": "Fast Moving Consumer Goods",
+    "JIOFIN.NS": "Financial Services",
+    "JSWSTEEL.NS": "Metals & Mining",
+    "KOTAKBANK.NS": "Financial Services",
+    "LICI.NS": "Financial Services",
+    "LT.NS": "Construction",
+    "LTIM.NS": "Information Technology",
+    "M&M.NS": "Automobile and Auto Components",
+    "MARUTI.NS": "Automobile and Auto Components",
+    "MAXHEALTH.NS": "Healthcare",
+    "NESTLEIND.NS": "Fast Moving Consumer Goods",
+    "NTPC.NS": "Power",
+    "ONGC.NS": "Oil Gas & Consumable Fuels",
+    "POWERGRID.NS": "Power",
+    "RELIANCE.NS": "Oil Gas & Consumable Fuels",
+    "SBILIFE.NS": "Financial Services",
+    "SBIN.NS": "Financial Services",
+    "SHRIRAMFIN.NS": "Financial Services",
+    "SUNPHARMA.NS": "Healthcare",
+    "TATACONSUM.NS": "Fast Moving Consumer Goods",
+    "TATAMOTORS.NS": "Automobile and Auto Components",
+    "TATASTEEL.NS": "Metals & Mining",
+    "TCS.NS": "Information Technology",
+    "TECHM.NS": "Information Technology",
+    "TITAN.NS": "Consumer Durables",
+    "TMPV.NS": "Automobile and Auto Components",
+    "TRENT.NS": "Consumer Services",
+    "ULTRACEMCO.NS": "Construction Materials",
+    "WIPRO.NS": "Information Technology"
+}
 
-def get_stock_company(ticker: str) -> str:
-    return get_company_name(ticker)
+def get_stock_sector(ticker: str) -> str:
+    """
+    Returns the official industry/sector classification for an NSE ticker symbol.
+    """
+    sym = ticker.strip().upper()
+    if not sym.endswith(".NS"):
+        sym = f"{sym}.NS"
+    return SECTOR_CACHE.get(sym, "Diversified")
+
+def get_nifty_250_tickers() -> List[str]:
+    """
+    Fetches the list of Nifty 50 symbols from the NSE archive and formats them for yfinance (.NS).
+    Includes a robust fallback list of major NSE tickers in case of network issues.
+    """
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
+    }
+    try:
+        response = requests.get(NIFTY_250_URL, headers=headers, timeout=10)
+        if response.status_code == 200:
+            df = pd.read_csv(io.StringIO(response.text))
+            if 'Symbol' in df.columns:
+                for _, row in df.iterrows():
+                    s = str(row['Symbol']).strip().upper()
+                    c = str(row['Company Name']).strip() if 'Company Name' in df.columns else ""
+                    ind = str(row['Industry']).strip() if 'Industry' in df.columns else ""
+                    if s:
+                        ticker_ns = f"{s}.NS"
+                        if c:
+                            COMPANY_NAME_CACHE[ticker_ns] = c
+                        if ind:
+                            SECTOR_CACHE[ticker_ns] = ind
+                            
+                symbols = df['Symbol'].tolist()
+                # Format for yfinance
+                tickers = [f"{sym.strip()}.NS" for sym in symbols if isinstance(sym, str)]
+                return tickers
+    except Exception as e:
+        print(f"Error fetching Nifty 50 from NSE: {e}. Using fallback tickers.")
+    
+    # Fallback to major NSE liquid tickers if download fails
+    fallback = [
+        "RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "ICICIBANK.NS", "INFY.NS",
+        "BHARTIARTL.NS", "ITC.NS", "SBIN.NS", "LICI.NS", "LTIM.NS",
+        "LT.NS", "HCLTECH.NS", "ASIANPAINT.NS", "AXISBANK.NS", "MARUTI.NS",
+        "SUNPHARMA.NS", "KOTAKBANK.NS", "ULTRACEMCO.NS", "NTPC.NS", "TATAMOTORS.NS",
+        "TITAN.NS", "POWERGRID.NS", "ADANIENT.NS", "BAJFINANCE.NS", "ADANIPORTS.NS",
+        "COALINDIA.NS", "TATASTEEL.NS", "INDUSINDBK.NS", "JIOFIN.NS", "GRASIM.NS",
+        "JSWSTEEL.NS", "HINDALCO.NS", "NESTLEIND.NS", "ADANIPOWER.NS", "HINDUNILVR.NS"
+    ]
+    return fallback
 
 def calculate_rsi(series: pd.Series, period: int = 14) -> pd.Series:
+    """
+    Calculates the Relative Strength Index (RSI) using Wilder's smoothing technique.
+    """
     delta = series.diff()
     gain = delta.clip(lower=0)
     loss = -delta.clip(upper=0)
+    
+    # Standard Wilder's smoothing using EWM
     avg_gain = gain.ewm(alpha=1/period, adjust=False).mean()
     avg_loss = loss.ewm(alpha=1/period, adjust=False).mean()
-    rs = avg_gain / avg_loss.replace(0, np.nan)
+    
+    rs = avg_gain / avg_loss
     rsi = 100 - (100 / (1 + rs))
-    return rsi.fillna(50)
+    return rsi
 
 def calculate_atr(df: pd.DataFrame, period: int = 14) -> pd.Series:
+    """
+    Calculates the Average True Range (ATR) using Wilder's smoothing technique.
+    """
     high = df['High']
     low = df['Low']
     prev_close = df['Close'].shift(1)
+    
     tr1 = high - low
     tr2 = (high - prev_close).abs()
     tr3 = (low - prev_close).abs()
+    
     tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
-    return tr.ewm(alpha=1/period, adjust=False).mean()
+    atr = tr.ewm(alpha=1/period, adjust=False).mean()
+    return atr
 
-def screen_stocks(
-    tickers: Optional[List[str]] = None, 
-    logs: Optional[List[str]] = None,
-    macro_data: Optional[Dict[str, Any]] = None,
-    check_sentiment: bool = True
-) -> List[Dict[str, Any]]:
+def screen_stocks(tickers: List[str], logs: List[str] = None, macro_data: Dict[str, Any] = None) -> List[Dict[str, Any]]:
     """
-    ETF Strategy 1: Systematic Dual-Target Swing Screener
-    - Universe: 20 Liquid NSE ETFs (Indices, Sectoral, Commodities, Global Tech)
-    - Breakout: Close crosses above 20-day SMA
-    - Volume Surge: Volume > 1.15x 20-day Vol SMA (Optimized for ETF AP/MM flow)
-    - Momentum: RSI 14 between 50 and 70
-    - Targets: Target 1 at +2.0x ATR (50% partial), Target 2 at +4.5x ATR (runner)
-    - Stop Loss: Dynamic 2.0x ATR below entry
+    Screens the list of tickers for Strategy v2:
+    1. Today's close > Today's 20 DMA
+    2. Yesterday's close <= Yesterday's 20 DMA
+    3. Today's volume > 2.5 * 20-day average volume (> 250% breakout threshold)
+    4. 14-day RSI is between 50 and 70 (bullish momentum but not overbought)
+    5. Initial SL sized to 2 * ATR(14) below entry (no fixed clamp)
+    6. Sector mapped for portfolio concentration limits (Max 3/sector)
     """
     if logs is None:
         logs = []
-    if tickers is None:
-        tickers = get_etf_tickers()
-
-    print(f"=== [ETF Strategy 1] Scanning {len(tickers)} Liquid NSE ETFs ===")
-
-    # 1. Macro Guardrails
-    if macro_data is None and check_sentiment:
-        try:
-            macro_data = sentiment_analyzer.get_comprehensive_market_macro_sentiment()
-        except Exception as e:
-            print(f"Notice: macro sentiment check failed: {e}")
-
-    if macro_data:
-        breakout_guard = macro_data.get("guardrail_breakouts", "ALLOW")
-        regime = macro_data.get("market_regime", "RISK-ON")
-        badge = macro_data.get("color_badge", "🟢")
-        color = macro_data.get("color", "GREEN")
         
-        if breakout_guard == "HALT" or color == "RED":
-            msg = f"{badge} Macro Alert: Regime is {regime} (Breakouts: HALT). High market volatility."
-            print(msg)
-            logs.append(msg)
-        elif breakout_guard == "SELECTIVE" or color == "YELLOW":
-            msg = f"{badge} Macro Caution: Regime is {regime} (Breakouts: SELECTIVE). Prioritizing high-liquidity ETFs."
-            print(msg)
-            logs.append(msg)
-        else:
-            msg = f"{badge} Macro Sentiment: {regime} (Breakouts: ALLOW). ETF Swing trading active."
-            print(msg)
-            logs.append(msg)
+    # 1. Comprehensive Global & Indian Macro Guardrail Check
+    if macro_data is None:
+        macro_data = sentiment_analyzer.get_comprehensive_market_macro_sentiment()
+        
+    breakout_guard = macro_data.get("guardrail_breakouts", "ALLOW")
+    regime = macro_data.get("market_regime", "RISK-ON")
+    badge = macro_data.get("color_badge", "🟢")
+    color = macro_data.get("color", "GREEN")
+    
+    if breakout_guard == "HALT" or color == "RED":
+        msg = f"[!] {badge} Macro Guardrail Alert: Market regime is {regime} (Breakouts: HALT). All new breakout entries are paused to protect capital."
+        print(msg)
+        logs.append(msg)
+        return []
+    elif breakout_guard == "SELECTIVE" or color == "YELLOW":
+        msg = f"[i] {badge} Macro Guardrail Caution: Market regime is {regime} (Breakouts: SELECTIVE). Prioritizing high-conviction volume breakouts only."
+        print(msg)
+        logs.append(msg)
+    else:
+        msg = f"[i] {badge} Macro Market Sentiment: {regime} (Breakout entries: ALLOW). Normal trading active."
+        print(msg)
+        logs.append(msg)
 
+    breakout_candidates = []
+    
+    # Download data in batches to be fast
+    # Period 60d is sufficient to calculate 20 DMA (and 20 EMA), 14-day RSI, and 14-day ATR
+    print(f"Downloading historical data for {len(tickers)} tickers...")
     try:
-        raw_data = yf.download(
-            tickers,
-            period="60d",
-            interval="1d",
-            group_by="ticker",
+        data = yf.download(
+            tickers, 
+            period="60d", 
+            interval="1d", 
+            group_by="ticker", 
             threads=True,
-            progress=False,
-            timeout=20
+            progress=False
         )
     except Exception as e:
-        print(f"Error downloading ETF batch data: {e}")
-        logs.append(f"Error downloading ETF batch data: {e}")
+        print(f"Error during batch download: {e}")
         return []
-
-    vol_multiplier = float(os.environ.get("VOLUME_MULTIPLIER", "1.15"))
-    candidates = []
-
+    
     for ticker in tickers:
         try:
-            if isinstance(raw_data.columns, pd.MultiIndex):
-                if ticker not in raw_data.columns.levels[0]:
+            # Handle single vs multi-index dataframes from yfinance
+            if isinstance(data.columns, pd.MultiIndex):
+                if ticker not in data.columns.levels[0]:
                     continue
-                df = raw_data[ticker].dropna().copy()
+                df = data[ticker].dropna()
             else:
-                if ticker not in raw_data:
+                if ticker not in data:
                     continue
-                df = raw_data[[ticker]].dropna().copy()
-
+                df = data[[ticker]].dropna()
+                
             if len(df) < 25:
                 continue
-
-            df['SMA_20'] = df['Close'].rolling(window=20).mean()
-            df['EMA_20'] = df['Close'].ewm(span=20, adjust=False).mean()
+            
+            # Calculate daily moving averages, RSI, and ATR(14)
+            df['20_SMA'] = df['Close'].rolling(window=20).mean()
+            df['20_EMA'] = df['Close'].ewm(span=20, adjust=False).mean()
             df['Vol_SMA_20'] = df['Volume'].rolling(window=20).mean()
             df['RSI_14'] = calculate_rsi(df['Close'], 14)
             df['ATR_14'] = calculate_atr(df, 14)
-
+            
+            # Check for NaN in indicators
+            if (df['20_SMA'].isna().iloc[-1] or 
+                df['Vol_SMA_20'].isna().iloc[-1] or 
+                df['RSI_14'].isna().iloc[-1] or 
+                df['ATR_14'].isna().iloc[-1]):
+                continue
+                
+            # Current values (last row)
             close_today = float(df['Close'].iloc[-1])
-            close_yesterday = float(df['Close'].iloc[-2])
-            sma_today = float(df['SMA_20'].iloc[-1])
-            sma_yesterday = float(df['SMA_20'].iloc[-2])
+            open_today = float(df['Open'].iloc[-1]) if 'Open' in df else close_today
+            high_today = float(df['High'].iloc[-1]) if 'High' in df else close_today
+            low_today = float(df['Low'].iloc[-1]) if 'Low' in df else close_today
             vol_today = float(df['Volume'].iloc[-1])
+            sma_today = float(df['20_SMA'].iloc[-1])
+            ema_today = float(df['20_EMA'].iloc[-1])
             vol_sma_today = float(df['Vol_SMA_20'].iloc[-1])
             rsi_today = float(df['RSI_14'].iloc[-1])
             atr_today = float(df['ATR_14'].iloc[-1])
-
-            # Turnover / Liquidity filter: Daily average turnover >= Rs 5 Lakhs
-            daily_turnover = vol_sma_today * close_today
-            if daily_turnover < 500000.0:
-                continue
-            if np.isnan(sma_today) or np.isnan(vol_sma_today) or np.isnan(rsi_today) or np.isnan(atr_today):
+            
+            # Data validation guardrails: block penny stocks (< Rs 20) and low volume (< 50,000 shares)
+            if close_today < 20.0 or vol_sma_today < 50000.0:
                 continue
 
-            # Technical Conditions: SMA Breakout, ETF Volume Multiplier (1.15x), Bullish RSI (50-70)
+            # Previous values (second last row)
+            close_yesterday = float(df['Close'].iloc[-2])
+            sma_yesterday = float(df['20_SMA'].iloc[-2])
+            
+            # Conditions for Strategy v2:
+            # 1. Price Breakout over 20 SMA
             price_breakout = (close_yesterday <= sma_yesterday) and (close_today > sma_today)
-            vol_confirmed = vol_today > (vol_multiplier * vol_sma_today)
-            rsi_confirmed = 50.0 <= rsi_today <= 70.0
+            # 2. Volume threshold upgraded to > 2.5x (250%) of 20-day avg volume
+            volume_confirmed = vol_today > (2.5 * vol_sma_today)
+            # 3. 14-period RSI between 50 and 70
+            rsi_confirmed = 50 <= rsi_today <= 70
 
-            if price_breakout and vol_confirmed and rsi_confirmed:
-                if atr_today <= 0.01:
-                    atr_today = close_today * 0.015
-
-                sl_price = round(close_today - (2.0 * atr_today), 2)
-                target_1 = round(close_today + (2.0 * atr_today), 2)
-                target_2 = round(close_today + (4.5 * atr_today), 2)
-                vol_ratio = round(vol_today / vol_sma_today, 2)
-
-                fund_name = get_company_name(ticker)
-                category = get_stock_sector(ticker)
-
-                candidates.append({
+            # 4. False Breakout Filter: Price Expansion Ratio >= 0.55 (ensures close near high, avoiding upper wicks)
+            range_today = high_today - low_today
+            price_expansion = ((close_today - open_today) / range_today) if range_today > 0 else 0.60
+            candle_confirmed = price_expansion >= 0.50
+            
+            if price_breakout and volume_confirmed and rsi_confirmed and candle_confirmed:
+                # Check stock-specific news sentiment
+                clean_sym = ticker.replace(".NS", "")
+                stock_sentiment = sentiment_analyzer.get_news_sentiment(f"{clean_sym} stock news NSE")
+                if stock_sentiment == "NEGATIVE":
+                    msg = f"[!] Discarded {ticker}: Stock News Sentiment is NEGATIVE."
+                    print(msg)
+                    logs.append(msg)
+                    continue
+                    
+                # v2 Stop-loss: 2x ATR(14) below entry, no fixed clamp
+                initial_sl = float(close_today - (2.0 * atr_today))
+                risk_per_share = float(2.0 * atr_today)
+                target = float(close_today + (2.0 * risk_per_share)) # 1:2 Risk to Reward
+                sector = get_stock_sector(ticker)
+                
+                breakout_candidates.append({
                     "ticker": ticker,
-                    "company": fund_name,
-                    "sector": category,
-                    "close": round(close_today, 2),
+                    "close": float(close_today),
+                    "open": float(open_today),
+                    "high": float(high_today),
+                    "low": float(low_today),
                     "volume": int(vol_today),
-                    "volume_ratio": vol_ratio,
-                    "rsi": round(rsi_today, 2),
-                    "rsi_14": round(rsi_today, 2),
-                    "atr": round(atr_today, 2),
-                    "atr_14": round(atr_today, 2),
-                    "stop_loss": sl_price,
-                    "target_1": target_1,
-                    "target_2": target_2,
-                    "sentiment": "BULLISH"
+                    "avg_volume_20": float(vol_sma_today),
+                    "sma_20": float(sma_today),
+                    "ema_20": float(ema_today),
+                    "volume_ratio": float(vol_today / vol_sma_today),
+                    "rsi_14": float(rsi_today),
+                    "atr_14": float(atr_today),
+                    "price_expansion": float(price_expansion),
+                    "initial_sl": initial_sl,
+                    "target": target,
+                    "sector": sector
                 })
-        except Exception:
+        except Exception as e:
+            # Silently catch individual ticker errors
             continue
-
-    del raw_data
+            
+    # Sort candidates by volume breakout strength (volume_ratio) descending
+    breakout_candidates.sort(key=lambda x: x['volume_ratio'], reverse=True)
     gc.collect()
-
-    candidates.sort(key=lambda x: x['volume_ratio'], reverse=True)
-    print(f"Found {len(candidates)} qualified ETF Strategy 1 candidate(s).")
-    return candidates
+    return breakout_candidates
 
 if __name__ == "__main__":
-    cands = screen_stocks(check_sentiment=False)
-    for c in cands[:10]:
-        print(f"{c['ticker']} ({c['company']}) | Cat: {c['sector']} | P: Rs {c['close']} | Vol: {c['volume_ratio']}x | RSI: {c['rsi']} | T1: {c['target_1']} | T2: {c['target_2']} | SL: {c['stop_loss']}")
+    print("Testing screener...")
+    tickers = get_nifty_250_tickers()
+    print(f"Fetched {len(tickers)} tickers.")
+    candidates = screen_stocks(tickers[:20]) # Test with a small batch
+    print(f"Found {len(candidates)} candidates:")
+    for c in candidates:
+        print(c)

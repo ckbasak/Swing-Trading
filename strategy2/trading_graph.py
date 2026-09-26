@@ -8,54 +8,91 @@ import screener
 import portfolio_manager
 import dhan_client
 import sentiment_analyzer
+import market_regime
+import portfolio_risk_engine
+import dynamic_sizing
+import correlation_sentinel
 
 class TradingState(TypedDict, total=False):
     candidates: List[Dict[str, Any]]
     open_positions: List[Dict[str, Any]]
     portfolio_value: float
     cash_balance: float
+    peak_portfolio_value: float
     risk_per_trade: float
     trades_to_execute: List[Dict[str, Any]]
     execute_trades: bool
     macro_sentiment: Dict[str, Any]
+    market_regime: Dict[str, Any]
+    portfolio_risk_status: Dict[str, Any]
     logs: List[str]
 
 def sync_portfolio_node(state: TradingState) -> Dict[str, Any]:
     """
-    Node 1: Syncs current portfolio, processes exits, evaluates macro guardrails, and retrieves latest account details.
+    Node 1: Syncs current portfolio, processes exits, evaluates macro guardrails,
+    computes composite Market Regime & Central Portfolio Risk Status.
     """
     logs = state.get("logs", [])
-    logs.append("--- Node: Syncing Portfolio & Macro Guardrails ---")
+    logs.append("--- Node: Syncing Portfolio, Market Regime & Portfolio Risk Engine ---")
     
     try:
         client = portfolio_manager.get_gspread_client()
         sh = portfolio_manager.get_or_create_portfolio_sheet(client)
         
-        # Analyze comprehensive Global & Indian market macro sentiment
+        # 1. Analyze comprehensive market macro sentiment
         macro_data = sentiment_analyzer.get_comprehensive_market_macro_sentiment()
         
-        # Sync open positions with macro guardrail directives
+        # 2. Sync open positions with macro guardrail directives
         sync_logs = portfolio_manager.sync_portfolio(sh, macro_data=macro_data)
         logs.extend(sync_logs)
         
-        # Get updated account details
+        # 3. Get updated account details
         account = portfolio_manager.get_account_details(sh)
-        portfolio_value = account["Total Portfolio Value"]
-        cash_balance = account["Cash Balance"]
-        risk_pct = account.get("Risk Percent", 0.075)
+        portfolio_value = float(account["Total Portfolio Value"])
+        cash_balance = float(account["Cash Balance"])
+        risk_pct = float(account.get("Risk Percent", 0.015))
         
         open_positions = portfolio_manager.get_open_positions(sh)
         
-        logs.append(f"Portfolio Value: INR {portfolio_value:,.2f}")
-        logs.append(f"Cash Balance: INR {cash_balance:,.2f}")
-        logs.append(f"Risk per trade: {risk_pct * 100:.1f}% (INR {portfolio_value * risk_pct:,.2f})")
+        # Track Peak Equity for Drawdown Curve
+        peak_equity = float(account.get("Peak Portfolio Value", portfolio_value))
+        if portfolio_value > peak_equity:
+            peak_equity = portfolio_value
+            
+        # 4. Calculate V2 Market Regime Score
+        regime_data = market_regime.get_market_regime(macro_sentiment_data=macro_data)
+        
+        # 5. Evaluate Central Portfolio Risk Engine
+        risk_engine = portfolio_risk_engine.get_risk_engine()
+        risk_status = risk_engine.evaluate_portfolio_risk(
+            open_positions=open_positions,
+            portfolio_value=portfolio_value,
+            cash_balance=cash_balance,
+            peak_portfolio_value=peak_equity,
+            market_regime=regime_data
+        )
+        
+        logs.append(f"Portfolio Value: INR {portfolio_value:,.2f} | Peak Value: INR {peak_equity:,.2f}")
+        logs.append(f"Cash Balance: INR {cash_balance:,.2f} (Actual: {risk_status['actual_cash_pct']}%, Min Required: {risk_status['min_cash_required_pct']}%)")
+        logs.append(
+            f"Market Regime Score: {regime_data['regime_score']}/100 | "
+            f"Classification: {regime_data['color']} {regime_data['classification']} "
+            f"(Max Sizing: {regime_data['max_sizing_multiplier']*100:.0f}%)"
+        )
+        logs.append(
+            f"Portfolio Risk Status: Total Risk = {risk_status['current_risk_pct']}% / {risk_status['max_allowed_risk_pct']}% Cap | "
+            f"Drawdown = -{risk_status['drawdown_pct']}% (Multiplier: {risk_status['drawdown_multiplier']}x)"
+        )
         
         return {
             "open_positions": open_positions,
             "portfolio_value": portfolio_value,
             "cash_balance": cash_balance,
+            "peak_portfolio_value": peak_equity,
             "risk_per_trade": portfolio_value * risk_pct,
             "macro_sentiment": macro_data,
+            "market_regime": regime_data,
+            "portfolio_risk_status": risk_status,
             "logs": logs
         }
     except Exception as e:
@@ -64,10 +101,10 @@ def sync_portfolio_node(state: TradingState) -> Dict[str, Any]:
 
 def scan_market_node(state: TradingState) -> Dict[str, Any]:
     """
-    Node 2: Runs the Nifty 50 screener to find new Strategy v2 breakout candidates.
+    Node 2: Runs the Nifty 50 screener to find new breakout candidates with false-breakout filters.
     """
     logs = state.get("logs", [])
-    logs.append("--- Node: Scanning Market ---")
+    logs.append("--- Node: Scanning Market & Filtering False Breakouts ---")
     
     try:
         tickers = screener.get_nifty_250_tickers()
@@ -79,8 +116,9 @@ def scan_market_node(state: TradingState) -> Dict[str, Any]:
         for idx, c in enumerate(candidates):
             logs.append(
                 f"Candidate {idx+1}: {c['ticker']} ({c.get('sector', 'Unknown')}) | "
-                f"Close: {c['close']:.2f} | Volume Ratio: {c['volume_ratio']:.2f}x | "
-                f"RSI(14): {c.get('rsi_14', 0.0):.1f} | ATR(14): {c.get('atr_14', 0.0):.2f}"
+                f"Close: {c['close']:.2f} | Vol Ratio: {c['volume_ratio']:.2f}x | "
+                f"RSI(14): {c.get('rsi_14', 0.0):.1f} | ATR(14): {c.get('atr_14', 0.0):.2f} | "
+                f"Price Expansion: {c.get('price_expansion', 0.60):.2f}"
             )
             
         return {
@@ -93,144 +131,124 @@ def scan_market_node(state: TradingState) -> Dict[str, Any]:
 
 def calculate_positions_node(state: TradingState) -> Dict[str, Any]:
     """
-    Node 3: Enforces Strategy v2 sizing & risk rules:
-    - 1.5% portfolio risk per trade
-    - Stop Loss sized to 2× ATR(14) below entry (no fixed clamp)
-    - Sector Concentration Limit: Max 3 open positions per sector
-    - 90% max portfolio exposure guardrail (10% cash buffer)
-    - Daily purchase limit of 3 breakouts (strongest volume ratio first)
+    Node 3: Central Risk & Dynamic Position Sizing Gate:
+    1. Cross-Strategy De-duplication & Correlation Matrix Blocker (rho <= 0.75)
+    2. Central Portfolio Risk Engine Validation (6% risk cap, 20% sector cap, 8% stock cap, cash floor)
+    3. Dynamic Sizing Formula (Regime + Drawdown + Quality + Volatility)
+    4. Genuine NO-TRADE Gate output if capital preservation is warranted.
     """
     logs = state.get("logs", [])
-    logs.append("--- Node: Calculating Position Sizing ---")
+    logs.append("--- Node: Central Portfolio Risk & Dynamic Position Sizing Gate ---")
     
     candidates = state.get("candidates", [])
     open_positions = state.get("open_positions", [])
-    cash = state.get("cash_balance", 0.0)
-    risk_per_trade = state.get("risk_per_trade", 0.0)
     portfolio_value = state.get("portfolio_value", 0.0)
+    cash_balance = state.get("cash_balance", 0.0)
+    regime_data = state.get("market_regime", {})
+    risk_status = state.get("portfolio_risk_status", {})
     
-    # Calculate current open holdings value
-    open_value = 0.0
-    for p in open_positions:
-        try:
-            qty = int(p.get("Quantity", 0))
-            entry = float(p.get("Entry Price", 0.0))
-            open_value += qty * entry
-        except Exception:
-            pass
-            
-    max_open_value = portfolio_value * 0.90
+    risk_engine = portfolio_risk_engine.get_risk_engine()
+    sizer = dynamic_sizing.get_dynamic_sizer()
+    corr_sentinel = correlation_sentinel.get_correlation_sentinel()
     
-    existing_tickers = {p["Ticker"] for p in open_positions}
-    
-    # Track existing open positions per sector (v2: Max 3 per sector)
-    sector_counts: Dict[str, int] = {}
-    for p in open_positions:
-        sec = screener.get_stock_sector(p.get("Ticker", ""))
-        sector_counts[sec] = sector_counts.get(sec, 0) + 1
-        
     trades_to_execute = []
-    remaining_cash = cash
     buy_count = 0
-    
-    # Sort candidates by volume ratio descending (strongest breakout first)
+    no_trade_reasons = []
+
+    # Check 1: Regime Halt
+    if regime_data.get("classification") in ["BEAR_RISK_OFF", "EXTREME_SHOCK"]:
+        msg = f"🛑 NO-TRADE DECISION: Market Regime is {regime_data.get('classification')}. All buy entries halted."
+        logs.append(msg)
+        return {"trades_to_execute": [], "logs": logs}
+
+    # Check 2: Capital Preservation Mode
+    if risk_status.get("drawdown_status") == "CAPITAL_PRESERVATION_MODE":
+        msg = f"🛑 NO-TRADE DECISION: Portfolio drawdown (-{risk_status.get('drawdown_pct')}%) reached max limit. Capital Preservation Mode active."
+        logs.append(msg)
+        return {"trades_to_execute": [], "logs": logs}
+
+    # Sort candidates by volume breakout ratio descending
     sorted_candidates = sorted(candidates, key=lambda x: x.get("volume_ratio", 0.0), reverse=True)
-    
+
     for c in sorted_candidates:
         ticker = c["ticker"]
-        candidate_sector = c.get("sector") or screener.get_stock_sector(ticker)
-        
-        # Skip if already in holdings (Double Buy Blocker)
-        if ticker in existing_tickers:
-            logs.append(f"Skipping {ticker}: Already in holdings.")
+        sector = c.get("sector") or screener.get_stock_sector(ticker)
+
+        # 1. De-Duplication Check
+        dedup_ok, dedup_msg = corr_sentinel.check_deduplication(ticker, open_positions, trades_to_execute)
+        if not dedup_ok:
+            logs.append(f"Skipping {ticker}: {dedup_msg}")
+            no_trade_reasons.append(f"{ticker}: {dedup_msg}")
             continue
-            
-        # Daily purchase limit guardrail (Max 3 buys per day)
+
+        # 2. Daily purchase limit (Max 3 trades)
         if buy_count >= 3:
             logs.append(f"Skipping {ticker}: Daily purchase limit of 3 trades reached.")
-            continue
-            
-        # Sector concentration guardrail (v2: Max 3 open positions per sector)
-        current_sector_positions = sector_counts.get(candidate_sector, 0)
-        if current_sector_positions >= 3:
-            logs.append(f"Skipping {ticker}: Sector concentration limit reached (Already 3 open in {candidate_sector}).")
-            continue
-            
-        entry_price = c["close"]
-        
-        # Strategy v2 Stop-loss: 2x ATR(14) below entry, no fixed clamp
-        atr_14 = c.get("atr_14")
-        if atr_14 is not None and atr_14 > 0:
-            risk_per_share = 2.0 * atr_14
-            initial_sl = entry_price - risk_per_share
-        else:
-            risk_per_share = max(entry_price - c.get("sma_20", entry_price * 0.95), entry_price * 0.03)
-            initial_sl = entry_price - risk_per_share
-            
-        if risk_per_share <= 0:
-            logs.append(f"Skipping {ticker}: Risk per share is <= 0.")
-            continue
-            
-        # Unified Capital Allocation Sizing: Entry Value ≈ 5% of Portfolio Capital (matching Strategies 1 & 3)
-        target_trade_val = portfolio_value * risk_pct
-        qty = math.floor(target_trade_val / entry_price)
-        
-        if qty <= 0:
-            logs.append(f"Skipping {ticker}: Calculated quantity is 0.")
-            continue
-            
-        total_cost = qty * entry_price
-        
-        # Exposure Guardrail: Ensure total open value does not exceed 90% of portfolio
-        if open_value + total_cost > max_open_value:
-            allowed_cost = max_open_value - open_value
-            if allowed_cost <= 0:
-                logs.append(f"Skipping {ticker}: Max 90% portfolio exposure allocation reached.")
-                continue
-            scaled_qty = math.floor(allowed_cost / entry_price)
-            if scaled_qty < qty:
-                qty = scaled_qty
-                total_cost = qty * entry_price
-                if qty <= 0:
-                    logs.append(f"Skipping {ticker}: Max 90% portfolio exposure allocation reached.")
-                    continue
-                logs.append(f"Scaled down quantity for {ticker} to {qty} to respect 90% portfolio exposure limit.")
-        
-        # Cash limit check
-        if total_cost > remaining_cash:
-            qty = math.floor(remaining_cash / entry_price)
-            total_cost = qty * entry_price
-            if qty <= 0:
-                logs.append(f"Skipping {ticker}: Insufficient cash to buy even 1 share. Need: {entry_price:.2f}, Available: {remaining_cash:.2f}")
-                continue
-            logs.append(f"Scaled down quantity for {ticker} to {qty} due to cash limit.")
-            
-        # Profit target: fixed 1:2 risk-to-reward ratio
-        target = entry_price + (2.0 * risk_per_share)
-        
-        trades_to_execute.append({
-            "ticker": ticker,
-            "entry_price": entry_price,
-            "quantity": qty,
-            "initial_sl": round(initial_sl, 2),
-            "target": round(target, 2),
-            "cost": round(total_cost, 2),
-            "sector": candidate_sector,
-            "atr_14": round(atr_14, 2) if atr_14 else 0.0
-        })
-        
-        # Update trackers
-        remaining_cash -= total_cost
-        open_value += total_cost
-        buy_count += 1
-        sector_counts[candidate_sector] = sector_counts.get(candidate_sector, 0) + 1
-        
-        sl_pct = ((entry_price - initial_sl) / entry_price) * 100.0
-        logs.append(
-            f"Prepared trade: Buy {qty} shares of {ticker} ({candidate_sector}) @ {entry_price:.2f} "
-            f"(SL: {initial_sl:.2f} [-{sl_pct:.2f}%], Target: {target:.2f}, Cost: ₹{total_cost:,.2f})"
+            break
+
+        # 3. Dynamic Position Sizing
+        size_res = sizer.calculate_position_size(
+            candidate=c,
+            portfolio_value=portfolio_value,
+            market_regime=regime_data,
+            portfolio_risk_status=risk_status
         )
-        
+
+        qty = size_res.get("quantity", 0)
+        cost = size_res.get("total_cost", 0.0)
+        proposed_risk = size_res.get("actual_risk_dollars", 0.0)
+
+        if qty <= 0:
+            logs.append(f"Skipping {ticker}: Dynamic sizer returned quantity 0.")
+            continue
+
+        # 4. Central Portfolio Risk Engine Validation
+        approved, rej_reason = risk_engine.validate_trade_permission(
+            candidate_ticker=ticker,
+            candidate_sector=sector,
+            proposed_cost=cost,
+            proposed_risk=proposed_risk,
+            portfolio_risk_status=risk_status,
+            market_regime=regime_data
+        )
+
+        if not approved:
+            logs.append(f"Skipping {ticker}: {rej_reason}")
+            no_trade_reasons.append(f"{ticker}: {rej_reason}")
+            continue
+
+        # 5. Correlation Matrix Blocker (bar_rho <= 0.75)
+        corr_ok, avg_rho, corr_msg = corr_sentinel.validate_correlation(ticker, open_positions)
+        if not corr_ok:
+            logs.append(f"Skipping {ticker}: {corr_msg}")
+            no_trade_reasons.append(f"{ticker}: {corr_msg}")
+            continue
+
+        trade_obj = {
+            "ticker": ticker,
+            "entry_price": size_res["entry_price"],
+            "quantity": qty,
+            "initial_sl": size_res["initial_sl"],
+            "target": size_res["target_price"],
+            "cost": cost,
+            "risk_dollars": proposed_risk,
+            "sector": sector,
+            "atr_14": c.get("atr_14", 0.0),
+            "correlation_rho": avg_rho,
+            "multipliers": size_res["multipliers"]
+        }
+        trades_to_execute.append(trade_obj)
+        buy_count += 1
+
+        sl_pct = ((size_res["entry_price"] - size_res["initial_sl"]) / size_res["entry_price"]) * 100.0
+        logs.append(
+            f"✅ Approved Trade: Buy {qty} shares of {ticker} ({sector}) @ ₹{size_res['entry_price']:.2f} "
+            f"(SL: ₹{size_res['initial_sl']:.2f} [-{sl_pct:.2f}%], Target: ₹{size_res['target_price']:.2f}, Cost: ₹{cost:,.2f}, Risk: ₹{proposed_risk:,.2f})"
+        )
+
+    if not trades_to_execute and candidates:
+        logs.append("🛑 NO-TRADE DECISION: Candidates found, but all entries rejected by Central Portfolio Risk & Correlation Gates.")
+
     return {
         "trades_to_execute": trades_to_execute,
         "logs": logs
@@ -297,7 +315,6 @@ def build_trading_workflow():
 def run_trading_system(execute_trades: bool = True) -> Dict[str, Any]:
     """
     Helper function to execute the compiled LangGraph workflow.
-    Set execute_trades=False for manual scans to only preview candidates without adding to portfolio.
     """
     app = build_trading_workflow()
     initial_state = {
@@ -308,15 +325,15 @@ def run_trading_system(execute_trades: bool = True) -> Dict[str, Any]:
         "risk_per_trade": 0.0,
         "trades_to_execute": [],
         "execute_trades": execute_trades,
-        "logs": ["System Execution Started."]
+        "logs": ["V2 System Execution Started."]
     }
     result = app.invoke(initial_state)
     return result
 
 def format_scan_report(state: Dict[str, Any], is_scheduled: bool = False, is_amo: bool = False) -> str:
     """
-    Formats the final state dictionary into a clean, human-readable report for Telegram.
-    Differentiates between Scheduled Daily Scans and Manual Scans (Live Market vs AMO).
+    Formats the final state dictionary into a rich, structured report for Telegram.
+    Includes V2 Market Regime, Portfolio Risk Budget, Correlation status, and NO-TRADE Telemetry.
     """
     from datetime import datetime
     import pytz
@@ -325,57 +342,36 @@ def format_scan_report(state: Dict[str, Any], is_scheduled: bool = False, is_amo
     date_str = now_ist.strftime("%Y-%m-%d")
     time_str = now_ist.strftime("%I:%M:%S %p IST")
     
-    # Active Market Data Source Badge
-    if dhan_client.is_dhan_configured():
-        source_badge = "🟢 DhanHQ (Live Broker Feed)"
-    else:
-        source_badge = "⚪ Yahoo Finance (EOD Fallback)"
+    source_badge = "🟢 DhanHQ (Live Broker Feed)" if dhan_client.is_dhan_configured() else "⚪ Yahoo Finance (EOD Fallback)"
+
+    regime = state.get("market_regime", {})
+    risk_status = state.get("portfolio_risk_status", {})
     
-    # Extract AI Sentiment logs
-    sentiment_logs = []
-    for log in state.get("logs", []):
-        if any(k in log for k in ["Macro Risk Alert", "Macro Market Sentiment", "NEGATIVE NEWS", "Discarded"]):
-            sentiment_logs.append(log)
-            
-    # Extract portfolio sync updates (exits, SL updates, and live quote notices)
-    sync_logs = []
-    for log in state.get("logs", []):
-        if any(k in log for k in ["Closed trade", "Updated Trailing Stop", "Real-time quotes"]):
-            sync_logs.append(log)
-            
     report = []
     if is_scheduled:
-        report.append("⏰ **Scheduled Daily Scan Report (Auto-Execution) — Strategy #2**")
+        report.append("⏰ **Scheduled Daily Scan Report (Auto-Execution) — Strategy #2 V2**")
     else:
-        if is_amo:
-            report.append("🌙 **Manual Market Scan Report (After-Market / AMO Mode) — Strategy #2**")
-        else:
-            report.append("🔍 **Manual Market Scan Report (Live Market Hours Preview) — Strategy #2**")
+        report.append("🔍 **Manual Market Scan Report — Strategy #2 V2**")
             
     report.append(f"📅 *Date: {date_str} | Time: {time_str}*")
     report.append(f"📡 *Data Engine: {source_badge}*")
     report.append("")
-    report.append(f"💰 **Portfolio Summary:**")
-    report.append(f"• Total Value: ₹{state.get('portfolio_value', 0.0):,.2f}")
-    report.append(f"• Cash Balance: ₹{state.get('cash_balance', 0.0):,.2f}")
-    report.append("")
-    
-    macro_data = state.get("macro_sentiment")
-    if macro_data:
-        snippet_lines = sentiment_analyzer.format_macro_sentiment_snippet(macro_data)
-        for line in snippet_lines:
-            report.append(line)
+
+    # V2 Market Regime Section
+    if regime:
+        report.append(f"🚦 **V2 Market Regime Score:** {regime.get('color', '🟡')} **{regime.get('classification', 'NEUTRAL')}** (`{regime.get('regime_score', 0)}/100`)")
+        report.append(f"• Sizing Multiplier: `{regime.get('max_sizing_multiplier', 1.0)*100:.0f}%` | Cash Floor: `{regime.get('min_cash_reserve_pct', 0.1)*100:.0f}%`")
+        comps = regime.get("components", {})
+        report.append(f"• Factors: Trend `{comps.get('trend_score', 0)}` \| Volatility `{comps.get('volatility_score', 0)}` \| Macro `{comps.get('macro_score', 0)}`")
         report.append("")
-    elif sentiment_logs:
-        report.append(f"🌐 **Global & Indian Market Sentiment & Macro Guardrails:**")
-        for sent_log in sentiment_logs:
-            report.append(f"• {sent_log}")
-        report.append("")
-        
-    if sync_logs:
-        report.append(f"🔄 **Portfolio Updates & Quotes:**")
-        for slog in sync_logs:
-            report.append(f"• {slog}")
+
+    # V2 Portfolio Risk & Capital Allocation Section
+    if risk_status:
+        report.append(f"🛡️ **Central Portfolio Risk Budgeting:**")
+        report.append(f"• Portfolio Value: ₹{risk_status.get('portfolio_value', 0.0):,.2f}")
+        report.append(f"• Cash Reserves: ₹{risk_status.get('cash_balance', 0.0):,.2f} (`{risk_status.get('actual_cash_pct', 0)}%`)")
+        report.append(f"• Total Risk at Stake: ₹{risk_status.get('total_risk_value', 0.0):,.2f} (`{risk_status.get('current_risk_pct', 0)}%` / `6.0%` Cap)")
+        report.append(f"• Drawdown State: `-{risk_status.get('drawdown_pct', 0.0)}%` (Sizing Multiplier: `{risk_status.get('drawdown_multiplier', 1.0)}x`)")
         report.append("")
         
     candidates = state.get("candidates", [])
@@ -395,59 +391,27 @@ def format_scan_report(state: Dict[str, Any], is_scheduled: bool = False, is_amo
     report.append("")
     
     trades = state.get("trades_to_execute", [])
-    if is_scheduled:
-        report.append(f"🚀 **Trades Executed ({len(trades)}):**")
-        if trades:
-            for idx, t in enumerate(trades, 1):
-                comp_name = screener.get_company_name(t['ticker'])
-                sym = t['ticker'].replace(".NS", "")
-                sector = t.get('sector') or screener.get_stock_sector(t['ticker'])
-                report.append(f"{idx}. 🏢 **{comp_name}** (`{sym}`) — *{sector}*")
-                report.append(
-                    f"   📦 Qty: {t['quantity']} | 🏷️ Entry: ₹{t['entry_price']:.2f} | "
-                    f"🛡️ SL (2×ATR): ₹{t['initial_sl']:.2f} | 🎯 Target (1:2): ₹{t['target']:.2f}"
-                )
-        else:
-            report.append("• No new trades executed.")
+    if trades:
+        report.append(f"🚀 **V2 Approved Trades ({len(trades)}):**")
+        for idx, t in enumerate(trades, 1):
+            comp_name = screener.get_company_name(t['ticker'])
+            sym = t['ticker'].replace(".NS", "")
+            sector = t.get('sector') or screener.get_stock_sector(t['ticker'])
+            report.append(f"{idx}. 🏢 **{comp_name}** (`{sym}`) — *{sector}*")
+            report.append(
+                f"   📦 Qty: {t['quantity']} | 🏷️ Entry: ₹{t['entry_price']:.2f} | "
+                f"🛡️ SL (2×ATR): ₹{t['initial_sl']:.2f} | 🎯 Target: ₹{t['target']:.2f} | 💳 Cost: ₹{t['cost']:,.2f}"
+            )
     else:
-        trade_label = "Proposed AMO Trades (Awaiting Confirmation)" if is_amo else "Proposed Market Trades (Awaiting Confirmation)"
-        report.append(f"🎯 **{trade_label} ({len(trades)}):**")
-        if trades:
-            for idx, t in enumerate(trades, 1):
-                comp_name = screener.get_company_name(t['ticker'])
-                sym = t['ticker'].replace(".NS", "")
-                sector = t.get('sector') or screener.get_stock_sector(t['ticker'])
-                report.append(f"{idx}. 🏢 **{comp_name}** (`{sym}`) — *{sector}*")
-                report.append(
-                    f"   📦 Qty: {t['quantity']} | 🏷️ Entry: ₹{t['entry_price']:.2f} | "
-                    f"🛡️ SL (2×ATR): ₹{t['initial_sl']:.2f} | 🎯 Target (1:2): ₹{t['target']:.2f} | 💳 Cost: ₹{t.get('cost', t['entry_price'] * t['quantity']):,.2f}"
-                )
-            action_name = "AMO Order" if is_amo else "Live Market Order"
-            report.append(f"\n👉 *No entries have been executed. Tap below to confirm {action_name}.*")
-        else:
-            report.append("• No trades proposed.")
-    report.append("")
-    
-    # Gather skips and execution notices
-    skips = []
-    for log in state.get("logs", []):
-        if any(k in log for k in ["Skipping", "Scaled down", "Blocked", "Successfully added", "SL adjusted"]):
-            clean_log = log.replace("Skipping ", "").replace("Scaled down ", "")
-            if clean_log not in skips:
-                skips.append(clean_log)
-            
-    if skips:
-        report.append(f"⚠️ **Execution & Sizing Notices:**")
-        for sk in skips:
-            report.append(f"• {sk}")
-            
+        report.append("🛑 **NO-TRADE Decision Gate Active:** No trades executed. Capital preserved.")
+
     return "\n".join(report)
 
 if __name__ == "__main__":
-    print("Running system manually...")
-    state = run_trading_system()
-    print("--- RAW LOGS ---")
+    print("Running V2 trading system manually...")
+    state = run_trading_system(execute_trades=False)
+    print("\n--- RAW LOGS ---")
     for l in state.get("logs", []):
         print(l)
-    print("\n--- FORMATTED REPORT ---")
+    print("\n--- FORMATTED V2 REPORT ---")
     print(format_scan_report(state))

@@ -104,8 +104,36 @@ def render_strategy_sub_app(sub_dir):
 
 if "Master Multi-System" in active_system:
     st.title("🏦 NSE Multi-Strategy Quantitative Swing Trading Master Hub")
-    st.markdown("*Autonomous institutional swing execution, multi-agent sentiment analysis, and statutory tax accounting across 4 independent strategy portfolios.*")
+    st.markdown("*V2 Regime-Adaptive, Portfolio-Aware & Risk-Budgeted AI Swing Trading System.*")
     
+    st.markdown("---")
+
+    # V2 Market Regime & Portfolio Risk Section
+    try:
+        import market_regime
+        import portfolio_risk_engine
+        
+        reg_data = market_regime.get_market_regime()
+        
+        st.subheader(f"🚦 V2 Market Regime Engine: {reg_data['color']} {reg_data['classification']} ({reg_data['regime_score']}/100)")
+        rc1, rc2, rc3, rc4 = st.columns(4)
+        rc1.metric("Regime Score", f"{reg_data['regime_score']} / 100", f"{reg_data['classification']}")
+        rc2.metric("Max Sizing Multiplier", f"{reg_data['max_sizing_multiplier']*100:.0f}%", "Adaptive Risk Scaling")
+        rc3.metric("Min Cash Floor", f"{reg_data['min_cash_reserve_pct']*100:.0f}%", "Capital Preservation Buffer")
+        rc4.metric("Aggregate Risk Cap", "6.0% Total Capital", "Global Portfolio Limit")
+        
+        with st.expander("📊 View Market Regime Component Breakdown", expanded=False):
+            comps = reg_data["components"]
+            st.json({
+                "Trend Score (30% weight)": f"{comps['trend_score']} / 100",
+                "Market Breadth Score (25% weight)": f"{comps['breadth_score']} / 100",
+                "Volatility Score (15% weight)": f"{comps['volatility_score']} / 100",
+                "Institutional Flow Score (15% weight)": f"{comps['institutional_score']} / 100",
+                "Macro Score (15% weight)": f"{comps['macro_score']} / 100"
+            })
+    except Exception as e:
+        st.warning(f"V2 Market Regime component loading notice: {e}")
+        
     st.markdown("---")
     
     try:
