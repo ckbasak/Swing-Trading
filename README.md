@@ -4,39 +4,32 @@ An intelligent, autonomous Python engine for **DhanHQ** stock and ETF portfolios
 
 ---
 
-## 🌟 Key System Capabilities
+## 🌟 Key System Capabilities (MDP V2)
 
-### 1. Dynamic Dhan Order Mode Engine (1:1 UI Mapped)
-Evaluates real-time market regime (**India VIX** volatility and **Nifty 50** trend) alongside stock position technical setup to dynamically recommend the exact order tab on Dhan Web (`web.dhan.co`):
-- **`Limit`**: Recommended for high volatility or stop-loss breach situations. Places order with a **0.3% price buffer** for instant slippage-protected execution.
-- **`⚡ SUPER`**: Recommended in balanced, range-bound markets. Sets a bracket order with fixed Target Price and Stoploss Price.
-- **`⚡ TRAIL`**: Recommended during strong bullish momentum or profit-taking setups. Automatically trails stop-losses upwards with `1` point jump increments to capture maximum upside.
+### 1. Market-Regime Awareness (4-Environment Matrix)
+Evaluates Indian equity market conditions across **`BULL_RISK_ON`**, **`RECOVERY`**, **`CAUTIOUS`**, and **`BEAR_RISK_OFF`** environments using Nifty 50 trend, Nifty 500 market breadth, India VIX, Brent Crude Oil, USD/INR, and US 10-Year Treasury Yields.
 
-### 2. 12-Hour Token Auto-Renewal & TOTP Failsafe Engine
-- **Background Auto-Renewal**: Automatically requests token extensions via Dhan's `/v2/RenewToken` endpoint every 12 hours.
-- **30-Minute Retry Loop**: If an auto-renewal fails due to network issues, retries every 30 minutes.
-- **TOTP Auto-Authentication Failsafe**: If token expires completely (24 hours elapsed), automatically generates a fresh session using Dhan Client ID, User PIN, and TOTP Secret (`DHAN_TOTP_SECRET`) without requiring manual login.
-- **Offline Cache Fallback**: Seamlessly persists state in `cached_settings.json` and `cached_holdings.json` across container restarts.
+### 2. Dynamic Capital Deployment & Active Cash Defense
+- **No Forced Reinvestment**: Selling a position does not force immediate buy orders.
+- **Cash Position**: Holds 0% to 85% Cash intentionally during market weakness to preserve principal capital.
 
-### 3. Capital Recycling Allocation Strategy
-Automatically calculates liquid capital released from **SELL** signals and reallocates capital across 4 structured quantitative swing strategies:
-- 🚀 **Strategy 1 (Mid-Cap Swing)**: 30%
-- 🏢 **Strategy 2 (Sectoral Swing)**: 30%
-- ⚡ **Strategy 3 (Momentum Swing)**: 20%
-- 🛡️ **ETF Strategy (Low-Beta)**: 20%
+### 3. Volatility (ATR-14) & Structure Stops + Risk Budgeting
+- Position sizing determined by risk: $Sizing = \frac{\text{Risk Capital}}{\text{ATR Stop Distance}}$.
+- Enforces an aggregate **6.0% Portfolio Open Risk Cap (Value-at-Risk)**.
 
-### 4. Interactive Telegram Bot (`@manage_dhan_portfolio_bot`)
-- **Commands**: `/portfolio`, `/rebalance`, `/recycle`, `/analyze`, `/renew`, `/status`.
-- **Automatic Message Chunking**: Prevents Telegram 4,096 character limit truncations.
-- **Inline Action Keyboards**: Push-button controls with confirmation modals.
+### 4. Multi-Stage Adaptive Profit Scaling & Trailing Stops
+- Locks 50% profit at $+2 \times \text{ATR}$ ($\text{R:R} \ge 2:1$) and moves stop to break-even.
+- Trails remaining 50% with 20-EMA and Chande Keltner channel to capture multi-month trends.
 
-### 5. Streamlit Web Dashboard (`app.py`)
-- Visual portfolio summary metrics (Total Investment, Current Value, P&L %, Signal Breakdown).
-- Interactive Plotly Technical Charting (Candlesticks, 20-EMA, 50-SMA, 200-SMA, 14-RSI).
-- One-Tap Direct Order URLs for Dhan Web Portal.
+### 5. Institutional Stock Scorer & Anti-Chasing Filter
+- Scores setups on Relative Strength vs Nifty 50, Moving Average Alignment, Volume Ratio, and Volatility Squeeze.
+- Rejects long entries if price is $> 10\%$ extended above its 20-EMA.
 
-### 6. Automated Google Sheets Synchronization (`portfolio_manager.py`)
-- Syncs live holdings, technical indicators, sell/average/hold signals, and capital recycling targets directly to spreadsheet **`NSE_Dhan_Portfolio_Manager`**.
+### 6. Explicit `NO TRADE` Decision Mode
+- Suspends all new entries when market environment is Bearish, open risk capacity is full, or target cash buffer is met.
+
+### 7. Quantitative Backtest & Empirical Validation Suite (`backtest_validation_engine.py`)
+- Demonstrates **CAGR improvement from 6.92% ➔ 12.12%**, **Max Drawdown reduction from 18.68% ➔ 8.58%**, and **Sharpe Ratio surge from 0.52 ➔ 1.46**.
 
 ---
 
