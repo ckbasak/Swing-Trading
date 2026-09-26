@@ -390,43 +390,45 @@ def get_portfolio_data(target_pct: float, stop_loss_pct: float, rsi_ob: float, r
 
 holdings, summary = get_portfolio_data(target_pct, stop_loss_pct, rsi_ob, rsi_exit, rsi_pb)
 
-# Macro Market Sentiment Banner
+# Macro Market Sentiment Banner (MDP V2 Engine)
 macro = summary.get("macroRegime", {})
 macro_label = macro.get("label", "⚖️ Market Sentiment: Balanced Volatility")
-macro_status = macro.get("status", "BALANCED")
+regime_name = macro.get("regime", "RECOVERY")
+composite_score = macro.get("compositeScore", 0.0)
+target_cash_pct = macro.get("targetCashPct", 0.25) * 100.0
 
-if macro_status == "HIGH_VOLATILITY":
-    st.error(f"{macro_label} | **Defensive Risk Active (35% Low-Beta ETF Split)**")
-elif macro_status == "LOW_VOLATILITY":
-    st.success(f"{macro_label} | **Bullish Uptrend Active (Growth Swing Allocations)**")
+no_trade = summary.get("noTradeFlag", False)
+no_reasons = summary.get("noTradeReasons", [])
+
+if regime_name == "BULL_RISK_ON":
+    st.success(f"{macro_label} | **Full Risk-On Equity Deployment (Target Cash: {target_cash_pct:.0f}%)**")
+elif regime_name == "RECOVERY":
+    st.info(f"{macro_label} | **Selective Quality Deployment (Target Cash: {target_cash_pct:.0f}%)**")
+elif regime_name == "CAUTIOUS":
+    st.warning(f"{macro_label} | **Defensive Capital Preservation Active (Target Cash: {target_cash_pct:.0f}%)**")
 else:
-    st.info(f"{macro_label} | **Standard Balanced Allocations Active**")
+    st.error(f"{macro_label} | **BEAR_RISK_OFF: 100% Cash Defense Active (Target Cash: {target_cash_pct:.0f}%)**")
+
+if no_trade:
+    st.error(f"🚨 **MDP V2 EXPLICIT 'NO TRADE' DECISION ACTIVE**: New trade entries suspended. **Reason**: {' | '.join(no_reasons)}")
 
 if dhan_client.get_holdings_source() == "CACHED":
     st.warning("⚠️ **Notice: Dhan API Access Token Expired** — Currently displaying cached holdings snapshot. To sync live Dhan portfolio, update your `DHAN_ACCESS_TOKEN` in the sidebar under **🔑 Dhan API Live Token Update**.")
 
-# Top KPI Metric Cards
+# MDP V2 Dynamic Risk & Capital Metric Cards
 col1, col2, col3, col4, col5 = st.columns(5)
 with col1:
-    st.metric("Total Investment", f"₹{summary['totalInvestment']:,.2f}")
+    st.metric("Total Portfolio Value", f"₹{summary.get('totalPortfolioValue', summary['totalCurrentValue']):,.2f}")
 with col2:
-    st.metric("Current Portfolio Value", f"₹{summary['totalCurrentValue']:,.2f}")
+    st.metric("Market Regime", f"{regime_name}", delta=f"Score: {composite_score:+.2f}")
 with col3:
-    st.metric(
-        "Total P&L",
-        f"₹{summary['totalPnL']:,.2f}",
-        delta=f"{summary['totalPnLPercentage']:+.2f}%"
-    )
+    cap_dep = summary.get("capitalDeployment", {})
+    st.metric("Target Cash Position", f"{target_cash_pct:.0f}%", delta=f"₹{cap_dep.get('targetCashValue', 0.0):,.2f}")
 with col4:
-    st.metric(
-        "Action Signals",
-        f"🔴 {summary['sellCount']} | 🟢 {summary['averageCount']} | 🟡 {summary['holdCount']}"
-    )
+    st.metric("Allowed New Capital", f"₹{cap_dep.get('allowedNewCapital', 0.0):,.2f}")
 with col5:
-    st.metric(
-        "Freed Capital Potential",
-        f"₹{summary['capitalRecycling']['totalFreedCapital']:,.2f}"
-    )
+    port_risk = summary.get("portfolioRisk", {})
+    st.metric("Portfolio Open Risk (VaR)", f"{port_risk.get('totalOpenRiskPct', 0.0):.1f}%", delta=f"Max 6.0% Cap")
 
 st.divider()
 

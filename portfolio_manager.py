@@ -110,6 +110,15 @@ def get_or_create_worksheet(sh: gspread.Spreadsheet, title: str, headers: List[s
         logger.info(f"Created worksheet '{title}' with headers.")
     return ws
 
+import math
+
+def _sanitize_val(v):
+    if v is None:
+        return ""
+    if isinstance(v, float) and (math.isnan(v) or math.isinf(v)):
+        return 0.0
+    return v
+
 def sync_analysis_to_sheets(analyzed_holdings: List[Dict[str, Any]], summary: Dict[str, Any]) -> bool:
     """Syncs full portfolio analysis, recommendations, and capital recycling breakdown to Google Sheets."""
     sh = get_or_create_spreadsheet()
@@ -130,7 +139,7 @@ def sync_analysis_to_sheets(analyzed_holdings: List[Dict[str, Any]], summary: Di
         
         rows_holdings = []
         for h in analyzed_holdings:
-            rows_holdings.append([
+            rows_holdings.append([_sanitize_val(x) for x in [
                 now_str,
                 h["tradingSymbol"],
                 h["type"],
@@ -150,7 +159,7 @@ def sync_analysis_to_sheets(analyzed_holdings: List[Dict[str, Any]], summary: Di
                 h.get("sma200", ""),
                 h.get("rsi14", ""),
                 " | ".join(h.get("rationale", []))
-            ])
+            ]])
             
         retry_gspread(ws_holdings.clear)
         retry_gspread(ws_holdings.append_row, holdings_headers)
@@ -166,7 +175,7 @@ def sync_analysis_to_sheets(analyzed_holdings: List[Dict[str, Any]], summary: Di
         
         rows_rec = []
         for h in analyzed_holdings:
-            rows_rec.append([
+            rows_rec.append([_sanitize_val(x) for x in [
                 now_str,
                 h["tradingSymbol"],
                 h["recommendation"],
@@ -178,7 +187,7 @@ def sync_analysis_to_sheets(analyzed_holdings: List[Dict[str, Any]], summary: Di
                 h["targetPrice"],
                 h["stopLoss"],
                 " | ".join(h.get("rationale", []))
-            ])
+            ]])
             
         retry_gspread(ws_rec.clear)
         retry_gspread(ws_rec.append_row, rec_headers)
@@ -192,14 +201,14 @@ def sync_analysis_to_sheets(analyzed_holdings: List[Dict[str, Any]], summary: Di
         ]
         ws_recycle = get_or_create_worksheet(sh, "Capital_Recycling_Log", recycle_headers)
         cr = summary.get("capitalRecycling", {})
-        retry_gspread(ws_recycle.append_row, [
+        retry_gspread(ws_recycle.append_row, [_sanitize_val(x) for x in [
             now_str,
             cr.get("totalFreedCapital", 0.0),
             cr.get("strategy1_midcap", 0.0),
             cr.get("strategy2_sector", 0.0),
             cr.get("strategy3_momentum", 0.0),
             cr.get("etf_strategy", 0.0)
-        ])
+        ]])
         
         logger.info(f"Successfully synced {len(analyzed_holdings)} holdings to Google Sheets '{SPREADSHEET_NAME}'.")
         return True

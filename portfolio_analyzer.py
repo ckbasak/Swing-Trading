@@ -318,121 +318,21 @@ def analyze_holding(item: Dict[str, Any], overrides: Optional[Dict[str, float]] 
 
     return analysis
 
+import mdp_v2.strategy_orchestrator
+import mdp_v2.market_regime_engine
+
 def get_market_macro_regime() -> Dict[str, Any]:
     """
-    Fetches live India VIX and Nifty 50 Index trend data to compute global macro regime & risk level.
+    Fetches composite market regime data via MDP V2 Market Regime Engine.
     """
-    macro = {
-        "vix": 15.0,
-        "niftyLtp": 0.0,
-        "niftyEma20": 0.0,
-        "niftySma50": 0.0,
-        "status": "BALANCED",
-        "riskLevel": "NORMAL",
-        "label": "⚖️ Market Sentiment: Balanced Volatility (VIX 15.0)",
-        "badgeColor": "green"
-    }
-    
-    try:
-        vix_df = yf.Ticker("^INDIAVIX").history(period="5d")
-        if not vix_df.empty:
-            vix_val = float(vix_df["Close"].dropna().iloc[-1])
-            macro["vix"] = round(vix_val, 2)
-            
-        nifty_df = yf.Ticker("^NSEI").history(period="3mo")
-        if not nifty_df.empty:
-            close = nifty_df["Close"].dropna()
-            ltp = float(close.iloc[-1])
-            ema20 = float(close.ewm(span=20, adjust=False).mean().iloc[-1])
-            sma50 = float(close.rolling(window=min(50, len(close))).mean().iloc[-1])
-            
-            macro["niftyLtp"] = round(ltp, 2)
-            macro["niftyEma20"] = round(ema20, 2)
-            macro["niftySma50"] = round(sma50, 2)
-            
-            if macro["vix"] >= 18.0 or ltp < sma50:
-                macro["status"] = "HIGH_VOLATILITY"
-                macro["riskLevel"] = "ELEVATED_RISK"
-                macro["label"] = f"⚠️ Macro Alert: High Volatility (VIX {macro['vix']:.1f}) & Nifty Market Pressure"
-                macro["badgeColor"] = "red"
-            elif macro["vix"] < 15.0 and ltp > ema20:
-                macro["status"] = "LOW_VOLATILITY"
-                macro["riskLevel"] = "BULLISH_STABLE"
-                macro["label"] = f"🟢 Market Sentiment: Bullish & Stable (VIX {macro['vix']:.1f})"
-                macro["badgeColor"] = "green"
-            else:
-                macro["status"] = "BALANCED"
-                macro["riskLevel"] = "MODERATE"
-                macro["label"] = f"⚖️ Market Sentiment: Moderate Volatility (VIX {macro['vix']:.1f})"
-                macro["badgeColor"] = "orange"
-                
-    except Exception as e:
-        logger.warning(f"Error fetching market macro regime data: {e}")
-        
-    return macro
+    regime = mdp_v2.market_regime_engine.get_composite_market_regime()
+    regime["vix"] = regime.get("vixVal", 15.0)
+    regime["status"] = regime.get("regime", "RECOVERY")
+    return regime
 
 def analyze_full_dhan_portfolio(overrides: Optional[Dict[str, float]] = None) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
     """
-    Scans full Dhan portfolio, executes technical analysis on all holdings,
-    and calculates portfolio metrics and capital recycling allocations.
+    Delegates full portfolio evaluation to MDP V2 Strategy Orchestrator.
     """
-    macro_regime = get_market_macro_regime()
-    holdings = dhan_client.get_dhan_holdings()
-    analyzed_holdings = []
-    
-    total_investment = 0.0
-    total_current_val = 0.0
-    total_pnl = 0.0
-    
-    sell_count = 0
-    average_count = 0
-    hold_count = 0
-    total_freed_capital = 0.0
-    
-    for h in holdings:
-        res = analyze_holding(h, overrides=overrides, macro_status=macro_regime.get("status", "BALANCED"))
-        analyzed_holdings.append(res)
-        
-        total_investment += res["investmentValue"]
-        total_current_val += res["currentValue"]
-        total_pnl += res["pnl"]
-        
-        rec = res["recommendation"]
-        if rec == "SELL":
-            sell_count += 1
-            total_freed_capital += res["freedCapitalPotential"]
-        elif rec == "AVERAGE":
-            average_count += 1
-        else:
-            hold_count += 1
-            
-    pnl_pct = (total_pnl / total_investment * 100) if total_investment > 0 else 0.0
-    
-    # Capital Recycling Allocation Split (Dynamic adjustment during High Macro Volatility)
-    if macro_regime["status"] == "HIGH_VOLATILITY":
-        cr_midcap_pct, cr_sector_pct, cr_mom_pct, cr_etf_pct = 0.25, 0.25, 0.15, 0.35
-    else:
-        cr_midcap_pct, cr_sector_pct, cr_mom_pct, cr_etf_pct = 0.30, 0.30, 0.20, 0.20
+    return mdp_v2.strategy_orchestrator.evaluate_mdp_v2_portfolio(overrides=overrides)
 
-    capital_recycling = {
-        "totalFreedCapital": round(total_freed_capital, 2),
-        "strategy1_midcap": round(total_freed_capital * cr_midcap_pct, 2),
-        "strategy2_sector": round(total_freed_capital * cr_sector_pct, 2),
-        "strategy3_momentum": round(total_freed_capital * cr_mom_pct, 2),
-        "etf_strategy": round(total_freed_capital * cr_etf_pct, 2)
-    }
-    
-    summary = {
-        "totalHoldings": len(analyzed_holdings),
-        "totalInvestment": round(total_investment, 2),
-        "totalCurrentValue": round(total_current_val, 2),
-        "totalPnL": round(total_pnl, 2),
-        "totalPnLPercentage": round(pnl_pct, 2),
-        "sellCount": sell_count,
-        "averageCount": average_count,
-        "holdCount": hold_count,
-        "capitalRecycling": capital_recycling,
-        "macroRegime": macro_regime
-    }
-    
-    return analyzed_holdings, summary
