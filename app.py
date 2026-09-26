@@ -483,7 +483,8 @@ with tab1:
             "riskReward": "R:R Ratio"
         }
         
-        df_styled = df_display[disp_cols].rename(columns=df_cols_rename)
+        valid_cols = [c for c in disp_cols if c in df_display.columns]
+        df_styled = df_display[valid_cols].rename(columns=df_cols_rename)
         
         st.dataframe(
             df_styled.style.map(highlight_rec, subset=["Recommendation"]),
