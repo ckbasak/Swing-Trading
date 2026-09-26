@@ -348,47 +348,32 @@ with st.sidebar:
 
     st.divider()
 
-    with st.expander("🎯 Auto-Optimize Thresholds & Presets", expanded=True):
-        st.caption("Select market goal & auto-tune indicator criteria:")
-        st.selectbox(
-            "Optimization Goal",
-            options=PRESET_OPTIONS,
-            key="opt_preset_select_key",
-            on_change=on_preset_select_change
-        )
+    with st.expander("🛡️ MDP V2 Risk & Volatility Controls", expanded=True):
+        st.caption("Institutional risk-budgeting & ATR volatility parameters:")
         
-        if st.button("⚡ Apply / Re-Tune Selected Preset", width="stretch", type="primary"):
-            on_preset_select_change()
-            st.toast(f"Updated thresholds for {st.session_state.opt_preset_select_key}", icon="⚡")
-            st.rerun()
+        max_trade_risk = st.slider("Max Trade Risk (% Equity)", min_value=0.5, max_value=2.0, value=1.0, step=0.1, help="Maximum portfolio equity risk budget per trade")
+        atr_mult = st.slider("ATR Stop Multiplier (N*ATR)", min_value=1.5, max_value=3.0, value=2.0, step=0.1, help="Volatility ATR multiplier for dynamic trailing stop")
+        max_port_var = st.slider("Max Portfolio Open Risk (VaR %)", min_value=4.0, max_value=10.0, value=6.0, step=0.5, help="Maximum aggregate open risk capacity for portfolio")
+        max_sector_cap = st.slider("Max Sector Exposure Cap %", min_value=15.0, max_value=35.0, value=25.0, step=1.0, help="Maximum allowed portfolio allocation per sector")
 
-        st.divider()
-        st.caption("Manual Indicator Slider Controls:")
-        target_pct = st.slider("Target Profit Gain %", min_value=5.0, max_value=30.0, key="target_pct_val", step=0.5, on_change=on_slider_change, help="Target gain percentage to trigger SELL signal")
-        stop_loss_pct = st.slider("Stop-Loss Risk Limit %", min_value=-20.0, max_value=-2.0, key="stop_loss_pct_val", step=0.5, on_change=on_slider_change, help="Maximum allowed position drawdown before exit")
-        rsi_ob = st.slider("RSI Overbought Exit", min_value=60.0, max_value=85.0, key="rsi_ob_val", step=1.0, on_change=on_slider_change)
-        rsi_exit = st.slider("RSI Breakdown Exit", min_value=25.0, max_value=50.0, key="rsi_exit_val", step=1.0, on_change=on_slider_change)
-        rsi_pb = st.slider("RSI Pullback Max (BUY)", min_value=30.0, max_value=55.0, key="rsi_pb_val", step=1.0, on_change=on_slider_change)
-        
     if st.button("🔄 Refresh Technical Analysis", width="stretch"):
         st.cache_data.clear()
         st.rerun()
 
 # Fetch Analysis Data
 @st.cache_data(ttl=300)
-def get_portfolio_data(target_pct: float, stop_loss_pct: float, rsi_ob: float, rsi_exit: float, rsi_pb: float):
+def get_portfolio_data(max_trade_risk: float, atr_mult: float, max_port_var: float, max_sector_cap: float):
     overrides = {
-        "PROFIT_TARGET_PCT": target_pct,
-        "STOP_LOSS_PCT": stop_loss_pct,
-        "RSI_OVERBOUGHT": rsi_ob,
-        "RSI_OVERSOLD_EXIT": rsi_exit,
-        "RSI_PULLBACK_MAX": rsi_pb
+        "MAX_TRADE_RISK_PCT": max_trade_risk / 100.0,
+        "ATR_MULTIPLIER": atr_mult,
+        "MAX_PORT_VAR": max_port_var,
+        "MAX_SECTOR_CAP": max_sector_cap
     }
     holdings, summary = portfolio_analyzer.analyze_full_dhan_portfolio(overrides=overrides)
     portfolio_manager.sync_analysis_to_sheets(holdings, summary)
     return holdings, summary
 
-holdings, summary = get_portfolio_data(target_pct, stop_loss_pct, rsi_ob, rsi_exit, rsi_pb)
+holdings, summary = get_portfolio_data(max_trade_risk, atr_mult, max_port_var, max_sector_cap)
 
 # Macro Market Sentiment Banner (MDP V2 Engine)
 macro = summary.get("macroRegime", {})
