@@ -95,11 +95,28 @@ class CorrelationSentinel:
     def validate_correlation(
         self,
         candidate_ticker: str,
-        open_positions: List[Dict[str, Any]]
+        open_positions: List[Dict[str, Any]],
+        candidate_sector: str = ""
     ) -> Tuple[bool, float, str]:
         """
-        Enforces correlation limit. Rejects trade if avg_rho > 0.75.
+        Enforces correlation limit (avg_rho <= 0.75) and thematic factor clustering limit (max 2 positions per theme).
         """
+        # Thematic factor mapping for NSE stocks
+        FACTOR_THEMES = {
+            "PSU": ["SBIN.NS", "NTPC.NS", "POWERGRID.NS", "COALINDIA.NS", "ONGC.NS", "BEL.NS", "HAL.NS", "RECL.NS", "PFC.NS", "IRFC.NS", "RVNL.NS"],
+            "DEFENSE": ["BEL.NS", "HAL.NS", "BDL.NS", "MAZDOCK.NS", "COCHINSHIP.NS"],
+            "IT_TECH": ["TCS.NS", "INFY.NS", "HCLTECH.NS", "WIPRO.NS", "TECHM.NS", "LTIM.NS"],
+            "HIGH_BETA_FINANCIALS": ["AXISBANK.NS", "ICICIBANK.NS", "HDFCBANK.NS", "KOTAKBANK.NS", "BAJFINANCE.NS", "SHRIRAMFIN.NS"]
+        }
+
+        # Check thematic factor concentration
+        cand_clean = candidate_ticker.upper().replace(".NS", "") + ".NS"
+        for theme_name, theme_tickers in FACTOR_THEMES.items():
+            if cand_clean in theme_tickers:
+                count_in_theme = sum(1 for pos in open_positions if (pos.get("Ticker", "").upper().replace(".NS", "") + ".NS") in theme_tickers)
+                if count_in_theme >= 2:
+                    return False, 0.85, f"NO-TRADE Gate: Thematic factor cluster '{theme_name}' already has {count_in_theme} open positions (Max 2 cap)."
+
         avg_rho, warnings = self.calculate_correlation_with_portfolio(candidate_ticker, open_positions)
 
         if avg_rho > self.max_correlation_threshold:

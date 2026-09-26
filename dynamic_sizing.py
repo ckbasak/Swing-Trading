@@ -109,8 +109,9 @@ class DynamicSizer:
         total_cost = shares * entry_price
         actual_risk_deployed = shares * risk_per_share
 
-        # 5. Cap single position value at 8.0% of portfolio
-        max_position_cost = portfolio_value * 0.08
+        # 5. Cap single position value (Adaptive: 15.0% for portfolios < ₹5L, 8.0% for portfolios >= ₹5L)
+        effective_cap_pct = 0.15 if portfolio_value < 500000.0 else 0.08
+        max_position_cost = portfolio_value * effective_cap_pct
         if total_cost > max_position_cost:
             shares = math.floor(max_position_cost / entry_price)
             total_cost = shares * entry_price

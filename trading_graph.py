@@ -217,8 +217,8 @@ def calculate_positions_node(state: TradingState) -> Dict[str, Any]:
             no_trade_reasons.append(f"{ticker}: {rej_reason}")
             continue
 
-        # 5. Correlation Matrix Blocker (bar_rho <= 0.75)
-        corr_ok, avg_rho, corr_msg = corr_sentinel.validate_correlation(ticker, open_positions)
+        # 5. Correlation & Thematic Factor Matrix Blocker (bar_rho <= 0.75 & Theme Cap <= 2)
+        corr_ok, avg_rho, corr_msg = corr_sentinel.validate_correlation(ticker, open_positions, candidate_sector=sector)
         if not corr_ok:
             logs.append(f"Skipping {ticker}: {corr_msg}")
             no_trade_reasons.append(f"{ticker}: {corr_msg}")
@@ -362,7 +362,7 @@ def format_scan_report(state: Dict[str, Any], is_scheduled: bool = False, is_amo
         report.append(f"🚦 **V2 Market Regime Score:** {regime.get('color', '🟡')} **{regime.get('classification', 'NEUTRAL')}** (`{regime.get('regime_score', 0)}/100`)")
         report.append(f"• Sizing Multiplier: `{regime.get('max_sizing_multiplier', 1.0)*100:.0f}%` | Cash Floor: `{regime.get('min_cash_reserve_pct', 0.1)*100:.0f}%`")
         comps = regime.get("components", {})
-        report.append(f"• Factors: Trend `{comps.get('trend_score', 0)}` \| Volatility `{comps.get('volatility_score', 0)}` \| Macro `{comps.get('macro_score', 0)}`")
+        report.append(f"• Factors: Trend `{comps.get('trend_score', 0)}` \\| Volatility `{comps.get('volatility_score', 0)}` \\| Macro `{comps.get('macro_score', 0)}`")
         report.append("")
 
     # V2 Portfolio Risk & Capital Allocation Section

@@ -168,10 +168,11 @@ class PortfolioRiskEngine:
         if curr_sector_count >= 3:
             return False, f"NO-TRADE Gate: Sector '{candidate_sector}' already has 3 open positions."
 
-        # Check 5: Single Stock Cap (8%)
+        # Check 5: Single Stock Exposure Cap (Adaptive: 15.0% for portfolios < ₹5L, 8.0% for portfolios >= ₹5L)
+        effective_stock_cap = 0.15 if port_val < 500000.0 else self.max_stock_exposure_pct
         curr_stock_val = portfolio_risk_status.get("stock_exposure_pct", {}).get(candidate_ticker, 0.0) / 100.0 * port_val
-        if (curr_stock_val + proposed_cost) / port_val > self.max_stock_exposure_pct:
-            return False, f"NO-TRADE Gate: Single stock exposure for '{candidate_ticker}' would exceed 8.0% cap."
+        if (curr_stock_val + proposed_cost) / port_val > effective_stock_cap:
+            return False, f"NO-TRADE Gate: Single stock exposure for '{candidate_ticker}' would exceed {effective_stock_cap * 100:.1f}% cap."
 
         # Check 6: Cash Reserve Floor
         cash_balance = portfolio_risk_status.get("cash_balance", 0.0)

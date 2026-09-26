@@ -170,6 +170,12 @@ class MarketRegimeEngine:
         else:
             breadth_score = float(np.clip(breadth_pct, 0.0, 100.0))
 
+        # Low-VIX & Breadth Counterbalance Guardrail:
+        # If market breadth is weak (< 50%), cap low VIX score to prevent false Strong Bull tops
+        if breadth_score < 50.0 and vol_score > 70.0:
+            logger.info("Low-VIX & Breadth Counterbalance triggered: Capping Volatility score due to weak breadth.")
+            vol_score = 60.0
+
         # Institutional Flow Score (Default to 65.0 unless trend is weak)
         inst_score = 65.0 if trend_score >= 60 else 40.0
 
