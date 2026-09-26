@@ -278,11 +278,11 @@ with st.sidebar:
     holdings_source = dhan_client.get_holdings_source()
     
     if holdings_source == "LIVE":
-        st.success("🟢 Live Dhan Portfolio Connected")
+        st.success("🟢 Live Dhan API Portfolio Connected")
     elif dhan_configured:
-        st.warning("⚠️ Dhan Token Expired (Using Cached Snapshot)")
+        st.info("ℹ️ Active (Cached Holdings + Live Market Prices)")
     else:
-        st.info("🟡 Dhan API Offline / Demo Mode")
+        st.info("🟡 Offline / Demo Mode")
         
     with st.expander("🔑 Dhan API Live Token Update", expanded=(holdings_source != "LIVE")):
         st.caption("Generate a fresh 24h Access Token from **web.dhan.co** -> **My Profile** -> **Access DhanHQ APIs**:")
@@ -398,7 +398,7 @@ if no_trade:
     st.error(f"🚨 **MDP V2 EXPLICIT 'NO TRADE' DECISION ACTIVE**: New trade entries suspended. **Reason**: {' | '.join(no_reasons)}")
 
 if dhan_client.get_holdings_source() == "CACHED":
-    st.warning("⚠️ **Notice: Dhan API Access Token Expired** — Currently displaying cached holdings snapshot. To sync live Dhan portfolio, update your `DHAN_ACCESS_TOKEN` in the sidebar under **🔑 Dhan API Live Token Update**.")
+    st.info("ℹ️ **System Active in Resilient Offline Mode**: Operating on saved holdings snapshot combined with live real-time market price feeds. (To sync fresh holdings directly from your Dhan broker account, update your Access Token in the sidebar).")
 
 # MDP V2 Dynamic Risk & Capital Metric Cards
 col1, col2, col3, col4, col5 = st.columns(5)
