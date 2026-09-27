@@ -133,6 +133,8 @@ if st.sidebar.button("🧹 Reset Account for Fresh Start", use_container_width=T
                 sh = portfolio_manager.get_or_create_portfolio_sheet(client)
                 acc_details = portfolio_manager.get_account_details(sh)
                 initial_cap = float(acc_details.get("Initial Capital") or acc_details.get("InitialCapital") or 100000.0)
+                if initial_cap >= 1000000.0:
+                    initial_cap = 100000.0
                 risk_pct = float(acc_details.get("Risk Percent") or acc_details.get("Risk Percentage") or 0.06)
 
                 updates = {
