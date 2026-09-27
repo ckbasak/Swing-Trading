@@ -82,15 +82,16 @@ import threading
 
 def _start_keep_alive_thread():
     def _ping():
+        time.sleep(60)  # Wait 60s after boot for Streamlit port binding before initial ping
         app_url = os.environ.get("RENDER_EXTERNAL_URL") or "https://ck-swing-trading-master.onrender.com"
         import requests
         while True:
-            time.sleep(720)  # Ping every 12 minutes to keep Render service awake
             try:
-                r = requests.get(app_url, timeout=15)
+                r = requests.get(app_url, timeout=5)
                 print(f"[KEEP-ALIVE] Ping {app_url} -> Status {r.status_code}", flush=True)
             except Exception as e:
-                print(f"[KEEP-ALIVE] Ping {app_url} error: {e}", flush=True)
+                print(f"[KEEP-ALIVE] Ping {app_url} notice: {e}", flush=True)
+            time.sleep(720)  # Ping every 12 minutes to keep Render service awake
 
     t = threading.Thread(target=_ping, daemon=True)
     t.start()
