@@ -1,0 +1,27 @@
+# Manage-Dhan-Portfolio Git Ignore Configuration
+
+# Environment Variables & Secrets
+.env
+.env.local
+service_account.json
+*.pem
+*.key
+
+# Python Cache & Artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Data Caches & Logs
+bot.log
+bot.log.*
+cached_chat_id.txt
+cached_paper_trades.json
+cached_holdings.json
+cached_settings.json
+scratch/
+
+# OS Specific
+.DS_Store
+Thumbs.db
