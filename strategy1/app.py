@@ -132,14 +132,30 @@ if st.sidebar.button("🧹 Reset Account for Fresh Start"):
             client = portfolio_manager.get_gspread_client()
             if client:
                 sh = portfolio_manager.get_or_create_portfolio_sheet(client)
+                acc_details = portfolio_manager.get_account_details(sh)
+                initial_cap = float(acc_details.get("Initial Capital") or acc_details.get("InitialCapital") or 100000.0)
+                risk_pct = float(acc_details.get("Risk Percent") or acc_details.get("Risk Percentage") or 0.01)
+
                 updates = {
-                    "Total Portfolio Value": "1000000.00",
-                    "Cash Balance": "1000000.00",
-                    "Initial Capital": "1000000.00",
-                    "Risk Percent": "0.01"
+                    "Total Portfolio Value": f"{initial_cap:.2f}",
+                    "Cash Balance": f"{initial_cap:.2f}",
+                    "Initial Capital": f"{initial_cap:.2f}",
+                    "Risk Percent": f"{risk_pct:.4f}"
                 }
                 portfolio_manager.update_account_details(sh, updates)
-                st.sidebar.success("Account tab reset to ₹1,000,000 initial capital!")
+
+                # Clear holdings table for fresh start
+                try:
+                    ws_h = sh.worksheet("Holdings")
+                    h_vals = ws_h.get_all_values()
+                    if len(h_vals) > 1:
+                        headers = h_vals[0]
+                        ws_h.clear()
+                        ws_h.append_row(headers)
+                except Exception:
+                    pass
+
+                st.sidebar.success(f"Account tab reset to ₹{initial_cap:,.2f} initial capital from Google Sheet!")
                 time.sleep(1)
                 st.rerun()
         except Exception as e:
@@ -149,9 +165,9 @@ if st.sidebar.button("🧹 Reset Account for Fresh Start"):
 @st.cache_data(ttl=60)
 def load_data():
     fallback_account = {
-        "Total Portfolio Value": 1000000.0,
-        "Cash Balance": 1000000.0,
-        "Initial Capital": 1000000.0,
+        "Total Portfolio Value": 100000.0,
+        "Cash Balance": 100000.0,
+        "Initial Capital": 100000.0,
         "Risk Percent": 0.01,
         "Risk Percentage": 0.01
     }

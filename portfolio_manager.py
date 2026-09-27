@@ -154,10 +154,10 @@ def get_or_create_portfolio_sheet(client: Optional[gspread.Client], sheet_name: 
     except gspread.WorksheetNotFound:
         account_ws = sh.add_worksheet(title=account_name, rows="100", cols="2")
         account_ws.append_row(["Parameter", "Value"])
-        account_ws.append_row(["Total Portfolio Value", "1000000"])
-        account_ws.append_row(["Cash Balance", "1000000"])
+        account_ws.append_row(["Total Portfolio Value", "100000"])
+        account_ws.append_row(["Cash Balance", "100000"])
         account_ws.append_row(["Risk Percent", "0.015"])
-        account_ws.append_row(["Initial Capital", "1000000"])
+        account_ws.append_row(["Initial Capital", "100000"])
         
     # Check/Create TelegramChats sheet
     try:

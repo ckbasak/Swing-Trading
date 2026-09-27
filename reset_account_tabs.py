@@ -49,14 +49,16 @@ def reset_all_strategy_accounts():
                 if sh:
                     # A. Reset Account Worksheet Parameters
                     try:
+                        acc_details = portfolio_manager.get_account_details(sh)
+                        initial_cap = float(acc_details.get("Initial Capital") or acc_details.get("InitialCapital") or 100000.0)
                         updates = {
-                            "Total Portfolio Value": "1000000.00",
-                            "Cash Balance": "1000000.00",
-                            "Initial Capital": "1000000.00",
+                            "Total Portfolio Value": f"{initial_cap:.2f}",
+                            "Cash Balance": f"{initial_cap:.2f}",
+                            "Initial Capital": f"{initial_cap:.2f}",
                             "Risk Percent": "0.01"
                         }
                         portfolio_manager.update_account_details(sh, updates)
-                        logger.info(f"  • Successfully reset 'Account' tab parameters to initial defaults (Capital: ₹1,000,000, Risk: 1%).")
+                        logger.info(f"  • Successfully reset 'Account' tab parameters to initial defaults (Capital: ₹{initial_cap:,.2f}, Risk: 1%).")
                     except Exception as e:
                         logger.warning(f"  • Account tab update notice: {e}")
                         
