@@ -24,36 +24,46 @@ except Exception:
     pass
 
 # Failsafe background bot supervisor
-def get_bot_status() -> dict:
-    """Checks bot process status and reads recent bot log entries."""
-    running = False
-    pid = None
+def is_bot_alive(pid_file: str) -> bool:
     try:
-        import psutil
-        for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
-            try:
-                cmdline = proc.info.get('cmdline') or []
-                if any('bot.py' in str(arg) for arg in cmdline) and proc.pid != os.getpid():
-                    running = True
-                    pid = proc.pid
-                    break
-            except Exception:
-                continue
+        if os.path.exists(pid_file):
+            with open(pid_file, "r") as f:
+                pid_str = f.read().strip()
+            if pid_str and pid_str.isdigit():
+                pid = int(pid_str)
+                if sys.platform == "win32":
+                    import ctypes
+                    kernel32 = ctypes.windll.kernel32
+                    process = kernel32.OpenProcess(0x00100000, False, pid)
+                    if process:
+                        kernel32.CloseHandle(process)
+                        return True
+                    return False
+                else:
+                    try:
+                        os.kill(pid, 0)
+                        return True
+                    except (OSError, ProcessLookupError):
+                        return False
     except Exception:
         pass
-        
-    if not running:
+    return False
+
+def get_bot_status() -> dict:
+    """Checks bot process status and reads recent bot log entries."""
+    s_dir = os.path.dirname(os.path.abspath(__file__))
+    pid_file = os.path.join(s_dir, "bot.pid")
+    running = is_bot_alive(pid_file)
+    pid = None
+    if running:
         try:
-            output = subprocess.check_output('wmic process where "commandline like \'%bot.py%\'" get processid', shell=True, stderr=subprocess.DEVNULL).decode()
-            pids = [int(p) for p in output.split() if p.isdigit() and int(p) != os.getpid()]
-            if pids:
-                running = True
-                pid = pids[0]
+            with open(pid_file, "r") as f:
+                pid = int(f.read().strip())
         except Exception:
             pass
-        
+            
     logs = ""
-    log_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bot.log")
+    log_file = os.path.join(s_dir, "bot.log")
     if os.path.exists(log_file):
         try:
             with open(log_file, "r", encoding="utf-8", errors="ignore") as f:

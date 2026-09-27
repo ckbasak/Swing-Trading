@@ -99,6 +99,22 @@ st.set_page_config(
 st.sidebar.title("🏦 Quantitative Trading Hub")
 st.sidebar.caption("Unified 1-Service Master Architecture (100% Free 24/7)")
 
+def get_default_strategy_index():
+    s_env = (os.environ.get("STRATEGY_ID") or os.environ.get("STRATEGY_APP") or os.environ.get("ACTIVE_STRATEGY") or "").lower()
+    if "1" in s_env or "classic" in s_env:
+        return 1
+    elif "2" in s_env or "atr" in s_env:
+        return 2
+    elif "3" in s_env or "hybrid" in s_env:
+        return 3
+    elif "etf" in s_env or "4" in s_env:
+        return 4
+    elif "mdp" in s_env or "5" in s_env:
+        return 5
+    return 0
+
+default_idx = get_default_strategy_index()
+
 active_system = st.sidebar.radio(
     "Select Active Trading System:",
     [
@@ -109,7 +125,7 @@ active_system = st.sidebar.radio(
         "📊 ETF Strategy #1: Systematic Liquid ETF Swing",
         "💼 Strategy #5: Live Dhan Portfolio & Capital Recycling (MDP)"
     ],
-    index=0
+    index=default_idx
 )
 
 st.sidebar.markdown("---")

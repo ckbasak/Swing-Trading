@@ -78,8 +78,26 @@ def launch_bot_process(name, strategy_dir, token_env):
         pass
     return proc
 
+import threading
+
+def _start_keep_alive_thread():
+    def _ping():
+        app_url = os.environ.get("RENDER_EXTERNAL_URL") or "https://ck-swing-trading-master.onrender.com"
+        import requests
+        while True:
+            time.sleep(720)  # Ping every 12 minutes to keep Render service awake
+            try:
+                r = requests.get(app_url, timeout=15)
+                print(f"[KEEP-ALIVE] Ping {app_url} -> Status {r.status_code}", flush=True)
+            except Exception as e:
+                print(f"[KEEP-ALIVE] Ping {app_url} error: {e}", flush=True)
+
+    t = threading.Thread(target=_ping, daemon=True)
+    t.start()
+
 def main():
     print("[UNIFIED BOTS] Master Process Watchdog starting 5 Bot Subprocesses...", flush=True)
+    _start_keep_alive_thread()
     processes = {}
     
     for name, s_dir, t_env in BOT_CONFIGS:
