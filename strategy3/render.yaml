@@ -1,7 +1,17 @@
 services:
   - type: web
-    name: swing-trading-master
+    name: ai-swing-trade-3
     env: python
+    plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: bash start.sh
     autoDeploy: true
+    envVars:
+      - key: TELEGRAM_BOT_TOKEN
+        value: 8821130913:AAHL-oB8ZVAHU95QguFC3I7kxVT5XaaOaWc
+      - key: TELEGRAM_BOT_TOKEN_3
+        value: 8821130913:AAHL-oB8ZVAHU95QguFC3I7kxVT5XaaOaWc
+      - key: SPREADSHEET_NAME
+        value: NSE_Swing_Trading_Portfolio_3
+      - key: GOOGLE_SERVICE_ACCOUNT_JSON
+        sync: false

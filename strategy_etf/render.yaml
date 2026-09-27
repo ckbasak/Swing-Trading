@@ -1,7 +1,17 @@
 services:
   - type: web
-    name: swing-trading-master
+    name: swing-trading-strategy-etf
     env: python
+    plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: bash start.sh
     autoDeploy: true
+    envVars:
+      - key: TELEGRAM_BOT_TOKEN
+        value: 8847294226:AAE0GTApXUSPbzX3lzUmpziOaAbU02zxMVY
+      - key: TELEGRAM_BOT_TOKEN_ETF
+        value: 8847294226:AAE0GTApXUSPbzX3lzUmpziOaAbU02zxMVY
+      - key: SPREADSHEET_NAME
+        value: NSE_ETF_Swing_Trading_Portfolio_1
+      - key: GOOGLE_SERVICE_ACCOUNT_JSON
+        sync: false

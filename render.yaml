@@ -11,6 +11,82 @@ services:
         value: NSE_Swing_Trading_Portfolio_1
 
   - type: web
+    name: ai-swing-trade-1
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: bash strategy1/start.sh
+    autoDeploy: true
+    envVars:
+      - key: TELEGRAM_BOT_TOKEN
+        value: 8832604687:AAHYOy1ywIcK-FOnnsgQTGEoDr9SiBUp2mc
+      - key: TELEGRAM_BOT_TOKEN_1
+        value: 8832604687:AAHYOy1ywIcK-FOnnsgQTGEoDr9SiBUp2mc
+      - key: SPREADSHEET_NAME
+        value: NSE_Swing_Trading_Portfolio_1
+      - key: STRATEGY_APP
+        value: strategy1/app.py
+      - key: GOOGLE_SERVICE_ACCOUNT_JSON
+        sync: false
+
+  - type: web
+    name: ai-swing-trade-2
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: bash strategy2/start.sh
+    autoDeploy: true
+    envVars:
+      - key: TELEGRAM_BOT_TOKEN
+        value: 8776408528:AAGexszfsf0DmRHFtS5CrPo_QmsN06QXc_A
+      - key: TELEGRAM_BOT_TOKEN_2
+        value: 8776408528:AAGexszfsf0DmRHFtS5CrPo_QmsN06QXc_A
+      - key: SPREADSHEET_NAME
+        value: NSE_Swing_Trading_Portfolio_2
+      - key: STRATEGY_APP
+        value: strategy2/app.py
+      - key: GOOGLE_SERVICE_ACCOUNT_JSON
+        sync: false
+
+  - type: web
+    name: ai-swing-trade-3
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: bash strategy3/start.sh
+    autoDeploy: true
+    envVars:
+      - key: TELEGRAM_BOT_TOKEN
+        value: 8821130913:AAHL-oB8ZVAHU95QguFC3I7kxVT5XaaOaWc
+      - key: TELEGRAM_BOT_TOKEN_3
+        value: 8821130913:AAHL-oB8ZVAHU95QguFC3I7kxVT5XaaOaWc
+      - key: SPREADSHEET_NAME
+        value: NSE_Swing_Trading_Portfolio_3
+      - key: STRATEGY_APP
+        value: strategy3/app.py
+      - key: GOOGLE_SERVICE_ACCOUNT_JSON
+        sync: false
+
+  - type: web
+    name: swing-trading-strategy-etf
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: bash strategy_etf/start.sh
+    autoDeploy: true
+    envVars:
+      - key: TELEGRAM_BOT_TOKEN
+        value: 8847294226:AAE0GTApXUSPbzX3lzUmpziOaAbU02zxMVY
+      - key: TELEGRAM_BOT_TOKEN_ETF
+        value: 8847294226:AAE0GTApXUSPbzX3lzUmpziOaAbU02zxMVY
+      - key: SPREADSHEET_NAME
+        value: NSE_ETF_Swing_Trading_Portfolio_1
+      - key: STRATEGY_APP
+        value: strategy_etf/app.py
+      - key: GOOGLE_SERVICE_ACCOUNT_JSON
+        sync: false
+
+  - type: web
     name: manage-dhan-portfolio
     env: python
     plan: free
