@@ -3,5 +3,5 @@ services:
     name: swing-trading-master
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: streamlit run app.py --server.port $PORT --server.address 0.0.0.0
+    startCommand: bash start.sh
     autoDeploy: true

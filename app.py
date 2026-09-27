@@ -31,17 +31,36 @@ def is_bot_alive(pid_file: str) -> bool:
         pass
     return False
 
-def ensure_all_bots_running():
+def launch_unified_bots_daemon():
+    try:
+        script = os.path.join(PROJECT_ROOT, "start_unified_bots.py")
+        if os.path.exists(script):
+            subprocess.Popen([sys.executable, "-u", script], cwd=PROJECT_ROOT)
+            time.sleep(2)
+            return True
+    except Exception as e:
+        print(f"Error launching unified bots daemon: {e}")
+    return False
+
+def ensure_all_bots_running(force_restart: bool = False):
     bot_configs = [
-        ("Strategy #1 Bot", os.path.join(PROJECT_ROOT, "strategy1"), "bot.py", "bot.pid"),
-        ("Strategy #2 Bot", os.path.join(PROJECT_ROOT, "strategy2"), "bot.py", "bot.pid"),
-        ("Strategy #3 Bot", os.path.join(PROJECT_ROOT, "strategy3"), "bot.py", "bot.pid"),
-        ("ETF Strategy #1 Bot", os.path.join(PROJECT_ROOT, "strategy_etf"), "bot.py", "bot.pid"),
-        ("Manage-Dhan-Portfolio Bot", os.path.join(PROJECT_ROOT, "strategy_mdp"), "bot.py", "bot.pid"),
+        ("Strategy #1 Bot", os.path.join(PROJECT_ROOT, "strategy1"), "bot.pid"),
+        ("Strategy #2 Bot", os.path.join(PROJECT_ROOT, "strategy2"), "bot.pid"),
+        ("Strategy #3 Bot", os.path.join(PROJECT_ROOT, "strategy3"), "bot.pid"),
+        ("ETF Strategy #1 Bot", os.path.join(PROJECT_ROOT, "strategy_etf"), "bot.pid"),
+        ("Manage-Dhan-Portfolio Bot", os.path.join(PROJECT_ROOT, "strategy_mdp"), "bot.pid"),
     ]
     
+    if force_restart:
+        launch_unified_bots_daemon()
+    else:
+        # Check if any bot daemon PID is active
+        any_alive = any(is_bot_alive(os.path.join(s_dir, pid_f)) for _, s_dir, pid_f in bot_configs)
+        if not any_alive:
+            launch_unified_bots_daemon()
+            
     status_dict = {}
-    for name, s_dir, script, pid_f in bot_configs:
+    for name, s_dir, pid_f in bot_configs:
         pid_path = os.path.join(s_dir, pid_f)
         status_dict[name] = is_bot_alive(pid_path)
     return status_dict
@@ -80,7 +99,8 @@ for b_name, b_active in bot_statuses.items():
         st.sidebar.error(f"🔴 {b_name}: Offline")
 
 if st.sidebar.button("🔄 Restart Bot Daemons", use_container_width=True):
-    ensure_all_bots_running()
+    ensure_all_bots_running(force_restart=True)
+    st.toast("Launching Telegram bot daemons...", icon="🤖")
     st.rerun()
 
 st.sidebar.markdown("---")
