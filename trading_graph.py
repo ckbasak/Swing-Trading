@@ -1,7 +1,41 @@
 import os
 import math
 from typing import TypedDict, List, Dict, Any
-from langgraph.graph import StateGraph, END
+
+try:
+    from langgraph.graph import StateGraph, END
+except ImportError:
+    # Bulletproof pure-Python StateGraph fallback for cloud environments
+    END = "__END__"
+    class StateGraph:
+        def __init__(self, state_schema):
+            self.nodes = {}
+            self.edges = {}
+            self.entry_point = None
+
+        def add_node(self, name, func):
+            self.nodes[name] = func
+
+        def set_entry_point(self, name):
+            self.entry_point = name
+
+        def add_edge(self, start, end):
+            self.edges[start] = end
+
+        def compile(self):
+            return self
+
+        def invoke(self, state):
+            curr = self.entry_point
+            while curr and curr != END:
+                fn = self.nodes.get(curr)
+                if not fn:
+                    break
+                res = fn(state)
+                if isinstance(res, dict):
+                    state.update(res)
+                curr = self.edges.get(curr, END)
+            return state
 
 # Import backend modules
 import screener
