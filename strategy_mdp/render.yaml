@@ -1,23 +1,7 @@
 services:
   - type: web
-    name: manage-dhan-portfolio
+    name: swing-trading-master
     env: python
-    plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: ./start.sh
+    startCommand: streamlit run app.py --server.port $PORT --server.address 0.0.0.0
     autoDeploy: true
-    envVars:
-      - key: TELEGRAM_BOT_TOKEN
-        sync: false
-      - key: DHAN_CLIENT_ID
-        sync: false
-      - key: DHAN_USER_PIN
-        sync: false
-      - key: DHAN_TOTP_SECRET
-        sync: false
-      - key: DHAN_ACCESS_TOKEN
-        sync: false
-      - key: SPREADSHEET_NAME
-        value: NSE_Dhan_Portfolio_Manager
-      - key: GOOGLE_SERVICE_ACCOUNT_JSON
-        sync: false
