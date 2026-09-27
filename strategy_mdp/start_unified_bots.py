@@ -27,8 +27,19 @@ os.environ["MKL_NUM_THREADS"] = "1"
 os.environ["OPENBLAS_NUM_THREADS"] = "1"
 os.environ["PYTHONMALLOC"] = "malloc"
 
+DEFAULT_BOT_TOKENS = {
+    "TELEGRAM_BOT_TOKEN_1": "8832604687:AAHYOy1ywIcK-FOnnsgQTGEoDr9SiBUp2mc",
+    "TELEGRAM_BOT_TOKEN_2": "8776408528:AAGexszfsf0DmRHFtS5CrPo_QmsN06QXc_A",
+    "TELEGRAM_BOT_TOKEN_3": "8821130913:AAHL-oB8ZVAHU95QguFC3I7kxVT5XaaOaWc",
+    "TELEGRAM_BOT_TOKEN_ETF": "8846086245:AAHeM2s85bmfHpOy1MZ_f45l3myND4C3z3Y",
+    "TELEGRAM_BOT_TOKEN_MDP": "8846086245:AAHeM2s85bmfHpOy1MZ_f45l3myND4C3z3Y",
+}
+
 def run_single_bot(name, strategy_dir, token_env):
-    token = os.environ.get(token_env) or os.environ.get("TELEGRAM_BOT_TOKEN")
+    token = os.environ.get(token_env) or DEFAULT_BOT_TOKENS.get(token_env) or os.environ.get("TELEGRAM_BOT_TOKEN")
+    if token and token_env not in os.environ:
+        os.environ[token_env] = token
+
     if not token:
         print(f"[UNIFIED BOTS] Skip {name} - token {token_env} missing", flush=True)
         return

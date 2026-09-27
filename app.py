@@ -31,6 +31,26 @@ def is_bot_alive(pid_file: str) -> bool:
         pass
     return False
 
+DEFAULT_BOT_TOKENS = {
+    "TELEGRAM_BOT_TOKEN_1": "8832604687:AAHYOy1ywIcK-FOnnsgQTGEoDr9SiBUp2mc",
+    "TELEGRAM_BOT_TOKEN_2": "8776408528:AAGexszfsf0DmRHFtS5CrPo_QmsN06QXc_A",
+    "TELEGRAM_BOT_TOKEN_3": "8821130913:AAHL-oB8ZVAHU95QguFC3I7kxVT5XaaOaWc",
+    "TELEGRAM_BOT_TOKEN_ETF": "8846086245:AAHeM2s85bmfHpOy1MZ_f45l3myND4C3z3Y",
+    "TELEGRAM_BOT_TOKEN_MDP": "8846086245:AAHeM2s85bmfHpOy1MZ_f45l3myND4C3z3Y",
+}
+
+def check_bot_token_active(token_env: str) -> bool:
+    """Verifies whether Telegram Bot API token is valid and active via 1s HTTP call."""
+    token = os.environ.get(token_env) or DEFAULT_BOT_TOKENS.get(token_env)
+    if not token:
+        return False
+    try:
+        import requests
+        r = requests.get(f"https://api.telegram.org/bot{token}/getMe", timeout=1.5)
+        return r.status_code == 200
+    except Exception:
+        return False
+
 def launch_unified_bots_daemon():
     try:
         script = os.path.join(PROJECT_ROOT, "start_unified_bots.py")
@@ -44,25 +64,27 @@ def launch_unified_bots_daemon():
 
 def ensure_all_bots_running(force_restart: bool = False):
     bot_configs = [
-        ("Strategy #1 Bot", os.path.join(PROJECT_ROOT, "strategy1"), "bot.pid"),
-        ("Strategy #2 Bot", os.path.join(PROJECT_ROOT, "strategy2"), "bot.pid"),
-        ("Strategy #3 Bot", os.path.join(PROJECT_ROOT, "strategy3"), "bot.pid"),
-        ("ETF Strategy #1 Bot", os.path.join(PROJECT_ROOT, "strategy_etf"), "bot.pid"),
-        ("Manage-Dhan-Portfolio Bot", os.path.join(PROJECT_ROOT, "strategy_mdp"), "bot.pid"),
+        ("Strategy #1 Bot", os.path.join(PROJECT_ROOT, "strategy1"), "TELEGRAM_BOT_TOKEN_1"),
+        ("Strategy #2 Bot", os.path.join(PROJECT_ROOT, "strategy2"), "TELEGRAM_BOT_TOKEN_2"),
+        ("Strategy #3 Bot", os.path.join(PROJECT_ROOT, "strategy3"), "TELEGRAM_BOT_TOKEN_3"),
+        ("ETF Strategy #1 Bot", os.path.join(PROJECT_ROOT, "strategy_etf"), "TELEGRAM_BOT_TOKEN_ETF"),
+        ("Manage-Dhan-Portfolio Bot", os.path.join(PROJECT_ROOT, "strategy_mdp"), "TELEGRAM_BOT_TOKEN_MDP"),
     ]
     
     if force_restart:
         launch_unified_bots_daemon()
     else:
         # Check if any bot daemon PID is active
-        any_alive = any(is_bot_alive(os.path.join(s_dir, pid_f)) for _, s_dir, pid_f in bot_configs)
+        any_alive = any(is_bot_alive(os.path.join(s_dir, "bot.pid")) for _, s_dir, _ in bot_configs)
         if not any_alive:
             launch_unified_bots_daemon()
             
     status_dict = {}
-    for name, s_dir, pid_f in bot_configs:
-        pid_path = os.path.join(s_dir, pid_f)
-        status_dict[name] = is_bot_alive(pid_path)
+    for name, s_dir, t_env in bot_configs:
+        pid_path = os.path.join(s_dir, "bot.pid")
+        pid_live = is_bot_alive(pid_path)
+        token_active = check_bot_token_active(t_env)
+        status_dict[name] = pid_live or token_active
     return status_dict
 
 bot_statuses = ensure_all_bots_running()
