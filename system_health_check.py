@@ -55,9 +55,11 @@ def check_google_sheets():
     base_dir = r"c:\Users\ckbas\Documents\antigravity"
     
     portfolios = [
-        ("Strategy 1", "AI-Swing-Trade-1", "NSE_Swing_Trading_Portfolio_1"),
-        ("Strategy 2", "AI-Swing-Trade-2", "NSE_Swing_Trading_Portfolio_2"),
-        ("Strategy 3", "AI-Swing-Trade-3", "NSE_Swing_Trading_Portfolio_3"),
+        ("Strategy 1", "AI-Swing-Trade", "NSE_Swing_Trading_Portfolio_1"),
+        ("Strategy 2", "AI-Swing-Trade", "NSE_Swing_Trading_Portfolio_2"),
+        ("Strategy 3", "AI-Swing-Trade", "NSE_Swing_Trading_Portfolio_3"),
+        ("Strategy ETF", "AI-Swing-Trade", "NSE_ETF_Swing_Trading_Portfolio_1"),
+        ("Strategy MDP", "AI-Swing-Trade", "NSE_Dhan_Portfolio_Manager"),
     ]
     
     for label, folder, sheet_name in portfolios:
@@ -80,9 +82,11 @@ def check_google_sheets():
 def check_telegram_bots():
     print_header("3. Telegram Bots Status")
     bots = [
-        ("Strategy 1", "8804741632:AAGQh-8oEMP25MupgadwikXcWpFWTNPwjUw"),
+        ("Strategy 1", "8832604687:AAHYOy1ywIcK-FOnnsgQTGEoDr9SiBUp2mc"),
         ("Strategy 2", "8776408528:AAGexszfsf0DmRHFtS5CrPo_QmsN06QXc_A"),
         ("Strategy 3", "8821130913:AAHL-oB8ZVAHU95QguFC3I7kxVT5XaaOaWc"),
+        ("Strategy ETF", "8846086245:AAHeM2s85bmfHpOy1MZ_f45l3myND4C3z3Y"),
+        ("Strategy MDP", "8846086245:AAHeM2s85bmfHpOy1MZ_f45l3myND4C3z3Y"),
     ]
     for label, token in bots:
         try:

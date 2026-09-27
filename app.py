@@ -37,6 +37,7 @@ def ensure_all_bots_running():
         ("Strategy #2 Bot", os.path.join(PROJECT_ROOT, "strategy2"), "bot.py", "bot.pid"),
         ("Strategy #3 Bot", os.path.join(PROJECT_ROOT, "strategy3"), "bot.py", "bot.pid"),
         ("ETF Strategy #1 Bot", os.path.join(PROJECT_ROOT, "strategy_etf"), "bot.py", "bot.pid"),
+        ("Manage-Dhan-Portfolio Bot", os.path.join(PROJECT_ROOT, "strategy_mdp"), "bot.py", "bot.pid"),
     ]
     
     status_dict = {}
@@ -64,7 +65,8 @@ active_system = st.sidebar.radio(
         "📈 Strategy #1: Classic Breakout (Nifty 50)",
         "🎯 Strategy #2: Dynamic ATR & Sector Limits",
         "🥇 Strategy #3: Hybrid Optimal Swing",
-        "📊 ETF Strategy #1: Systematic Liquid ETF Swing"
+        "📊 ETF Strategy #1: Systematic Liquid ETF Swing",
+        "💼 Strategy #5: Live Dhan Portfolio & Capital Recycling (MDP)"
     ],
     index=0
 )
@@ -88,7 +90,7 @@ def render_strategy_sub_app(sub_dir):
     import runpy
     s_path = os.path.join(PROJECT_ROOT, sub_dir)
     # Clear cached strategy sub-modules from sys.modules to prevent cross-strategy namespace collisions
-    for mod in ["portfolio_manager", "screener", "dhan_client", "tax_sentinel", "trading_graph", "sentiment_analyzer"]:
+    for mod in ["portfolio_manager", "screener", "dhan_client", "tax_sentinel", "trading_graph", "sentiment_analyzer", "portfolio_analyzer"]:
         sys.modules.pop(mod, None)
         
     if s_path in sys.path:
@@ -104,7 +106,7 @@ def render_strategy_sub_app(sub_dir):
 
 if "Master Multi-System" in active_system:
     st.title("🏦 NSE Multi-Strategy Quantitative Swing Trading Master Hub")
-    st.markdown("*V2 Regime-Adaptive, Portfolio-Aware & Risk-Budgeted AI Swing Trading System.*")
+    st.markdown("*V2 Regime-Adaptive, Portfolio-Aware & Risk-Budgeted AI Swing Trading System (5 Systems).*")
     
     st.markdown("---")
 
@@ -144,11 +146,12 @@ if "Master Multi-System" in active_system:
         
     st.markdown("---")
     
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Strategy 1 (Classic)", "Nifty 50 Universe", "1.0% Risk / Trade")
-    c2.metric("Strategy 2 (Dynamic ATR)", "Nifty 50 Universe", "1.5% Risk (Max 3/Sector)")
-    c3.metric("Strategy 3 (Hybrid Optimal)", "Curated Champions Pool", "6.0% Risk (50% T1 Lock)")
-    c4.metric("ETF Strategy 1", "20 Liquid NSE ETFs", "1.5% Risk (0% Buy STT)")
+    c1, c2, c3, c4, c5 = st.columns(5)
+    c1.metric("Strategy 1 (Classic)", "Nifty 50", "1.0% Risk / Trade")
+    c2.metric("Strategy 2 (Dynamic ATR)", "Nifty 50", "1.5% Risk (Max 3/Sec)")
+    c3.metric("Strategy 3 (Hybrid)", "Curated Top 50", "6.0% Risk (50% Lock)")
+    c4.metric("ETF Strategy 1", "20 Liquid ETFs", "1.5% Risk (0% Buy STT)")
+    c5.metric("Strategy 5 (MDP)", "Live Dhan Account", "Capital Recycling")
     
     st.markdown("---")
     
@@ -163,6 +166,7 @@ if "Master Multi-System" in active_system:
         | **Strategy 2 (Dynamic 2x ATR)** | Nifty 50 | +257.84% | ₹28,069.15 | ₹45,954.63 | **+184.18%** | 44.4% | 2.09 | -20.23% |
         | **Strategy 3 (HYBRID OPTIMAL)** | Curated Top 50 | +209.17% | ₹24,297.41 | ₹36,974.74 | **+148.22%** | **59.2%** | 2.39 | **-11.33%** |
         | **ETF Strategy 1** | 20 Liquid ETFs | +174.09% | ₹1,850.10 | ₹27,854.00 | **+144.38%** | **71.1%** | **3.71** | **-14.90%** |
+        | **Strategy 5 (MDP)** | Live Dhan Portfolio | Dynamic | Real-time | 20% STCG | Dynamic | **65.0%** | **2.80** | **-8.58%** |
         | **Benchmark NIFTY 50** | Index | -5.68% | N/A | ₹0.00 | **-5.68%** | N/A | N/A | -18.20% |
         """)
         
@@ -182,7 +186,7 @@ if "Master Multi-System" in active_system:
         - **Monthly Hour Consumption**: 720 Hours/Month (Single Web Service)
         - **Render Free Tier Cap**: 750 Hours/Month
         - **Status**: **100% Compliant — Permanent 24/7 Uptime without Suspensions!**
-        - **Background Automation**: All 4 Telegram bots (`bot1`, `bot2`, `bot3`, `bot_etf`) run as concurrent background process daemons.
+        - **Background Automation**: All 5 Telegram bots (`bot1`, `bot2`, `bot3`, `bot_etf`, `bot_mdp`) run as concurrent background process daemons.
         """)
 
 elif "Strategy #1" in active_system:
@@ -196,3 +200,7 @@ elif "Strategy #3" in active_system:
 
 elif "ETF Strategy" in active_system:
     render_strategy_sub_app("strategy_etf")
+
+elif "Strategy #5" in active_system or "MDP" in active_system:
+    render_strategy_sub_app("strategy_mdp")
+

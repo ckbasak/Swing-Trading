@@ -58,18 +58,22 @@ def run_single_bot(name, strategy_dir, token_env):
         elif strategy_dir == "strategy_etf":
             import strategy_etf.bot as b_etf
             b_etf.run_forever()
+        elif strategy_dir == "strategy_mdp":
+            import strategy_mdp.bot as b_mdp
+            b_mdp.run_forever()
     except Exception as e:
         print(f"[UNIFIED BOTS ERROR] {name} exited with error: {e}", flush=True)
     finally:
         os.chdir(old_cwd)
 
 def main():
-    print("[UNIFIED BOTS] Starting 4 Telegram Bots in ONE Memory-Optimized Python Process...", flush=True)
+    print("[UNIFIED BOTS] Starting 5 Telegram Bots in ONE Memory-Optimized Python Process...", flush=True)
     bot_configs = [
         ("Strategy #1 Bot", "strategy1", "TELEGRAM_BOT_TOKEN_1"),
         ("Strategy #2 Bot", "strategy2", "TELEGRAM_BOT_TOKEN_2"),
         ("Strategy #3 Bot", "strategy3", "TELEGRAM_BOT_TOKEN_3"),
         ("ETF Strategy Bot", "strategy_etf", "TELEGRAM_BOT_TOKEN_ETF"),
+        ("Manage-Dhan-Portfolio Bot", "strategy_mdp", "TELEGRAM_BOT_TOKEN_MDP"),
     ]
 
     threads = []
@@ -79,7 +83,7 @@ def main():
         threads.append(t)
         time.sleep(2)  # Stagger startup to prevent memory spikes
 
-    print("[UNIFIED BOTS] All 4 bot threads active. Monitoring...", flush=True)
+    print("[UNIFIED BOTS] All 5 bot threads active. Monitoring...", flush=True)
     while True:
         time.sleep(30)
 
