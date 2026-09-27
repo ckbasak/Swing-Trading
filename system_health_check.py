@@ -85,7 +85,7 @@ def check_telegram_bots():
         ("Strategy 1", "8832604687:AAHYOy1ywIcK-FOnnsgQTGEoDr9SiBUp2mc"),
         ("Strategy 2", "8776408528:AAGexszfsf0DmRHFtS5CrPo_QmsN06QXc_A"),
         ("Strategy 3", "8821130913:AAHL-oB8ZVAHU95QguFC3I7kxVT5XaaOaWc"),
-        ("Strategy ETF", "8846086245:AAHeM2s85bmfHpOy1MZ_f45l3myND4C3z3Y"),
+        ("Strategy ETF", "8847294226:AAE0GTApXUSPbzX3lzUmpziOaAbU02zxMVY"),
         ("Strategy MDP", "8846086245:AAHeM2s85bmfHpOy1MZ_f45l3myND4C3z3Y"),
     ]
     for label, token in bots:

@@ -1,7 +1,7 @@
 import os
 import sys
 import time
-import threading
+import subprocess
 
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 
@@ -31,73 +31,73 @@ DEFAULT_BOT_TOKENS = {
     "TELEGRAM_BOT_TOKEN_1": "8832604687:AAHYOy1ywIcK-FOnnsgQTGEoDr9SiBUp2mc",
     "TELEGRAM_BOT_TOKEN_2": "8776408528:AAGexszfsf0DmRHFtS5CrPo_QmsN06QXc_A",
     "TELEGRAM_BOT_TOKEN_3": "8821130913:AAHL-oB8ZVAHU95QguFC3I7kxVT5XaaOaWc",
-    "TELEGRAM_BOT_TOKEN_ETF": "8846086245:AAHeM2s85bmfHpOy1MZ_f45l3myND4C3z3Y",
+    "TELEGRAM_BOT_TOKEN_ETF": "8847294226:AAE0GTApXUSPbzX3lzUmpziOaAbU02zxMVY",
     "TELEGRAM_BOT_TOKEN_MDP": "8846086245:AAHeM2s85bmfHpOy1MZ_f45l3myND4C3z3Y",
 }
 
-def run_single_bot(name, strategy_dir, token_env):
-    token = os.environ.get(token_env) or DEFAULT_BOT_TOKENS.get(token_env) or os.environ.get("TELEGRAM_BOT_TOKEN")
-    if token and token_env not in os.environ:
-        os.environ[token_env] = token
+DEFAULT_SHEETS = {
+    "strategy1": "NSE_Swing_Trading_Portfolio_1",
+    "strategy2": "NSE_Swing_Trading_Portfolio_2",
+    "strategy3": "NSE_Swing_Trading_Portfolio_3",
+    "strategy_etf": "NSE_ETF_Swing_Trading_Portfolio_1",
+    "strategy_mdp": "NSE_Dhan_Portfolio_Manager",
+}
 
-    if not token:
-        print(f"[UNIFIED BOTS] Skip {name} - token {token_env} missing", flush=True)
-        return
+BOT_CONFIGS = [
+    ("Strategy #1 Bot", "strategy1", "TELEGRAM_BOT_TOKEN_1"),
+    ("Strategy #2 Bot", "strategy2", "TELEGRAM_BOT_TOKEN_2"),
+    ("Strategy #3 Bot", "strategy3", "TELEGRAM_BOT_TOKEN_3"),
+    ("ETF Strategy Bot", "strategy_etf", "TELEGRAM_BOT_TOKEN_ETF"),
+    ("Manage-Dhan-Portfolio Bot", "strategy_mdp", "TELEGRAM_BOT_TOKEN_MDP"),
+]
 
-    print(f"[UNIFIED BOTS] Starting thread for {name} in {strategy_dir}...", flush=True)
-    
+def launch_bot_process(name, strategy_dir, token_env):
     s_path = os.path.join(PROJECT_ROOT, strategy_dir)
-    if s_path not in sys.path:
-        sys.path.insert(0, s_path)
+    bot_script = os.path.join(s_path, "bot.py")
+    if not os.path.exists(bot_script):
+        print(f"[UNIFIED BOTS] {name}: bot.py missing at {bot_script}", flush=True)
+        return None
 
-    old_cwd = os.getcwd()
+    bot_token = os.environ.get(token_env) or DEFAULT_BOT_TOKENS.get(token_env)
+    sheet_name = DEFAULT_SHEETS.get(strategy_dir)
+
+    bot_env = os.environ.copy()
+    if bot_token:
+        bot_env[token_env] = bot_token
+        bot_env["TELEGRAM_BOT_TOKEN"] = bot_token
+    if sheet_name:
+        bot_env["SPREADSHEET_NAME"] = sheet_name
+
+    print(f"[UNIFIED BOTS] Spawning subprocess for {name} in {strategy_dir}...", flush=True)
+    proc = subprocess.Popen([sys.executable, "-u", bot_script], cwd=s_path, env=bot_env)
+    pid_file = os.path.join(s_path, "bot.pid")
     try:
-        os.chdir(s_path)
-        pid_file = os.path.join(s_path, "bot.pid")
         with open(pid_file, "w") as f:
-            f.write(str(os.getpid()))
-            
-        if strategy_dir == "strategy1":
-            import strategy1.bot as b1
-            b1.run_forever()
-        elif strategy_dir == "strategy2":
-            import strategy2.bot as b2
-            b2.run_forever()
-        elif strategy_dir == "strategy3":
-            import strategy3.bot as b3
-            b3.run_forever()
-        elif strategy_dir == "strategy_etf":
-            import strategy_etf.bot as b_etf
-            b_etf.run_forever()
-        elif strategy_dir == "strategy_mdp":
-            import strategy_mdp.bot as b_mdp
-            b_mdp.run_forever()
-    except Exception as e:
-        print(f"[UNIFIED BOTS ERROR] {name} exited with error: {e}", flush=True)
-    finally:
-        os.chdir(old_cwd)
+            f.write(str(proc.pid))
+    except Exception:
+        pass
+    return proc
 
 def main():
-    print("[UNIFIED BOTS] Starting 5 Telegram Bots in ONE Memory-Optimized Python Process...", flush=True)
-    bot_configs = [
-        ("Strategy #1 Bot", "strategy1", "TELEGRAM_BOT_TOKEN_1"),
-        ("Strategy #2 Bot", "strategy2", "TELEGRAM_BOT_TOKEN_2"),
-        ("Strategy #3 Bot", "strategy3", "TELEGRAM_BOT_TOKEN_3"),
-        ("ETF Strategy Bot", "strategy_etf", "TELEGRAM_BOT_TOKEN_ETF"),
-        ("Manage-Dhan-Portfolio Bot", "strategy_mdp", "TELEGRAM_BOT_TOKEN_MDP"),
-    ]
+    print("[UNIFIED BOTS] Master Process Watchdog starting 5 Bot Subprocesses...", flush=True)
+    processes = {}
+    
+    for name, s_dir, t_env in BOT_CONFIGS:
+        proc = launch_bot_process(name, s_dir, t_env)
+        if proc:
+            processes[s_dir] = (name, s_dir, t_env, proc)
+        time.sleep(1)
 
-    threads = []
-    for name, s_dir, t_env in bot_configs:
-        t = threading.Thread(target=run_single_bot, args=(name, s_dir, t_env), daemon=True)
-        t.start()
-        threads.append(t)
-        time.sleep(2)  # Stagger startup to prevent memory spikes
-
-    print("[UNIFIED BOTS] All 5 bot threads active. Monitoring...", flush=True)
+    print("[UNIFIED BOTS] All 5 bot subprocesses spawned. Entering active supervision loop...", flush=True)
     while True:
-        time.sleep(30)
+        time.sleep(10)
+        for s_dir, (name, strategy_dir, t_env, proc) in list(processes.items()):
+            poll = proc.poll()
+            if poll is not None:
+                print(f"[UNIFIED BOTS WARNING] {name} exited with code {poll}. Auto-restarting in 2s...", flush=True)
+                new_proc = launch_bot_process(name, strategy_dir, t_env)
+                if new_proc:
+                    processes[s_dir] = (name, strategy_dir, t_env, new_proc)
 
 if __name__ == "__main__":
     main()
-

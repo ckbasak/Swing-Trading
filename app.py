@@ -35,18 +35,18 @@ DEFAULT_BOT_TOKENS = {
     "TELEGRAM_BOT_TOKEN_1": "8832604687:AAHYOy1ywIcK-FOnnsgQTGEoDr9SiBUp2mc",
     "TELEGRAM_BOT_TOKEN_2": "8776408528:AAGexszfsf0DmRHFtS5CrPo_QmsN06QXc_A",
     "TELEGRAM_BOT_TOKEN_3": "8821130913:AAHL-oB8ZVAHU95QguFC3I7kxVT5XaaOaWc",
-    "TELEGRAM_BOT_TOKEN_ETF": "8846086245:AAHeM2s85bmfHpOy1MZ_f45l3myND4C3z3Y",
+    "TELEGRAM_BOT_TOKEN_ETF": "8847294226:AAE0GTApXUSPbzX3lzUmpziOaAbU02zxMVY",
     "TELEGRAM_BOT_TOKEN_MDP": "8846086245:AAHeM2s85bmfHpOy1MZ_f45l3myND4C3z3Y",
 }
 
 def check_bot_token_active(token_env: str) -> bool:
-    """Verifies whether Telegram Bot API token is valid and active via 1s HTTP call."""
+    """Verifies whether Telegram Bot API token is valid and active via 3.5s HTTP call."""
     token = os.environ.get(token_env) or DEFAULT_BOT_TOKENS.get(token_env)
     if not token:
         return False
     try:
         import requests
-        r = requests.get(f"https://api.telegram.org/bot{token}/getMe", timeout=1.5)
+        r = requests.get(f"https://api.telegram.org/bot{token}/getMe", timeout=3.5)
         return r.status_code == 200
     except Exception:
         return False
