@@ -58,22 +58,6 @@ def is_bot_pid_alive() -> bool:
         pass
     return False
 
-def _ensure_bot_running():
-    if is_bot_pid_alive():
-        return True
-    try:
-        bot_script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bot.py")
-        if os.path.exists(bot_script):
-            subprocess.Popen([sys.executable, "-u", bot_script], cwd=os.path.dirname(os.path.abspath(__file__)))
-            time.sleep(1)
-            return is_bot_pid_alive()
-    except Exception:
-        pass
-    return False
-
-
-_ensure_bot_running()
-
 try:
     st.set_page_config(
         page_title="NSE Swing Trading Dashboard #1 (Classic Breakout)",
@@ -83,6 +67,25 @@ try:
     )
 except Exception:
     pass
+
+def _ensure_bot_running(force_restart: bool = False):
+    if force_restart:
+        try:
+            bot_script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bot.py")
+            if os.path.exists(bot_script):
+                subprocess.Popen([sys.executable, "-u", bot_script], cwd=os.path.dirname(os.path.abspath(__file__)))
+                time.sleep(1)
+        except Exception:
+            pass
+    elif not os.environ.get("BOT_STARTED_BY_SCRIPT") and not is_bot_pid_alive():
+        try:
+            bot_script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bot.py")
+            if os.path.exists(bot_script):
+                subprocess.Popen([sys.executable, "-u", bot_script], cwd=os.path.dirname(os.path.abspath(__file__)))
+                time.sleep(1)
+        except Exception:
+            pass
+    return is_bot_pid_alive()
 
 st.title("📈 NSE Swing Trading Dashboard (Project #1: Classic Breakout)")
 st.markdown("Automated Quantitative System: 20-SMA Breakout • >2.0x Volume • Trailing 20-EMA • 1.0% Risk")
@@ -94,7 +97,7 @@ if bot_alive:
 else:
     st.sidebar.error("⚠️ Telegram Bot: Offline")
     if st.sidebar.button("▶️ Start Telegram Bot"):
-        _ensure_bot_running()
+        _ensure_bot_running(force_restart=True)
         st.rerun()
 
 # Live Bot Logs expander in sidebar

@@ -220,13 +220,47 @@ class MarketRegimeEngine:
         }
 
 _engine_instance = None
+_cached_regime_result = None
+_cached_regime_time = 0
 
 def get_market_regime(breadth_pct: float = None, macro_sentiment_data: Dict[str, Any] = None) -> Dict[str, Any]:
-    """Global helper function to fetch current market regime."""
-    global _engine_instance
+    """Global helper function to fetch current market regime with 5-minute in-memory caching and fail-safe fallback."""
+    global _engine_instance, _cached_regime_result, _cached_regime_time
+    import time
+    now = time.time()
+    
+    if breadth_pct is None and macro_sentiment_data is None and _cached_regime_result is not None and (now - _cached_regime_time) < 300:
+        return _cached_regime_result
+
     if _engine_instance is None:
         _engine_instance = MarketRegimeEngine()
-    return _engine_instance.calculate_regime_score(breadth_pct=breadth_pct, macro_sentiment_data=macro_sentiment_data)
+        
+    try:
+        res = _engine_instance.calculate_regime_score(breadth_pct=breadth_pct, macro_sentiment_data=macro_sentiment_data)
+        if breadth_pct is None and macro_sentiment_data is None:
+            _cached_regime_result = res
+            _cached_regime_time = now
+        return res
+    except Exception as e:
+        logger.error(f"Error evaluating market regime score: {e}")
+        if _cached_regime_result:
+            return _cached_regime_result
+        return {
+            "regime_score": 65.0,
+            "classification": "NEUTRAL_CHOPPY",
+            "color": "🟡",
+            "max_sizing_multiplier": 0.60,
+            "max_open_exposure_pct": 0.60,
+            "min_cash_reserve_pct": 0.30,
+            "components": {
+                "trend_score": 60.0,
+                "breadth_score": 65.0,
+                "volatility_score": 65.0,
+                "institutional_score": 65.0,
+                "macro_score": 60.0
+            },
+            "details": {}
+        }
 
 if __name__ == "__main__":
     print("Evaluating current Market Regime...")

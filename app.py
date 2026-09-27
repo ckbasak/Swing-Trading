@@ -4,6 +4,13 @@ import time
 import subprocess
 import streamlit as st
 
+st.set_page_config(
+    page_title="NSE AI Swing Trading Master Systems",
+    page_icon="🏦",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 
 def is_bot_alive(pid_file: str) -> bool:
@@ -46,7 +53,7 @@ def check_bot_token_active(token_env: str) -> bool:
         return False
     try:
         import requests
-        r = requests.get(f"https://api.telegram.org/bot{token}/getMe", timeout=3.5)
+        r = requests.get(f"https://api.telegram.org/bot{token}/getMe", timeout=2.0)
         return r.status_code == 200
     except Exception:
         return False
@@ -56,13 +63,14 @@ def launch_unified_bots_daemon():
         script = os.path.join(PROJECT_ROOT, "start_unified_bots.py")
         if os.path.exists(script):
             subprocess.Popen([sys.executable, "-u", script], cwd=PROJECT_ROOT)
-            time.sleep(2)
+            time.sleep(1)
             return True
     except Exception as e:
         print(f"Error launching unified bots daemon: {e}")
     return False
 
-def ensure_all_bots_running(force_restart: bool = False):
+@st.cache_data(ttl=60)
+def check_all_bot_statuses():
     bot_configs = [
         ("Strategy #1 Bot", os.path.join(PROJECT_ROOT, "strategy1"), "TELEGRAM_BOT_TOKEN_1"),
         ("Strategy #2 Bot", os.path.join(PROJECT_ROOT, "strategy2"), "TELEGRAM_BOT_TOKEN_2"),
@@ -70,15 +78,6 @@ def ensure_all_bots_running(force_restart: bool = False):
         ("ETF Strategy #1 Bot", os.path.join(PROJECT_ROOT, "strategy_etf"), "TELEGRAM_BOT_TOKEN_ETF"),
         ("Manage-Dhan-Portfolio Bot", os.path.join(PROJECT_ROOT, "strategy_mdp"), "TELEGRAM_BOT_TOKEN_MDP"),
     ]
-    
-    if force_restart:
-        launch_unified_bots_daemon()
-    else:
-        # Check if any bot daemon PID is active
-        any_alive = any(is_bot_alive(os.path.join(s_dir, "bot.pid")) for _, s_dir, _ in bot_configs)
-        if not any_alive:
-            launch_unified_bots_daemon()
-            
     status_dict = {}
     for name, s_dir, t_env in bot_configs:
         pid_path = os.path.join(s_dir, "bot.pid")
@@ -87,14 +86,24 @@ def ensure_all_bots_running(force_restart: bool = False):
         status_dict[name] = pid_live or token_active
     return status_dict
 
-bot_statuses = ensure_all_bots_running()
+def ensure_all_bots_running(force_restart: bool = False):
+    if force_restart:
+        launch_unified_bots_daemon()
+        st.cache_data.clear()
+    elif not os.environ.get("BOT_STARTED_BY_SCRIPT"):
+        bot_configs = [
+            ("Strategy #1 Bot", os.path.join(PROJECT_ROOT, "strategy1"), "TELEGRAM_BOT_TOKEN_1"),
+            ("Strategy #2 Bot", os.path.join(PROJECT_ROOT, "strategy2"), "TELEGRAM_BOT_TOKEN_2"),
+            ("Strategy #3 Bot", os.path.join(PROJECT_ROOT, "strategy3"), "TELEGRAM_BOT_TOKEN_3"),
+            ("ETF Strategy #1 Bot", os.path.join(PROJECT_ROOT, "strategy_etf"), "TELEGRAM_BOT_TOKEN_ETF"),
+            ("Manage-Dhan-Portfolio Bot", os.path.join(PROJECT_ROOT, "strategy_mdp"), "TELEGRAM_BOT_TOKEN_MDP"),
+        ]
+        any_alive = any(is_bot_alive(os.path.join(s_dir, "bot.pid")) for _, s_dir, _ in bot_configs)
+        if not any_alive:
+            launch_unified_bots_daemon()
+    return check_all_bot_statuses()
 
-st.set_page_config(
-    page_title="NSE AI Swing Trading Master Systems",
-    page_icon="🏦",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+bot_statuses = ensure_all_bots_running()
 
 st.sidebar.title("🏦 Quantitative Trading Hub")
 st.sidebar.caption("Unified 1-Service Master Architecture (100% Free 24/7)")

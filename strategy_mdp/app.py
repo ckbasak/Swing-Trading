@@ -73,14 +73,21 @@ def get_bot_status() -> dict:
             
     return {"running": running, "pid": pid, "logs": logs}
 
-def _ensure_bot_running():
-    status = get_bot_status()
-    if not status["running"]:
+def _ensure_bot_running(force_restart: bool = False):
+    if force_restart:
         try:
             cmd = [sys.executable, "-u", "bot.py"]
             subprocess.Popen(cmd, cwd=os.path.dirname(os.path.abspath(__file__)))
         except Exception as e:
             print(f"Could not launch bot daemon: {e}")
+    elif not os.environ.get("BOT_STARTED_BY_SCRIPT"):
+        status = get_bot_status()
+        if not status["running"]:
+            try:
+                cmd = [sys.executable, "-u", "bot.py"]
+                subprocess.Popen(cmd, cwd=os.path.dirname(os.path.abspath(__file__)))
+            except Exception as e:
+                print(f"Could not launch bot daemon: {e}")
 
 _ensure_bot_running()
 

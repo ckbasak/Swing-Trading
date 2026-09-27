@@ -58,22 +58,6 @@ def is_bot_pid_alive() -> bool:
         pass
     return False
 
-def _ensure_bot_running():
-    if is_bot_pid_alive():
-        return True
-    try:
-        bot_script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bot.py")
-        if os.path.exists(bot_script):
-            subprocess.Popen([sys.executable, "-u", bot_script], cwd=os.path.dirname(os.path.abspath(__file__)))
-            time.sleep(1)
-            return is_bot_pid_alive()
-    except Exception:
-        pass
-    return False
-
-
-_ensure_bot_running()
-
 try:
     st.set_page_config(
         page_title="ETF Strategy 1 - Systematic Swing Trading",
@@ -83,6 +67,25 @@ try:
     )
 except Exception:
     pass
+
+def _ensure_bot_running(force_restart: bool = False):
+    if force_restart:
+        try:
+            bot_script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bot.py")
+            if os.path.exists(bot_script):
+                subprocess.Popen([sys.executable, "-u", bot_script], cwd=os.path.dirname(os.path.abspath(__file__)))
+                time.sleep(1)
+        except Exception:
+            pass
+    elif not os.environ.get("BOT_STARTED_BY_SCRIPT") and not is_bot_pid_alive():
+        try:
+            bot_script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bot.py")
+            if os.path.exists(bot_script):
+                subprocess.Popen([sys.executable, "-u", bot_script], cwd=os.path.dirname(os.path.abspath(__file__)))
+                time.sleep(1)
+        except Exception:
+            pass
+    return is_bot_pid_alive()
 
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 ETF_CSV_PATH = os.path.join(PROJECT_ROOT, "curated_etf_pool.csv")
