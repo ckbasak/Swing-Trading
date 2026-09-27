@@ -346,7 +346,7 @@ def build_trading_workflow():
     # Compile
     return workflow.compile()
 
-def run_trading_system(execute_trades: bool = True) -> Dict[str, Any]:
+def run_trading_system(execute_trades: bool = True, pool_type: str = 'top_50', **kwargs) -> Dict[str, Any]:
     """
     Helper function to execute the compiled LangGraph workflow.
     """
