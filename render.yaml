@@ -7,8 +7,28 @@ services:
     startCommand: bash start.sh
     autoDeploy: true
     envVars:
+      - key: TELEGRAM_BOT_TOKEN_1
+        value: 8832604687:AAHYOy1ywIcK-FOnnsgQTGEoDr9SiBUp2mc
+      - key: TELEGRAM_BOT_TOKEN_2
+        value: 8776408528:AAGexszfsf0DmRHFtS5CrPo_QmsN06QXc_A
+      - key: TELEGRAM_BOT_TOKEN_3
+        value: 8821130913:AAHL-oB8ZVAHU95QguFC3I7kxVT5XaaOaWc
+      - key: TELEGRAM_BOT_TOKEN_ETF
+        value: 8847294226:AAE0GTApXUSPbzX3lzUmpziOaAbU02zxMVY
+      - key: TELEGRAM_BOT_TOKEN_MDP
+        value: 8846086245:AAHeM2s85bmfHpOy1MZ_f45l3myND4C3z3Y
       - key: SPREADSHEET_NAME
         value: NSE_Swing_Trading_Portfolio_1
+      - key: DHAN_CLIENT_ID
+        sync: false
+      - key: DHAN_USER_PIN
+        sync: false
+      - key: DHAN_TOTP_SECRET
+        sync: false
+      - key: DHAN_ACCESS_TOKEN
+        sync: false
+      - key: GOOGLE_SERVICE_ACCOUNT_JSON
+        sync: false
 
   - type: web
     name: ai-swing-trade-1
