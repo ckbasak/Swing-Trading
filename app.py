@@ -139,13 +139,15 @@ active_system = st.sidebar.radio(
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("🤖 Telegram Bot Daemons Status")
+bot_lines = []
 for b_name, b_active in bot_statuses.items():
-    if b_active:
-        st.sidebar.success(f"🟢 {b_name}: Active")
-    else:
-        st.sidebar.error(f"🔴 {b_name}: Offline")
+    badge = "🟢 **Active**" if b_active else "🔴 **Offline**"
+    bot_lines.append(f"• **{b_name}**: {badge}")
 
-if st.sidebar.button("🔄 Restart Bot Daemons", use_container_width=True):
+st.sidebar.markdown("\n".join(bot_lines))
+st.sidebar.markdown("")
+
+if st.sidebar.button("🔄 Restart Bot Daemons"):
     ensure_all_bots_running(force_restart=True)
     st.toast("Launching Telegram bot daemons...", icon="🤖")
     st.rerun()
