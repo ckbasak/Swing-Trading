@@ -30,7 +30,7 @@ def render_dual_execution_panel(
     
     # 1. Paper Trade Execution Button
     with col_paper:
-        if st.button(f"🧪 Execute Paper Trade ({clean_sym})", key=f"btn_paper_{key_prefix}", use_container_width=True):
+        if st.button(f"🧪 Execute Paper Trade ({clean_sym})", key=f"btn_paper_{key_prefix}", use_container_width=True, type="secondary"):
             res = portfolio_manager.add_position(
                 sh, ticker, entry_price, quantity, initial_sl, target,
                 execution_type="PAPER_SIMULATED"
