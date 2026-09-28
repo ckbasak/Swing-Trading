@@ -343,3 +343,87 @@ def load_app_settings_from_sheets() -> Dict[str, Any]:
     except Exception as e:
         logger.error(f"Error loading app settings from Google Sheets: {e}")
         return {}
+
+def _parse_num(val: Any, fallback: float = 0.0) -> float:
+    if val is None or str(val).strip() == "":
+        return fallback
+    try:
+        s = str(val).replace("₹", "").replace("%", "").replace(",", "").strip()
+        return float(s)
+    except Exception:
+        return fallback
+
+def get_account_details(sh: Optional[gspread.Spreadsheet] = None) -> Dict[str, Any]:
+    """Retrieves account details (Portfolio Value, Cash, Risk %, Execution Mode) from Google Sheets Account worksheet."""
+    if not sh:
+        sh = get_or_create_spreadsheet()
+    if not sh:
+        return {
+            "Total Portfolio Value": 100000.0,
+            "Cash Balance": 100000.0,
+            "Initial Capital": 100000.0,
+            "Risk Percent": 0.06,
+            "Execution Mode": "PAPER_SIMULATED"
+        }
+    try:
+        ws = get_or_create_worksheet(sh, "Account", ["Parameter", "Value"])
+        records = retry_gspread(ws.get_all_records)
+        details = {}
+        for r in records:
+            param = str(r.get("Parameter", "")).strip()
+            val_str = str(r.get("Value", "")).strip()
+            norm_key = param.lower().replace(" ", "").replace("_", "")
+            if norm_key in ["totalportfoliovalue", "portfoliovalue"]:
+                details["Total Portfolio Value"] = _parse_num(val_str, 100000.0)
+            elif norm_key in ["cashbalance", "cash"]:
+                details["Cash Balance"] = _parse_num(val_str, 100000.0)
+            elif norm_key in ["executionmode", "mode", "tradingmode"]:
+                details["Execution Mode"] = val_str.upper()
+            elif norm_key in ["initialcapital", "startingcapital"]:
+                details["Initial Capital"] = _parse_num(val_str, 100000.0)
+
+        if "Initial Capital" not in details:
+            details["Initial Capital"] = 100000.0
+        if "Execution Mode" not in details:
+            details["Execution Mode"] = "PAPER_SIMULATED"
+        return details
+    except Exception as e:
+        logger.error(f"Error reading Account worksheet: {e}")
+        return {
+            "Total Portfolio Value": 100000.0,
+            "Cash Balance": 100000.0,
+            "Initial Capital": 100000.0,
+            "Risk Percent": 0.06,
+            "Execution Mode": "PAPER_SIMULATED"
+        }
+
+def update_account_details(sh: gspread.Spreadsheet, updates: Dict[str, Any]):
+    """Updates parameters in the Account worksheet while strictly preserving all existing rows."""
+    if not sh:
+        return
+    try:
+        ws = get_or_create_worksheet(sh, "Account", ["Parameter", "Value"])
+        all_rows = retry_gspread(ws.get_all_values)
+        if not all_rows:
+            all_rows = [["Parameter", "Value"]]
+
+        param_map = {}
+        for idx, row in enumerate(all_rows[1:], start=2):
+            if row:
+                param_map[row[0].strip().lower().replace(" ", "").replace("_", "")] = idx
+
+        for k, v in updates.items():
+            norm_k = k.strip().lower().replace(" ", "").replace("_", "")
+            formatted_val = str(v)
+            if isinstance(v, float):
+                formatted_val = f"{v:.2f}"
+
+            if norm_k in param_map:
+                row_idx = param_map[norm_k]
+                retry_gspread(ws.update_cell, row_idx, 2, formatted_val)
+            else:
+                retry_gspread(ws.append_row, [k, formatted_val])
+                param_map[norm_k] = len(all_rows) + 1
+    except Exception as e:
+        logger.error(f"Error updating Account worksheet: {e}")
+

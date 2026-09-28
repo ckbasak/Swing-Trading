@@ -362,6 +362,8 @@ def get_account_details(sh: gspread.Spreadsheet) -> Dict[str, float]:
             details["Total Portfolio Value"] = val
         elif norm_key in ["cashbalance", "cash"]:
             details["Cash Balance"] = val
+        elif norm_key in ["executionmode", "mode", "tradingmode"]:
+            details["Execution Mode"] = raw_val.upper()
         elif norm_key in ["initialcapital", "startingcapital"]:
             details["Initial Capital"] = val
 
@@ -371,6 +373,8 @@ def get_account_details(sh: gspread.Spreadsheet) -> Dict[str, float]:
         details["Risk Percent"] = 0.075
     if "Risk Percentage" not in details:
         details["Risk Percentage"] = details["Risk Percent"]
+    if "Execution Mode" not in details:
+        details["Execution Mode"] = "PAPER_SIMULATED"
     return details
 
 def update_account_details(sh: gspread.Spreadsheet, updates: Dict[str, Any]):

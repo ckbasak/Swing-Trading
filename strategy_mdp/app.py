@@ -368,6 +368,43 @@ with st.sidebar:
 
     st.divider()
 
+    st.subheader("⚙️ Execution Mode")
+    try:
+        _acc_mdp = portfolio_manager.get_account_details(sh_instance) if sh_instance else {}
+    except Exception:
+        _acc_mdp = {}
+
+    current_mode_mdp = str(_acc_mdp.get("Execution Mode", "PAPER_SIMULATED")).upper()
+    mdp_is_live = "LIVE" in current_mode_mdp or "DHAN" in current_mode_mdp
+
+    mode_choice_mdp = st.radio(
+        "Strategy #5 MDP Mode:",
+        ["🧪 Paper Trading (Simulated)", "🚀 Live Dhan Broker"],
+        index=1 if mdp_is_live else 0,
+        key="exec_mode_radio_mdp",
+        help="Configures whether Strategy #5 MDP operates in paper-simulated mode or dispatches live orders."
+    )
+
+    new_is_live_mdp = "Live" in mode_choice_mdp
+    if new_is_live_mdp != mdp_is_live:
+        new_mode_str = "LIVE_DHAN" if new_is_live_mdp else "PAPER_SIMULATED"
+        try:
+            if sh_instance:
+                portfolio_manager.update_account_details(sh_instance, {"Execution Mode": new_mode_str})
+                st.success(f"Strategy #5 MDP mode updated to {new_mode_str}!")
+                time.sleep(1)
+                st.rerun()
+        except Exception as e:
+            st.warning(f"Notice updating execution mode: {e}")
+
+    if mdp_is_live:
+        st.warning("🚀 **Live Dhan Orders Enabled** for Strategy #5 MDP")
+    else:
+        st.info("🧪 **Paper Trading Active** for Strategy #5 MDP")
+
+    st.divider()
+
+
     with st.expander("🛡️ MDP V2 Risk & Volatility Controls", expanded=True):
         st.caption("Institutional risk-budgeting & ATR volatility parameters:")
         

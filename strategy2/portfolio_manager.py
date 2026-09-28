@@ -364,25 +364,30 @@ def get_account_details(sh: Optional[gspread.Spreadsheet] = None) -> Dict[str, f
                     details["Total Portfolio Value"] = val
                 elif norm_key in ["cashbalance", "cash"]:
                     details["Cash Balance"] = val
+                elif norm_key in ["executionmode", "mode", "tradingmode"]:
+                    details["Execution Mode"] = raw_val.upper()
                 elif norm_key in ["initialcapital", "startingcapital"]:
                     details["Initial Capital"] = val
 
             if "Initial Capital" not in details:
-                details["Initial Capital"] = 1000000.0
+                details["Initial Capital"] = 100000.0
             if "Risk Percent" not in details:
                 details["Risk Percent"] = 0.015
             if "Risk Percentage" not in details:
                 details["Risk Percentage"] = details["Risk Percent"]
+            if "Execution Mode" not in details:
+                details["Execution Mode"] = "PAPER_SIMULATED"
             return details
         except Exception as e:
             print(f"Error reading Account worksheet: {e}")
 
     return {
-        "Total Portfolio Value": 1000000.0,
-        "Cash Balance": 1000000.0,
-        "Initial Capital": 1000000.0,
+        "Total Portfolio Value": 100000.0,
+        "Cash Balance": 100000.0,
+        "Initial Capital": 100000.0,
         "Risk Percent": 0.015,
-        "Risk Percentage": 0.015
+        "Risk Percentage": 0.015,
+        "Execution Mode": "PAPER_SIMULATED"
     }
 
 def update_account_details(sh: Optional[gspread.Spreadsheet], updates: Dict[str, Any]):

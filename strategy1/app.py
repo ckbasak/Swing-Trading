@@ -113,6 +113,40 @@ with st.sidebar.expander("📋 Bot Live Logs"):
     else:
         st.write("Initializing logs...")
 
+# Strategy Execution Mode Selector (Saved in Google Sheet 'Account' tab)
+st.sidebar.markdown("---")
+st.sidebar.subheader("⚙️ Execution Mode")
+
+current_mode_s1 = str(account.get("Execution Mode", "PAPER_SIMULATED")).upper() if 'account' in locals() and account else "PAPER_SIMULATED"
+s1_is_live = "LIVE" in current_mode_s1 or "DHAN" in current_mode_s1
+
+mode_choice_s1 = st.sidebar.radio(
+    "Strategy #1 Mode:",
+    ["🧪 Paper Trading (Simulated)", "🚀 Live Dhan Broker"],
+    index=1 if s1_is_live else 0,
+    key="exec_mode_radio_s1",
+    help="Configures whether Strategy #1 operates in paper-simulated mode or dispatches live orders."
+)
+
+new_is_live_s1 = "Live" in mode_choice_s1
+if new_is_live_s1 != s1_is_live:
+    new_mode_str = "LIVE_DHAN" if new_is_live_s1 else "PAPER_SIMULATED"
+    try:
+        client = portfolio_manager.get_gspread_client()
+        if client:
+            sh = portfolio_manager.get_or_create_portfolio_sheet(client)
+            portfolio_manager.update_account_details(sh, {"Execution Mode": new_mode_str})
+            st.sidebar.success(f"Strategy #1 mode updated to {new_mode_str}!")
+            time.sleep(1)
+            st.rerun()
+    except Exception as e:
+        st.sidebar.warning(f"Notice updating execution mode: {e}")
+
+if s1_is_live:
+    st.sidebar.warning("🚀 **Live Dhan Orders Enabled** for Strategy #1")
+else:
+    st.sidebar.info("🧪 **Paper Trading Active** for Strategy #1")
+
 # Refresh Button
 if st.sidebar.button("🔄 Sync & Refresh Portfolio"):
     st.cache_data.clear()

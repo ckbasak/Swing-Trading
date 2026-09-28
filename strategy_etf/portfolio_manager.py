@@ -438,6 +438,8 @@ def get_account_details(sh: Optional[gspread.Spreadsheet] = None) -> Dict[str, A
                 elif norm_key in ["riskpercent", "riskpercentage", "risk"]:
                     rp = _parse_num(val_str, 6.0)
                     details["Risk Percent"] = rp / 100.0 if rp > 1.0 else rp
+                elif norm_key in ["executionmode", "mode", "tradingmode"]:
+                    details["Execution Mode"] = val_str.upper()
                 elif norm_key in ["initialcapital", "startingcapital"]:
                     details["Initial Capital"] = _parse_num(val_str, INITIAL_CAPITAL)
                     
@@ -449,6 +451,8 @@ def get_account_details(sh: Optional[gspread.Spreadsheet] = None) -> Dict[str, A
                 details["Cash Balance"] = INITIAL_CAPITAL
             if "Risk Percent" not in details:
                 details["Risk Percent"] = 0.06
+            if "Execution Mode" not in details:
+                details["Execution Mode"] = "PAPER_SIMULATED"
             return details
         except Exception as e:
             print(f"Notice reading Account sheet: {e}")
@@ -463,7 +467,8 @@ def get_account_details(sh: Optional[gspread.Spreadsheet] = None) -> Dict[str, A
         "Risk Percent": acc.get("risk_pct", 6.0) / 100.0,
         "Realized PnL": acc.get("realized_pnl", 0.0),
         "Total Return %": acc.get("total_return_pct", 0.0),
-        "Active Pool": acc.get("active_pool", "Top 50 Champions")
+        "Active Pool": acc.get("active_pool", "Top 50 Champions"),
+        "Execution Mode": "PAPER_SIMULATED"
     }
 
 def update_account_details(sh: gspread.Spreadsheet, updates: Dict[str, Any]):

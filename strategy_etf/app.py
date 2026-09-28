@@ -110,6 +110,45 @@ st.sidebar.markdown("""
 """)
 
 st.sidebar.markdown("---")
+st.sidebar.subheader("⚙️ Execution Mode")
+
+try:
+    _client_etf = portfolio_manager.get_gspread_client()
+    _sh_etf = portfolio_manager.get_or_create_portfolio_sheet(_client_etf) if _client_etf else None
+    _acc_etf = portfolio_manager.get_account_details(_sh_etf) if _sh_etf else {}
+except Exception:
+    _sh_etf = None
+    _acc_etf = {}
+
+current_mode_etf = str(_acc_etf.get("Execution Mode", "PAPER_SIMULATED")).upper()
+etf_is_live = "LIVE" in current_mode_etf or "DHAN" in current_mode_etf
+
+mode_choice_etf = st.sidebar.radio(
+    "ETF Strategy Mode:",
+    ["🧪 Paper Trading (Simulated)", "🚀 Live Dhan Broker"],
+    index=1 if etf_is_live else 0,
+    key="exec_mode_radio_etf",
+    help="Configures whether Strategy ETF operates in paper-simulated mode or dispatches live orders."
+)
+
+new_is_live_etf = "Live" in mode_choice_etf
+if new_is_live_etf != etf_is_live:
+    new_mode_str = "LIVE_DHAN" if new_is_live_etf else "PAPER_SIMULATED"
+    try:
+        if _sh_etf:
+            portfolio_manager.update_account_details(_sh_etf, {"Execution Mode": new_mode_str})
+            st.sidebar.success(f"Strategy ETF mode updated to {new_mode_str}!")
+            time.sleep(1)
+            st.rerun()
+    except Exception as e:
+        st.sidebar.warning(f"Notice updating execution mode: {e}")
+
+if etf_is_live:
+    st.sidebar.warning("🚀 **Live Dhan Orders Enabled** for Strategy ETF")
+else:
+    st.sidebar.info("🧪 **Paper Trading Active** for Strategy ETF")
+
+st.sidebar.markdown("---")
 if st.sidebar.button("🔍 Run Scan on Liquid ETFs", use_container_width=True):
     with st.spinner("Scanning 20 Liquid NSE ETFs..."):
         st_res = trading_graph.run_trading_system(execute_trades=False)

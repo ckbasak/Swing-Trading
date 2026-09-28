@@ -114,6 +114,45 @@ st.sidebar.markdown("""
 """)
 
 st.sidebar.markdown("---")
+st.sidebar.subheader("⚙️ Execution Mode")
+
+try:
+    _client_s3 = portfolio_manager.get_gspread_client()
+    _sh_s3 = portfolio_manager.get_or_create_portfolio_sheet(_client_s3) if _client_s3 else None
+    _acc_s3 = portfolio_manager.get_account_details(_sh_s3) if _sh_s3 else {}
+except Exception:
+    _sh_s3 = None
+    _acc_s3 = {}
+
+current_mode_s3 = str(_acc_s3.get("Execution Mode", "PAPER_SIMULATED")).upper()
+s3_is_live = "LIVE" in current_mode_s3 or "DHAN" in current_mode_s3
+
+mode_choice_s3 = st.sidebar.radio(
+    "Strategy #3 Mode:",
+    ["🧪 Paper Trading (Simulated)", "🚀 Live Dhan Broker"],
+    index=1 if s3_is_live else 0,
+    key="exec_mode_radio_s3",
+    help="Configures whether Strategy #3 operates in paper-simulated mode or dispatches live orders."
+)
+
+new_is_live_s3 = "Live" in mode_choice_s3
+if new_is_live_s3 != s3_is_live:
+    new_mode_str = "LIVE_DHAN" if new_is_live_s3 else "PAPER_SIMULATED"
+    try:
+        if _sh_s3:
+            portfolio_manager.update_account_details(_sh_s3, {"Execution Mode": new_mode_str})
+            st.sidebar.success(f"Strategy #3 mode updated to {new_mode_str}!")
+            time.sleep(1)
+            st.rerun()
+    except Exception as e:
+        st.sidebar.warning(f"Notice updating execution mode: {e}")
+
+if s3_is_live:
+    st.sidebar.warning("🚀 **Live Dhan Orders Enabled** for Strategy #3")
+else:
+    st.sidebar.info("🧪 **Paper Trading Active** for Strategy #3")
+
+st.sidebar.markdown("---")
 if st.sidebar.button("🔍 Run Scan on Curated Pool", use_container_width=True):
     with st.spinner(f"Scanning {active_pool}..."):
         st_res = trading_graph.run_trading_system(execute_trades=False, pool_type=pool_type)
