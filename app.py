@@ -222,7 +222,12 @@ if "Master Multi-System" in active_system:
     
     st.markdown("---")
     
-    tab1, tab2, tab3 = st.tabs(["📊 Performance Matrix", "🏛️ Statutory Fee & STCG Tax Schedule", "🌐 Master Cloud Architecture"])
+    tab1, tab2, tab3, tab4 = st.tabs([
+        "📊 Performance Matrix",
+        "🚀 Dual Trade Execution Panel (Live / Paper)",
+        "🏛️ Statutory Fee & STCG Tax Schedule",
+        "🌐 Master Cloud Architecture"
+    ])
     
     with tab1:
         st.subheader("🏆 2-Year Comprehensive Backtest Scorecard (₹1,00,000 Capital)")
@@ -236,8 +241,43 @@ if "Master Multi-System" in active_system:
         | **Strategy 5 (MDP)** | Live Dhan Portfolio | Dynamic | Real-time | 20% STCG | Dynamic | **65.0%** | **2.80** | **-8.58%** |
         | **Benchmark NIFTY 50** | Index | -5.68% | N/A | ₹0.00 | **-5.68%** | N/A | N/A | -18.20% |
         """)
-        
+
     with tab2:
+        st.subheader("🚀 Dual Execution Control Panel (Human-in-the-Loop)")
+        st.markdown("Manually trigger simulated **Paper Trades** or send **Real-Money Orders** directly to Dhan Exchange with live Pre-Flight validation.")
+        
+        col_in1, col_in2, col_in3 = st.columns(3)
+        with col_in1:
+            exec_ticker = st.text_input("Stock Ticker Symbol:", value="RELIANCE.NS", key="exec_input_ticker").upper()
+        with col_in2:
+            exec_price = st.number_input("Entry Price (₹):", min_value=1.0, value=2500.0, step=0.5, key="exec_input_price")
+        with col_in3:
+            exec_qty = st.number_input("Quantity (Shares):", min_value=1, value=10, step=1, key="exec_input_qty")
+            
+        col_sl, col_tgt = st.columns(2)
+        with col_sl:
+            exec_sl = st.number_input("Initial Stop Loss (₹):", min_value=0.5, value=2400.0, step=0.5, key="exec_input_sl")
+        with col_tgt:
+            exec_tgt = st.number_input("Target Price (₹):", min_value=1.0, value=2700.0, step=0.5, key="exec_input_tgt")
+            
+        st.markdown("---")
+        
+        try:
+            import execution_ui
+            import portfolio_manager
+            client = portfolio_manager.get_gspread_client()
+            sh = portfolio_manager.get_or_create_portfolio_sheet(client) if client else None
+            if sh:
+                execution_ui.render_dual_execution_panel(
+                    sh, exec_ticker, exec_price, exec_qty, exec_sl, exec_tgt,
+                    strategy_name="Master Hub", key_prefix="master_manual"
+                )
+            else:
+                st.warning("Google Sheets database offline. Please configure service_account.json.")
+        except Exception as e:
+            st.warning(f"Trade Execution Panel Notice: {e}")
+        
+    with tab3:
         st.subheader("🏛️ Dynamic Statutory Fee & Tax Schedule (Google Sheets Synced)")
         st.markdown("""
         - **STT (Equity Buy)**: `0.100%` | **STT (Equity Sell)**: `0.100%` | **STT (ETF Sell)**: `0.001%`
@@ -247,7 +287,7 @@ if "Master Multi-System" in active_system:
         - **STCG Capital Gains Tax**: `20.0%` (Section 111A)
         """)
         
-    with tab3:
+    with tab4:
         st.subheader("⚡ 1-Service Render Architecture (100% Free Forever)")
         st.markdown("""
         - **Monthly Hour Consumption**: 720 Hours/Month (Single Web Service)

@@ -590,10 +590,11 @@ def calculate_true_break_even_price(entry_price: float, qty: int, config: Option
     break_even_price = target_sell_val / qty
     return round(break_even_price + 0.05, 2)
 
-def add_position(sh: gspread.Spreadsheet, ticker: str, entry_price: float, quantity: int, initial_sl: float, target: float) -> str:
+def add_position(sh: gspread.Spreadsheet, ticker: str, entry_price: float, quantity: int, initial_sl: float, target: float, execution_type: str = "PAPER_SIMULATED", order_id: str = "") -> str:
     """
     Adds a new position to the Holdings worksheet and deducts cash.
     Enforces Strategy v2 guardrails: Double Buy Blocker, Sector Concentration (max 3/sector), and valid SL range.
+    Tags execution_type (PAPER_SIMULATED vs LIVE_DHAN) and Dhan Order ID.
     """
     open_positions = get_open_positions(sh)
     existing_tickers = [p["Ticker"] for p in open_positions]
@@ -628,24 +629,26 @@ def add_position(sh: gspread.Spreadsheet, ticker: str, entry_price: float, quant
     has_comp = "Company Name" in headers
     comp_name = get_company_name(ticker)
     
+    notes = f"Mode: {execution_type}" + (f" | OrderId: {order_id}" if order_id else "")
+    
     if has_comp:
         row_data = [
             ticker, comp_name, date_str, round(entry_price, 2), quantity, round(entry_price * quantity, 2),
             round(initial_sl, 2), round(current_sl, 2), round(target, 2), status, "", "", "", "", "",
-            "", "", "", ""
+            "", "", "", notes
         ]
     else:
         row_data = [
             ticker, date_str, round(entry_price, 2), quantity, round(entry_price * quantity, 2),
             round(initial_sl, 2), round(current_sl, 2), round(target, 2), status, "", "", "", "", "",
-            "", "", "", ""
+            "", "", "", notes
         ]
     
     retry_gspread(ws.append_row, row_data)
     
     new_cash = round(account["Cash Balance"] - cost, 2)
     update_account_details(sh, {"Cash Balance": new_cash})
-    return f"Successfully added {ticker} ({comp_name}) x {quantity} @ {entry_price:.2f}. New cash: {new_cash:.2f}"
+    return f"Successfully added {ticker} ({comp_name}) x {quantity} @ {entry_price:.2f} [{execution_type}]. New cash: {new_cash:.2f}"
 
 def close_position(sh: gspread.Spreadsheet, row_idx: int, exit_price: float, exit_reason: str) -> str:
     """
