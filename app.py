@@ -138,6 +138,25 @@ active_system = st.sidebar.radio(
 )
 
 st.sidebar.markdown("---")
+st.sidebar.subheader("📡 Inter-Service Microservices Telemetry")
+
+import gateway_client
+gw_status = gateway_client.check_gateway_health()
+if gw_status.get("status") in ["healthy", "success"]:
+    st.sidebar.success("🟢 Service Beta (MDP Gateway): Connected")
+else:
+    st.sidebar.info("🟡 Service Beta (MDP Gateway): Local Fallback")
+
+try:
+    r_intel = requests.get("http://127.0.0.1:8086/api/v1/health", timeout=1)
+    if r_intel.status_code == 200:
+        st.sidebar.success("🟢 Service Gamma (Intelligence API): Connected")
+    else:
+        st.sidebar.info("🟡 Service Gamma (Intelligence API): Standby")
+except Exception:
+    st.sidebar.info("🟡 Service Gamma (Intelligence API): Standby")
+
+st.sidebar.markdown("---")
 st.sidebar.subheader("🤖 Telegram Bot Daemons Status")
 for b_name, b_active in bot_statuses.items():
     if b_active:
@@ -151,7 +170,8 @@ if st.sidebar.button("🔄 Restart Bot Daemons", use_container_width=True):
     st.rerun()
 
 st.sidebar.markdown("---")
-st.sidebar.caption("🛡️ Autonomous Regulatory Sentinel & Google Sheets Sync active across all systems.")
+st.sidebar.caption("🛡️ Autonomous Regulatory Sentinel & Microservices Gateway active across all systems.")
+
 
 def render_strategy_sub_app(sub_dir):
     import runpy
